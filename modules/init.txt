@@ -36,5 +36,40 @@
 #
 # Live example:
 
-custom/commands/
+# Server Specific Custom GM Commands
+
+custom/lua/hogwarts/commands/
+
+# Class Shop NPCs
+
+# custom/lua/hogwarts/classNPCs/
+
+# New Player Mods
+
+custom/lua/hogwarts/new_player_capallskills.lua
+custom/lua/hogwarts/new_player_startergear.lua
+custom/lua/hogwarts/new_player_linkshell.lua
+custom/lua/hogwarts/new_player_addallweaponskills.lua
+
+# Community Mods
+
 custom/lua/test_npcs_in_gm_home.lua
+custom/lua/homepoint_heal.lua
+custom/lua/replace_trust_with_cornelia.lua
+custom/lua/custom_HNM_system.lua
+era/sql/pre_rmt_drops.sql
+era/lua/pre_rmt_drops.lua
+
+# Server Specific LUA Mods
+
+# custom/lua/hogwarts/abilities/custom_effect_composure.lua
+
+# Server Specific SQL Mods
+
+custom/sql/hogwarts/make_ream_ws_learnable.sql
+custom/sql/hogwarts/custom_Jobs.sql
+custom/sql/hogwarts/missing_item_mods.sql
+#custom/sql/hogwarts/custom_Mob_Groups.sql
+#custom/sql/hogwarts/custom_Mob_Spawn_Points.sql
+#custom/sql/hogwarts/custom_spells.sql
+#custom/sql/hogwarts/zone_ips.sql

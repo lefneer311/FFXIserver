@@ -58,7 +58,7 @@ local priceMythicWp = 7250000 -- Level 75 Mythics
 local priceMythicWp99 = 32500000 -- Level 99 Mythics
 local priceMythicWp119 = 62500000 -- iLvl 119 III Mythics
 local priceEmpWp = 7500000 -- Level 90 Empyrean Weapons
-local priceEmpWp99 = 3000000 -- Level 99 Empyrean Weapons
+local priceEmpWp99 = 30000000 -- Level 99 Empyrean Weapons
 local priceEmpWp119 = 42500000 -- iLvl 119 III Empyrean Weapons
 local priceAeonWp = 75000000 -- iLvl 119 III Aeonic Weapons
 
@@ -126,10 +126,13 @@ commandObj.onTrigger = function(player)
                 local prices = {priceAF1, priceAF2, priceAF2, priceAF3, priceAF3, priceAF3, priceAF3, priceAF3,
                                 priceAFP1, priceAFP1, priceAFP1, priceAFP1, priceAFP1}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -149,10 +152,13 @@ commandObj.onTrigger = function(player)
                                 priceRelicP1, priceRelicP1, priceRelicP1, priceRelicP1, priceRelicP1,
                                 priceRelicP2, priceRelicP2, priceRelicP2, priceRelicP2, priceRelicP2}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -172,10 +178,13 @@ commandObj.onTrigger = function(player)
                                 priceEmpP1, priceEmpP1, priceEmpP1, priceEmpP1, priceEmpP1, priceEmpP2, priceEmpP2,
                                 priceEmpP2, priceEmpP2, priceEmpP2}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -196,10 +205,13 @@ commandObj.onTrigger = function(player)
                                 priceReEmp, priceReEmp, priceReEmp, priceReEmp, priceReEmp,
                                 priceReEmp, priceReEmp}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -232,10 +244,13 @@ commandObj.onTrigger = function(player)
                                 priceReEmpP1, priceReEmpP1, priceReEmpP1, priceReEmpP1, priceReEmpP1,
                                 priceReEmpP1, priceReEmpP1, priceReEmpP1}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -256,10 +271,13 @@ commandObj.onTrigger = function(player)
                                 priceReEmpP2, priceReEmpP2, priceReEmpP2, priceReEmpP2, priceReEmpP2,
                                 priceReEmpP2, priceReEmpP2, priceReEmpP2}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -279,10 +297,13 @@ commandObj.onTrigger = function(player)
                                 priceReRelicP3, priceReRelicP3, priceReRelicP3, priceReRelicP3, priceReRelicP3,
                                 priceReEmpP3, priceReEmpP3, priceReEmpP3, priceReEmpP3, priceReEmpP3}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -318,10 +339,13 @@ commandObj.onTrigger = function(player)
                 local itemIndexes = {116, 117, 118, 119, 120, 121, 122, 123}
                 local prices = {priceRelicWp, priceEmpWp, priceRelicWp, priceRelicWp, priceEmpWp, priceEmpWp, priceEmpWp, priceMythicWp}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -339,10 +363,13 @@ commandObj.onTrigger = function(player)
                 local itemIndexes = {124, 125, 126, 127, 128, 129, 130, 131}
                 local prices = {priceRelicWp99, priceEmpWp99, priceRelicWp99, priceRelicWp99, priceEmpWp99, priceEmpWp99, priceEmpWp99, priceMythicWp99}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
@@ -360,10 +387,13 @@ commandObj.onTrigger = function(player)
                 local itemIndexes = {132, 133, 134, 135, 136, 137, 138}
                 local prices = {priceRelicWp119, priceRelicWp119, priceMythicWp119, priceEmpWp119, priceEmpWp119, priceAeonWp, priceAeonWp}
 
-                -- Loop through the indexes and add items if they are not 0
-                for i, idx in ipairs(itemIndexes) do
-                    if jseArray[jobId][idx] ~= 0 then
-                        table.insert(stock, jseArray[jobId][idx])
+                -- Loop through the indexes and add items if they are not 0, keeping item and price in sync
+                for i = 1, #itemIndexes do
+                    local itemId = jseArray[jobId][itemIndexes[i]]
+
+                    -- Only add the item and its price if the item is not 0
+                    if itemId ~= 0 then
+                        table.insert(stock, itemId)
                         table.insert(stock, prices[i])
                     end
                 end
