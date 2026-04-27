@@ -101,6 +101,7 @@
 #include "enums/automaton.h"
 #include "enums/chat_message_area.h"
 #include "enums/item_lockflg.h"
+#include "enums/synthesis_effect.h"
 #include "items/exdata.h"
 #include "items/item_furnishing.h"
 #include "items/item_linkshell.h"
@@ -121,6 +122,7 @@
 #include "packets/s2c/0x02a_talknumwork.h"
 #include "packets/s2c/0x02d_battle_message2.h"
 #include "packets/s2c/0x02e_openmogmenu.h"
+#include "packets/s2c/0x030_effect.h"
 #include "packets/s2c/0x036_talknum.h"
 #include "packets/s2c/0x038_schedulor.h"
 #include "packets/s2c/0x039_mapschedulor.h"
@@ -968,6 +970,32 @@ void CLuaBaseEntity::injectActionPacket(const uint32 inTargetID, uint16 inCatego
     if (m_PBaseEntity->loc.zone)
     {
         m_PBaseEntity->loc.zone->PushPacket(m_PBaseEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(Action));
+    }
+}
+
+/************************************************************************
+ *  Function: synthesisEffectPacket()
+ *  Purpose : Sends synthesis elemental effect packet to the player
+ *  Example : player:synthesisEffectPacket(0x0012, 0) -- Fire crystal
+ *  Notes   : Effect values are from enum SynthesisEffect in synthesis_effect.h
+ ************************************************************************/
+void CLuaBaseEntity::synthesisEffectPacket(uint16 effect, uint8 param)
+{
+    if (m_PBaseEntity->objtype != TYPE_PC)
+    {
+        ShowWarning("Invalid entity type calling function (%s).", m_PBaseEntity->getName());
+        return;
+    }
+
+    if (effect != 0x0000 && (effect < 0x0010 || effect > 0x0017))
+    {
+        ShowWarning("CLuaBaseEntity::synthesisEffectPacket - invalid effect %u for (%s).", effect, m_PBaseEntity->getName());
+        return;
+    }
+
+    if (auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity))
+    {
+        PChar->pushPacket<GP_SERV_COMMAND_EFFECT>(PChar, static_cast<SynthesisEffect>(effect), param);
     }
 }
 
@@ -13579,6 +13607,99 @@ sol::table CLuaBaseEntity::getNotorietyList()
 }
 
 /************************************************************************
+ *  Function: getTrustMasterThreatMob(rangeOverride)
+ *  Purpose : Returns a mob in the master's notoriety list that threatens
+ *            the trust's master, preferring non-master-target mobs first.
+ *  Example : local target = trust:getTrustMasterThreatMob(22)
+ *  Notes   : Intended for trust combat scripts that need efficient target
+ *            selection without Lua-side entity/enmity table iteration.
+ ************************************************************************/
+
+auto CLuaBaseEntity::getTrustMasterThreatMob(const sol::object& rangeOverride) -> CBaseEntity*
+{
+    if (m_PBaseEntity->objtype != TYPE_TRUST)
+    {
+        ShowWarning("Attempting to get trust threat target for invalid entity type (%s).", m_PBaseEntity->getName());
+        return nullptr;
+    }
+
+    auto* PTrust  = static_cast<CTrustEntity*>(m_PBaseEntity);
+    auto* PMaster = PTrust->PMaster;
+
+    if (!PMaster)
+    {
+        return nullptr;
+    }
+
+    const auto maxDistance = rangeOverride.get_or(22.0f);
+    auto*      PMastersTarget{ PMaster->GetEntity(PMaster->GetBattleTargetID()) };
+
+    auto isMasterTopEnmityOnMob = [PMaster](CMobEntity* PMob) -> bool
+    {
+        if (!PMob)
+        {
+            return false;
+        }
+
+        auto* enmityList = PMob->PEnmityContainer->GetEnmityList();
+        if (!enmityList)
+        {
+            return false;
+        }
+
+        CBattleEntity* PTopEntity = nullptr;
+        int32          topHate    = std::numeric_limits<int32>::min();
+
+        for (const auto& [_, enmityObject] : *enmityList)
+        {
+            if (!enmityObject.active || !enmityObject.PEnmityOwner || !enmityObject.PEnmityOwner->isAlive())
+            {
+                continue;
+            }
+
+            const auto totalHate = enmityObject.CE + enmityObject.VE;
+            if (totalHate > topHate)
+            {
+                topHate    = totalHate;
+                PTopEntity = enmityObject.PEnmityOwner;
+            }
+        }
+
+        return PTopEntity && PTopEntity->id == PMaster->id;
+    };
+
+    CMobEntity* threateningTarget = nullptr;
+
+    for (auto* entity : PMaster->PNotorietyContainer)
+    {
+        auto* PMob = dynamic_cast<CMobEntity*>(entity);
+        if (!PMob || !PMob->isAlive() || distance(PMaster->loc.p, PMob->loc.p) > maxDistance)
+        {
+            continue;
+        }
+
+        auto* PTarget           = PMob->GetEntity(PMob->GetBattleTargetID());
+        bool  isTargetingMaster = PTarget && PTarget->id == PMaster->id;
+        bool  masterHasTopEnmity = isMasterTopEnmityOnMob(PMob);
+
+        if (isTargetingMaster || masterHasTopEnmity)
+        {
+            if (!PMastersTarget || PMob->id != PMastersTarget->id)
+            {
+                return PMob;
+            }
+
+            if (!threateningTarget)
+            {
+                threateningTarget = PMob;
+            }
+        }
+    }
+
+    return threateningTarget;
+}
+
+/************************************************************************
  *  Function: clearEnmityForEntity(...)
  *  Purpose :
  *  Example : mob:clearEnmityForEntity(player)
@@ -15952,6 +16073,53 @@ void CLuaBaseEntity::setTrustTPSkillSettings(uint16 trigger, uint16 select, cons
     controller->m_GambitsContainer->tp_trigger = static_cast<G_TP_TRIGGER>(trigger);
     controller->m_GambitsContainer->tp_select  = static_cast<G_SELECT>(select);
     controller->m_GambitsContainer->tp_value   = tp_value;
+}
+
+/************************************************************************
+ *  Function: setTrustTPWeaponSkillWeights(weights)
+ *  Purpose : Sets weighted preferences by weapon skill ID for trust TP skill usage.
+ *  Example : mob:setTrustTPWeaponSkillWeights({ [238] = 8, [42] = 2 })
+ *  Notes   : Missing IDs default to weight 1. IDs set to 0 are ignored.
+ ************************************************************************/
+
+void CLuaBaseEntity::setTrustTPWeaponSkillWeights(const sol::table& weights)
+{
+    if (m_PBaseEntity->objtype != TYPE_TRUST)
+    {
+        ShowWarning("Invalid Entity calling function (%s).", m_PBaseEntity->getName());
+        return;
+    }
+
+    auto* trust      = static_cast<CTrustEntity*>(m_PBaseEntity);
+    auto* controller = static_cast<CTrustController*>(trust->PAI->GetController());
+
+    controller->m_GambitsContainer->tp_skill_weights.clear();
+
+    for (const auto& [key, value] : weights)
+    {
+        if (!key.is<int>() || !value.is<int>())
+        {
+            continue;
+        }
+
+        const auto skillIdRaw = key.as<int>();
+        const auto weightRaw  = value.as<int>();
+
+        if (skillIdRaw < 0 || skillIdRaw > std::numeric_limits<uint16>::max() || weightRaw < 0 || weightRaw > std::numeric_limits<uint16>::max())
+        {
+            continue;
+        }
+
+        const auto skillId = static_cast<uint16>(skillIdRaw);
+        const auto weight  = static_cast<uint16>(weightRaw);
+
+        if (weight == 0)
+        {
+            continue;
+        }
+
+        controller->m_GambitsContainer->tp_skill_weights[skillId] = weight;
+    }
 }
 
 /************************************************************************
@@ -18353,6 +18521,66 @@ void CLuaBaseEntity::useJobAbility(uint16 skillID, const sol::object& pet)
 }
 
 /************************************************************************
+ *  Function: useWeaponSkill()
+ *  Purpose : Forces an entity to use a specific weapon skill
+ *  Example : mob:useWeaponSkill(238, target)
+ ************************************************************************/
+
+void CLuaBaseEntity::useWeaponSkill(sol::variadic_args va)
+{
+    if (va.size() == 0)
+    {
+        ShowWarning("CLuaBaseEntity::useWeaponSkill - Missing weaponskill ID");
+        return;
+    }
+
+    auto           skillid{ va.get<uint16>(0) };
+    CBattleEntity* PTarget{ nullptr };
+    bool           syncBattleId{ true };
+
+    if (va.size() >= 2)
+    {
+        CLuaBaseEntity* PLuaBaseEntity = va.get<CLuaBaseEntity*>(1);
+        PTarget                        = PLuaBaseEntity ? dynamic_cast<CBattleEntity*>(PLuaBaseEntity->m_PBaseEntity) : nullptr;
+    }
+
+    if (va.size() >= 3 && va.get_type(2) == sol::type::boolean)
+    {
+        syncBattleId = va.get<bool>(2);
+    }
+
+    // clang-format off
+    m_PBaseEntity->PAI->QueueAction(queueAction_t(0ms, true, [PTarget, skillid, syncBattleId](auto PEntity)
+    {
+        auto* battleEntity = dynamic_cast<CBattleEntity*>(PEntity);
+        if (!battleEntity)
+        {
+            return;
+        }
+
+        if (PTarget)
+        {
+            if (syncBattleId && battleEntity->getBattleID() != PTarget->getBattleID())
+            {
+                battleEntity->setBattleID(PTarget->getBattleID());
+            }
+            PEntity->PAI->WeaponSkill(PTarget->targid, skillid);
+        }
+        else
+        {
+            auto* battleTarget = battleEntity->GetBattleTarget();
+            if (battleTarget)
+            {
+                PEntity->PAI->WeaponSkill(battleTarget->targid, skillid);
+            }
+        }
+    }));
+    // clang-format on
+
+    m_PBaseEntity->PAI->checkQueueImmediately();
+}
+
+/************************************************************************
  *  Function: useMobAbility()
  *  Purpose : Uses a specified Mob Ability or the next one ready in the que
  *  Example : automation:useMobAbility(2132, automation) --Specifying pet
@@ -19622,6 +19850,7 @@ void CLuaBaseEntity::Register()
     // Packets, Events, and Flags
     SOL_REGISTER("injectPacket", CLuaBaseEntity::injectPacket);
     SOL_REGISTER("injectActionPacket", CLuaBaseEntity::injectActionPacket);
+    SOL_REGISTER("synthesisEffectPacket", CLuaBaseEntity::synthesisEffectPacket);
     SOL_REGISTER("entityVisualPacket", CLuaBaseEntity::entityVisualPacket);
     SOL_REGISTER("entityAnimationPacket", CLuaBaseEntity::entityAnimationPacket);
     SOL_REGISTER("sendDebugPacket", CLuaBaseEntity::sendDebugPacket);
@@ -20178,6 +20407,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("hasClaim", CLuaBaseEntity::hasClaim);
     SOL_REGISTER("hasEnmity", CLuaBaseEntity::hasEnmity);
     SOL_REGISTER("getNotorietyList", CLuaBaseEntity::getNotorietyList);
+    SOL_REGISTER("getTrustMasterThreatMob", CLuaBaseEntity::getTrustMasterThreatMob);
     SOL_REGISTER("clearEnmityForEntity", CLuaBaseEntity::clearEnmityForEntity);
 
     // Status Effects
@@ -20339,6 +20569,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("removeGambit", CLuaBaseEntity::removeGambit);
     SOL_REGISTER("removeAllGambits", CLuaBaseEntity::removeAllGambits);
     SOL_REGISTER("setTrustTPSkillSettings", CLuaBaseEntity::setTrustTPSkillSettings);
+    SOL_REGISTER("setTrustTPWeaponSkillWeights", CLuaBaseEntity::setTrustTPWeaponSkillWeights);
 
     // Mob Entity-Specific
     SOL_REGISTER("setMobLevel", CLuaBaseEntity::setMobLevel);
@@ -20414,6 +20645,7 @@ void CLuaBaseEntity::Register()
 
     SOL_REGISTER("castSpell", CLuaBaseEntity::castSpell);
     SOL_REGISTER("useJobAbility", CLuaBaseEntity::useJobAbility);
+    SOL_REGISTER("useWeaponSkill", CLuaBaseEntity::useWeaponSkill);
     SOL_REGISTER("useMobAbility", CLuaBaseEntity::useMobAbility);
     SOL_REGISTER("usePetAbility", CLuaBaseEntity::usePetAbility);
     SOL_REGISTER("getAbilityDistance", CLuaBaseEntity::getAbilityDistance);

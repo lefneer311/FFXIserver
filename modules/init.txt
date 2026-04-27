@@ -36,5 +36,24 @@
 #
 # Live example:
 
-custom/commands/
+#LUA
+custom/lua/announce_player_login.lua
+custom/lua/chocobo_raising_qol.lua
+custom/lua/conquest_regional_npcs_always_up.lua
+custom/lua/homepoint_heal.lua
+custom/lua/mission_wardrobe_unlocks.lua
+custom/lua/replace_trust_with_cornelia.lua
+custom/lua/custom_HNM_system.lua
+custom/lua/the_holy_crest_qm1_workaround.lua
+
+#Custom
+custom/lua/hogwarts/augment_system/
+custom/lua/hogwarts/commands/
+custom/lua/hogwarts/new_player_mods/
+custom/lua/hogwarts/trust_mods/trust_overrides/
 custom/lua/test_npcs_in_gm_home.lua
+custom/sql/hogwarts/
+
+#Rhapsody Related Mods
+custom/lua/hogwarts/trust_mods/rhapsody/
+custom/sql/rhapsody/

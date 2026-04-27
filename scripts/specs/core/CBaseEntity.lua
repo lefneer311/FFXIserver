@@ -200,6 +200,12 @@ end
 function CBaseEntity:injectActionPacket(inTargetID, inCategory, inAnimationID, inSpecEffect, inReaction, inMessage, inActionParam, inParam)
 end
 
+---@param effect integer Synthesis effect (0x0010..0x0017 for elemental crystals, 0x0000 for none)
+---@param param integer?
+---@return nil
+function CBaseEntity:synthesisEffectPacket(effect, param)
+end
+
 ---@param command string
 ---@param entity CBaseEntity?
 ---@return nil
@@ -2843,6 +2849,12 @@ end
 function CBaseEntity:getNotorietyList()
 end
 
+---@nodiscard
+---@param rangeOverride number? Optional, Defaults to 22
+---@return CBaseEntity?
+function CBaseEntity:getTrustMasterThreatMob(rangeOverride)
+end
+
 ---@param PEntity CBaseEntity
 ---@return nil
 function CBaseEntity:clearEnmityForEntity(PEntity)
@@ -3382,6 +3394,11 @@ end
 ---@param value integer?
 ---@return nil
 function CBaseEntity:setTrustTPSkillSettings(trigger, select, value)
+end
+
+---@param weights table<integer, integer>
+---@return nil
+function CBaseEntity:setTrustTPWeaponSkillWeights(weights)
 end
 
 ---@nodiscard
@@ -3930,6 +3947,13 @@ end
 ---@param pet CBaseEntity?
 ---@return nil
 function CBaseEntity:useJobAbility(skillID, pet)
+end
+
+---@param skillID integer
+---@param target CBaseEntity?
+---@param syncBattleId boolean?
+---@return nil
+function CBaseEntity:useWeaponSkill(skillID, target, syncBattleId)
 end
 
 ---@param skillID integer

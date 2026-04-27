@@ -3450,9 +3450,9 @@ INSERT INTO `mob_skill_lists` VALUES ('TRUST_Mihli_Aliapoh',1024,162);  -- Brain
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Mihli_Aliapoh',1024,166);  -- True Strike
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Mihli_Aliapoh',1024,168);  -- Hexastrike
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Mihli_Aliapoh',1024,3203); -- Scouring Bubbles
-INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,34);  -- Red Lotus Blade
-INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,41);  -- Swift Blade
-INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,42);  -- Savage Blade
+INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,38);  -- Circle Blade (2021 Update)
+INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,42);  -- Savage Blade (2021 Update)
+INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,47);  -- Sanguine Blade (2021 Update)
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Valaineral',1025,238); -- Uriel Blade
 -- INSERT INTO `mob_skill_lists` VALUES ('TRUST_Joachim',1026,0);
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Naja_Salaheem',1027,166); -- True Strike
@@ -3579,7 +3579,7 @@ INSERT INTO `mob_skill_lists` VALUES ('TRUST_Mildaurion',1086,3473); -- Stellar 
 -- INSERT INTO `mob_skill_lists` VALUES ('TRUST_Kupofried',1093,0);
 -- INSERT INTO `mob_skill_lists` VALUES ('TRUST_Selh_teus',1094,0);
 -- INSERT INTO `mob_skill_lists` VALUES ('TRUST_Yoran-Oran_UC',1095,0);
--- INSERT INTO `mob_skill_lists` VALUES ('TRUST_Sylvie_UC',1096,0);
+INSERT INTO `mob_skill_lists` VALUES ('TRUST_Sylvie_UC',1096,3502); -- Nott
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Abquhbah',1097,1); -- Combo
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Abquhbah',1097,4); -- Backhand Blow
 INSERT INTO `mob_skill_lists` VALUES ('TRUST_Abquhbah',1097,3541); -- Salaheem Spirit
