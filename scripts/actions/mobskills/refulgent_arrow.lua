@@ -1,6 +1,6 @@
 -----------------------------------
--- Black Halo
--- Family: Humanoid Club Weaponskill
+-- Refulgent Arrow
+-- Family: Humanoid Archery Weaponskill
 -- Description: Delivers a twofold attack. Damage varies with TP.
 -----------------------------------
 ---@type TMobSkill
@@ -15,14 +15,16 @@ mobskillObject.onMobWeaponSkill = function(mob, target, skill, action)
 
     params.baseDamage     = mob:getWeaponDmg()
     params.numHits        = 2
-    params.fTP            = { 1.5, 2.5, 3.0 }
-    -- params.str_wSC     = 0.3 -- TODO: Capture if mobskill weaponskills have wSC.
-    -- params.mnd_wSC     = 0.5 -- TODO: Capture if mobskill weaponskills have wSC.
-    params.attackType     = xi.attackType.PHYSICAL
-    params.damageType     = xi.damageType.BLUNT
+    params.fTP            = { 3.0, 4.25, 5.0 }
+    -- params.str_wSC     = 0.16 -- TODO: Capture if mobskill weaponskills have wSC.
+    params.skipParry      = true
+    params.skipGuard      = true
+    params.skipBlock      = true
+    params.attackType     = xi.attackType.RANGED
+    params.damageType     = xi.damageType.PIERCING
     params.shadowBehavior = xi.mobskills.shadowBehavior.NUMSHADOWS_2
 
-    local info = xi.mobskills.mobPhysicalMove(mob, target, skill, action, params)
+    local info = xi.mobskills.mobRangedMove(mob, target, skill, action, params)
 
     if xi.mobskills.processDamage(mob, target, skill, action, info) then
         target:takeDamage(info.damage, mob, info.attackType, info.damageType)
