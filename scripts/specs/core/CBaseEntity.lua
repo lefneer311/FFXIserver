@@ -3579,7 +3579,6 @@ end
 function CBaseEntity:getAttachment(slotId)
 end
 
----@nodiscard
 ---@param itemId integer
 ---@param slotId integer
 ---@return nil
