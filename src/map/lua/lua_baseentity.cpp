@@ -13631,7 +13631,7 @@ auto CLuaBaseEntity::getTrustMasterThreatMob(const sol::object& rangeOverride) -
         return nullptr;
     }
 
-    const auto maxDistance = rangeOverride.get_or(22.0f);
+    const auto maxDistance = rangeOverride.is<float>() ? rangeOverride.as<float>() : 22.0f;
     auto*      PMastersTarget{ PMaster->GetEntity(PMaster->GetBattleTargetID()) };
 
     auto isMasterTopEnmityOnMob = [PMaster](CMobEntity* PMob) -> bool
@@ -13670,7 +13670,7 @@ auto CLuaBaseEntity::getTrustMasterThreatMob(const sol::object& rangeOverride) -
 
     CMobEntity* threateningTarget = nullptr;
 
-    for (auto* entity : PMaster->PNotorietyContainer)
+    for (auto* entity : *PMaster->PNotorietyContainer)
     {
         auto* PMob = dynamic_cast<CMobEntity*>(entity);
         if (!PMob || !PMob->isAlive() || distance(PMaster->loc.p, PMob->loc.p) > maxDistance)

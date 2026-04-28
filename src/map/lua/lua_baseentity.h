@@ -676,6 +676,7 @@ public:
     bool  hasClaim(CLuaBaseEntity* PTarget);
     bool  hasEnmity();
     auto  getNotorietyList() -> sol::table;
+    auto  getTrustMasterThreatMob(const sol::object& rangeOverride) -> CBaseEntity*;
     void  clearEnmityForEntity(CLuaBaseEntity* PEntity);
 
     // Status Effects
