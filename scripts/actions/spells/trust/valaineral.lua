@@ -331,3 +331,7 @@ spellObject.onMobDespawn = function(mob)
 end
 
 spellObject.onMobDeath = function(mob)
+    xi.trust.message(mob, xi.trust.messageOffset.DEATH)
+end
+
+return spellObject
