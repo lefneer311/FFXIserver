@@ -1,25 +1,17 @@
 -----------------------------------
--- func: getstats
+-- func: mygetstats
 -- desc: prints stats of cursor target into chatlog, for debugging.
 -----------------------------------
----@type TCommand
 local commandObj = {}
-
-local options =
-{
-    [1] = 'base',
-    [2] = 'defensive',
-    [3] = 'offensive',
-    [4] = 'elements',
-}
 
 commandObj.cmdprops =
 {
     permission = 1,
-    parameters = 's'
+    parameters = ''
 }
 
-commandObj.onTrigger = function(player, option)
+-- function onTrigger(player, extendedMode)
+commandObj.onTrigger = function(player)
     local target = player:getCursorTarget()
     if target == nil then
         player:printToPlayer('Target something first.')
@@ -33,127 +25,76 @@ commandObj.onTrigger = function(player, option)
         return
     end
 
-    -- map integer option to a name for easier reading in if/else for convenient use
-    if
-        options[tonumber(option)]
-    then
-        option = options[tonumber(option)]
+    player:printToPlayer(string.format('MainJob(jID: %s) LV: %i / SubJob(jID: %s) LV: %i ',
+        target:getMainJob(), target:getMainLvl(), target:getSubJob(), target:getSubLvl()), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('-------------------- | Basic Stats | --------------------'), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('HP: %i/%i  MP: %i/%i (current/max) ',
+        target:getHP(), target:getMaxHP(), target:getMP(), target:getMaxMP()), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('STR: [%i] | DEX: [%i] | VIT: [%i] | AGI: [%i]',
+        target:getStat(xi.mod.STR), target:getStat(xi.mod.DEX), target:getStat(xi.mod.VIT), target:getStat(xi.mod.AGI)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('MND: [%i] | INT: [%i] | CHR: [%i] ',
+        target:getStat(xi.mod.MND), target:getStat(xi.mod.INT), target:getStat(xi.mod.CHR)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Food Accuracy Bonus: [%i%%] | Accuracy Base: [%i] | Total Accuracy: [%i]',
+        target:getMod(xi.mod.FOOD_ACCP), target:getMod(xi.mod.ACC), target:getStat(xi.mod.ACC)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Food Accuracy Bonus: [%i%%] | RAccuracy Base: [%i] | Total RAccuracy: [%i]',
+        target:getMod(xi.mod.FOOD_ACCP), target:getMod(xi.mod.RACC), target:getStat(xi.mod.RACC)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('EVA Base: [%i] | EVA Total: [%i] | Magic EVA Base: [%i]',
+        target:getMod(xi.mod.EVA), target:getStat(xi.mod.EVA), target:getMod(xi.mod.MEVA)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Attack Base: %i ', target:getMod(xi.mod.ATT)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Total Attack: %i ', target:getStat(xi.mod.ATT)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Defense Base: %i ', target:getMod(xi.mod.DEF)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Total Defense: %i ', target:getStat(xi.mod.DEF)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Magic Attack bonus: %i ', target:getMod(xi.mod.MATT)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Magic Defense bonus: %i ', target:getMod(xi.mod.MDEF)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Magic Accuracy bonus: %i ', target:getMod(xi.mod.MACC)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Total Subtle Blow: %i ', target:getMod(xi.mod.SUBTLE_BLOW)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Total Store TP: %i ', target:getMod(xi.mod.STORETP)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('-------------------- | Enspell Mods | ---------------------'), xi.msg.channel.SYSTEM_3)
+	player:printToPlayer(string.format('EnSpell: [%i] | EnSpell Dmg Bonus [%i%%] | Enspell DMG [%i] ',
+		target:getMod(xi.mod.ENSPELL), target:getMod(xi.mod.ENSPELL_DMG_BONUS), target:getMod(xi.mod.ENSPELL_DMG)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('-------------------- | Multi Strikes | --------------------'), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Double Attack: [%i] | Triple Attack: [%i] | Quad Attack: [%i]',
+        target:getMod(xi.mod.DOUBLE_ATTACK), target:getMod(xi.mod.TRIPLE_ATTACK), target:getMod(xi.mod.QUAD_ATTACK)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('----------------- | Cast / Recast Mods | -----------------'), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Fast Cast: [%i] | Quick Magic: [%i]',
+        target:getMod(xi.mod.FASTCAST), target:getMod(xi.mod.QUICK_MAGIC)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Haste Magic: [%i] | Haste Ability: [%i] | Haste Gear: [%i]',
+        target:getMod(xi.mod.HASTE_MAGIC), target:getMod(xi.mod.HASTE_ABILITY), target:getMod(xi.mod.HASTE_GEAR)), xi.msg.channel.SYSTEM_3)
+    player:printToPlayer(string.format('Spell Interrupt: [%i] | UFast Cast: [%i]',
+        target:getMod(xi.mod.SPELLINTERRUPT), target:getMod(xi.mod.UFASTCAST)), xi.msg.channel.SYSTEM_3)
+
+	-- player:printToPlayer('Cannot easily and accurately get Magic Evasion with current methods.')
+
+    if targetType == xi.objType.PC then
+        player:printToPlayer(string.format('%s\'s base Treasure Hunter with current equipment: %i', target:getName(), target:getMod(xi.mod.TREASURE_HUNTER)), xi.msg.channel.SYSTEM_3)
+    elseif targetType == xi.objType.PET then
+        -- not needed yet, but we don't want to run MOB so just die in empty conditionals
+    elseif targetType == xi.objType.TRUST then
+        -- see above
+    elseif targetType == xi.objType.FELLOW then
+        -- see above
+    elseif targetType == xi.objType.MOB then
+        player:printToPlayer(string.format('Mob\'s current Treasure Hunter Tier: %i', target:getTHlevel()), xi.msg.channel.SYSTEM_3)
+        player:printToPlayer(string.format('Battletime: %i ', target:getBattleTime()), xi.msg.channel.SYSTEM_3)
+        -- Todo: check if raged and/or how long mobs ragetimer is.
     end
 
-    player:printToPlayer('Stats for ' .. target:getName(), xi.msg.channel.SYSTEM_3)
-    switch(option): caseof
-    {
-        ['base'] = function()
-            player:printToPlayer(string.format('MainJob(jID: %s) LV: %i / SubJob(jID: %s) LV: %i ',
-                target:getMainJob(), target:getMainLvl(), target:getSubJob(), target:getSubLvl()), xi.msg.channel.SYSTEM_3)
+	local effects = target:getStatusEffects()
+	if effects and #effects > 0 then
+		player:printToPlayer('------------------- | Status Effects | -------------------', xi.msg.channel.SYSTEM_3)
+		for _, eff in ipairs(effects) do
+			player:printToPlayer(string.format(
+				'EffectID: %i Power: %i SubPower: %i Tier: %i',
+				eff:getType(), eff:getPower(), eff:getSubPower(), eff:getTier()
+			), xi.msg.channel.SYSTEM_3)
+		end
+	end
 
-            player:printToPlayer(string.format('HP: %i/%i  MP: %i/%i (current/max) ',
-                target:getHP(), target:getMaxHP(), target:getMP(), target:getMaxMP()), xi.msg.channel.SYSTEM_3)
-
-            player:printToPlayer(string.format('Total STR: %i ', target:getStat(xi.mod.STR)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total DEX: %i ', target:getStat(xi.mod.DEX)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total VIT: %i ', target:getStat(xi.mod.VIT)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total AGI: %i ', target:getStat(xi.mod.AGI)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total MND: %i ', target:getStat(xi.mod.MND)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total INT: %i ', target:getStat(xi.mod.INT)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total CHR: %i ', target:getStat(xi.mod.CHR)), xi.msg.channel.SYSTEM_3)
-            if targetType == xi.objType.PC then
-                player:printToPlayer(string.format('Total Subtle Blow: %i ', target:getMod(xi.mod.SUBTLE_BLOW)), xi.msg.channel.SYSTEM_3)
-                player:printToPlayer(string.format('Total Store TP: %i ', target:getMod(xi.mod.STORETP)), xi.msg.channel.SYSTEM_3)
-                player:printToPlayer(string.format('%s\'s base Treasure Hunter with current equipment: %i', target:getName(), target:getMod(xi.mod.TREASURE_HUNTER)), xi.msg.channel.SYSTEM_3)
-            elseif targetType == xi.objType.MOB then
-                player:printToPlayer(string.format('Mob\'s current Treasure Hunter Tier: %i', target:getTHlevel()), xi.msg.channel.SYSTEM_3)
-                player:printToPlayer(string.format('Battletime: %i ', target:getBattleTime()), xi.msg.channel.SYSTEM_3)
-            end
-        end,
-
-        ['offensive'] = function()
-            player:printToPlayer(string.format('Food Accuracy%% bonus: %i ', target:getMod(xi.mod.FOOD_ACCP)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Accuracy Base: %i ', target:getMod(xi.mod.ACC)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total Accuracy: %i ', target:getStat(xi.mod.ACC)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Attack Base: %i ', target:getMod(xi.mod.ATT)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total Attack: %i ', target:getStat(xi.mod.ATT)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Main Weap Dmg: %i ', target:getWeaponDmg()), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('RAccuracy Base: %i ', target:getMod(xi.mod.RACC)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total RAccuracy: %i ', target:getStat(xi.mod.RACC)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Ranged Weap Dmg: %i ', target:getRangedDmg()), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Magic Attack bonus: %i ', target:getMod(xi.mod.MATT)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Magic Accuracy bonus: %i ', target:getMod(xi.mod.MACC)), xi.msg.channel.SYSTEM_3)
-
-            return
-        end,
-
-        ['defensive'] = function()
-            player:printToPlayer(string.format('EVA Base: %i ', target:getMod(xi.mod.EVA)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('EVA Total: %i ', target:getStat(xi.mod.EVA)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Magic EVA Base: %i ', target:getMod(xi.mod.MEVA)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Defense Base: %i ', target:getMod(xi.mod.DEF)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Total Defense: %i ', target:getStat(xi.mod.DEF)), xi.msg.channel.SYSTEM_3)
-            player:printToPlayer(string.format('Magic Defense bonus: %i ', target:getMod(xi.mod.MDEF)), xi.msg.channel.SYSTEM_3)
-
-            return
-        end,
-
-        ['elements'] = function()
-            local eleMessages = {}
-            for k, v in pairs(xi.element) do
-                if v > 0 then
-                    local message = k
-                    -- Right padding to line up lines (not perfect as the font )
-                    for i = 1, 8 do
-                        if string.len(k) < i then
-                            message = ' ' .. message .. ' '
-                        end
-                    end
-
-                    message = message .. ' SDT: ' ..         target:getMod(xi.data.element.getElementalSDTModifier(v))
-                    message = message .. ' resRank: ' ..     target:getMod(xi.data.element.getElementalResistanceRankModifier(v))
-                    message = message .. ' Null%: ' ..       target:getMod(xi.data.element.getElementalNullificationModifier(v))
-                    message = message .. ' Absorb%: ' ..     target:getMod(xi.data.element.getElementalAbsorptionModifier(v))
-                    message = message .. ' MEva: ' ..        target:getMod(xi.data.element.getElementalMEVAModifier(v))
-                    eleMessages[v] = message
-                end
-            end
-
-            -- Because pairs(xi.element) doesn't guarantee order
-            for _, message in ipairs(eleMessages) do
-                player:printToPlayer(message, xi.msg.channel.SYSTEM_3)
-            end
-
-            if targetType == xi.objType.MOB then
-                -- Print immunities
-                local printString = 'Immunities:'
-                local hasImmunities = false
-                for k, v in pairs(xi.immunity) do
-                    if v > 0 then
-                        if target:hasImmunity(v) then
-                            printString = printString .. ' ' .. k
-                            hasImmunities = true
-                        end
-                    end
-                end
-
-                if not hasImmunities then
-                    printString = printString .. ' None'
-                end
-
-                player:printToPlayer(printString, xi.msg.channel.SYSTEM_3)
-            end
-
-            return
-        end,
-
-        ['default'] = function()
-            -- Not found in switch statement, so we didn't match an option
-            local printString = 'Please choose a report type:'
-            for k, v in ipairs(options) do
-                printString = printString .. ' ' .. v .. '-' .. k
-            end
-
-            player:printToPlayer(printString)
-            player:printToPlayer('Example: !getstats base or !getstats 1')
-        end,
-    }
+    --[[ future use: print resistances etc..
+    if extendedMode then
+        -- That'll be pretty spammy.. Maybe NOT print everything and make it a choice which 'page' of stats to print.
+    end
+    ]]
 end
 
 return commandObj

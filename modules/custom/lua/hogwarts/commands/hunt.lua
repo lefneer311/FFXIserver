@@ -19,14 +19,17 @@ commandObj.cmdprops =
 }
 
 -- Forward declarations (required)
-local menu  = {}
-local page1 = {}
-local page2 = {}
-local page3 = {}
-local page4 = {}
-local page5 = {}
-local page6 = {}
-local page7 = {}
+local menu   = {}
+local page1  = {}
+local page2  = {}
+local page3  = {}
+local page4  = {}
+local page5  = {}
+local page6  = {}
+local page7  = {}
+local page8  = {}
+local page9  = {}
+local page10 = {}
 
 -- We need just a tiny delay to let the previous menu context be cleared out
 -- 'New pages' are actually just whole new menus!
@@ -73,7 +76,7 @@ page1 =
         end,
     },
     {
-        'Next Page',
+        'Aht Urgan Kings (1)',
         function(playerArg)
             menu.options = page2
             delaySendMenu(playerArg)
@@ -91,28 +94,28 @@ page2 =
         end,
     },
     {
-        '[HNM75+] - Medusa',
+        '[HNM75+] - Hydra',
         function(playerArg)
             playerArg:setPos(0, 0, 0, 0, 128)
             playerArg:printToPlayer('Warping to Valley of Sorrow~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        '[HNM75+] - ',
+        '[HNM75+] - Khimaira',
         function(playerArg)
             playerArg:setPos(0, 0, 0, 0, 154)
             playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        'Previous Page',
+        'Ground Kings',
         function(playerArg)
             menu.options = page1
             delaySendMenu(playerArg)
         end,
     },
     {
-        'Next Page',
+        'Aht Urgan Kings (2)',
         function(playerArg)
             menu.options = page3
             delaySendMenu(playerArg)
@@ -123,7 +126,7 @@ page2 =
 page3 =
 {
     {
-        '[HNM75+] - Cerberus',
+        '[HNM75+] - Gurfurlur the Menacing',
         function(playerArg)
             playerArg:setPos(-287.3790, -20.9100, 86.2606, 27, 127)
             playerArg:printToPlayer('Warping to Behemoth\'s Dominion~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
@@ -137,21 +140,21 @@ page3 =
         end,
     },
     {
-        '[HNM75+] - ',
+        '[HNM75+] - Gulool Ja Ja',
         function(playerArg)
             playerArg:setPos(0, 0, 0, 0, 154)
             playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        'Previous Page',
+        'Aht Urgan Kings (1)',
         function(playerArg)
             menu.options = page2
             delaySendMenu(playerArg)
         end,
     },
     {
-        'Next Page',
+        'Sky Kings (1)',
         function(playerArg)
             menu.options = page4
             delaySendMenu(playerArg)
@@ -162,30 +165,161 @@ page3 =
 page4 =
 {
     {
-        '[HNM75+] - Cerberus',
+        '[HNM75+] - Motherglobe',
         function(playerArg)
-            playerArg:setPos(-287.3790, -20.9100, 86.2606, 27, 127)
-            playerArg:printToPlayer('Warping to Behemoth\'s Dominion~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+            playerArg:setPos(-81, 32, 2, 27, 178)
+            playerArg:printToPlayer('Warping to The Shrine of Ru\'Avitau~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        '[HNM75+] - Medusa',
+        '[HNM75+] - Steam Cleaner',
         function(playerArg)
-            playerArg:setPos(0, 0, 0, 0, 128)
+            playerArg:setPos(-220, -5, 60, 0, 178)
             playerArg:printToPlayer('Warping to Valley of Sorrow~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        '[HNM75+] - ',
+        '[HNM75+] - Seiryu',
         function(playerArg)
             playerArg:setPos(0, 0, 0, 0, 154)
             playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
         end,
     },
     {
-        'Previous Page',
+        'Aht Urgan Kings (2)',
         function(playerArg)
             menu.options = page3
+            delaySendMenu(playerArg)
+        end,
+    },
+    {
+        'Sky Kings (2)',
+        function(playerArg)
+            menu.options = page5
+            delaySendMenu(playerArg)
+        end,
+    },
+}
+
+page5 =
+{
+    {
+        '[HNM75+] - Faust',
+        function(playerArg)
+            playerArg:setPos(-287.3790, -20.9100, 86.2606, 27, 127)
+            playerArg:printToPlayer('Warping to Behemoth\'s Dominion~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Brigandish Blade',
+        function(playerArg)
+            playerArg:setPos(0, 0, 0, 0, 128)
+            playerArg:printToPlayer('Warping to Valley of Sorrow~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Suzaku',
+        function(playerArg)
+            playerArg:setPos(0, 0, 0, 0, 154)
+            playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        'Sky Kings (1)',
+        function(playerArg)
+            menu.options = page4
+            delaySendMenu(playerArg)
+        end,
+    },
+    {
+        'Sky Kings (3)',
+        function(playerArg)
+            menu.options = page6
+            delaySendMenu(playerArg)
+        end,
+    },
+}
+
+page6 =
+{
+    {
+        '[HNM75+] - Ullikummi',
+        function(playerArg)
+            playerArg:setPos(-287.3790, -20.9100, 86.2606, 27, 127)
+            playerArg:printToPlayer('Warping to Behemoth\'s Dominion~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Despot',
+        function(playerArg)
+            playerArg:setPos(20, -5, 140, 0, 178)
+            playerArg:printToPlayer('Warping to Valley of Sorrow~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Byakko',
+        function(playerArg)
+            playerArg:setPos(0, 0, 0, 0, 154)
+            playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        'Sky Kings (2)',
+        function(playerArg)
+            menu.options = page5
+            delaySendMenu(playerArg)
+        end,
+    },
+    {
+        'Sky Kings (4)',
+        function(playerArg)
+            menu.options = page7
+            delaySendMenu(playerArg)
+        end,
+    },
+}
+
+page7 =
+{
+    {
+        '[HNM75+] - Olla Grande',
+        function(playerArg)
+            playerArg:setPos(-287.3790, -20.9100, 86.2606, 27, 127)
+            playerArg:printToPlayer('Warping to Behemoth\'s Dominion~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Zipacna',
+        function(playerArg)
+            playerArg:setPos(0, 0, 0, 0, 128)
+            playerArg:printToPlayer('Warping to Valley of Sorrow~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Genbu',
+        function(playerArg)
+            playerArg:setPos(0, 0, 0, 0, 154)
+            playerArg:printToPlayer('Warping to Dragon\'s Aery~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        '[HNM75+] - Kirin',
+        function(playerArg)
+            playerArg:setPos(-81, 32, 2, 27, 178)
+            playerArg:printToPlayer('Warping to The Shrine of Ru\'Avitau~\nTrade to the ??? to spawn the HNM.\nThe ??? respawns in 5 minutes.\n', xi.msg.channel.SYSTEM_1)
+        end,
+    },
+    {
+        'Sky Kings (3)',
+        function(playerArg)
+            menu.options = page6
+            delaySendMenu(playerArg)
+        end,
+    },
+    {
+        'Sea Kings (1)',
+        function(playerArg)
+            menu.options = page8
             delaySendMenu(playerArg)
         end,
     },
