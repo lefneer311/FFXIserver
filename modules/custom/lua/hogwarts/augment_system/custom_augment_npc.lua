@@ -116,7 +116,7 @@ local function playCrystalSynthesisAnimation(player, craftChoice, useHQ2Effect)
     pulse(player, loops)
 end
 
-local function showAugmentPreview(player, npc, augmentableItem, itemTier, augments)
+local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
     player:printToPlayer('----- Augment Preview -----', 0, npc:getPacketName())
     -- player:printToPlayer(string.format('Augmented item: %d (Tier %d)', augmentableItem, itemTier), 0, npc:getPacketName())
 	player:printToPlayer(string.format('Augmented item: %s (Tier %d)', augmentableName or tostring(augmentableItem), itemTier), 0, npc:getPacketName())
@@ -128,7 +128,7 @@ local function showAugmentPreview(player, npc, augmentableItem, itemTier, augmen
             a.augmentID or 0,
             a.power or 0
         ))
-        player:printToPlayer(string.format('%d) %s', i, text), 0, xi.msg.channel.SYSTEM_3)
+        player:printToPlayer(string.format('%d) %s', i, text), xi.msg.channel.SYSTEM_3, npc:getPacketName())
     end
 
     player:printToPlayer('If you\'re sure, hand me those same materials again and we will proceed.', 0, npc:getPacketName())
@@ -286,7 +286,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
             if pendingSig ~= sig or pendingItem ~= augmentableItem then
                 player:setLocalVar('CA_PENDING_SIG', sig)
                 player:setLocalVar('CA_PENDING_ITEM', augmentableItem)
-                showAugmentPreview(player, npc, augmentableItem, itemTier, selectedAugments)
+                showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, selectedAugments)
                 return
             end
 
@@ -383,6 +383,9 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                 [0] = 'Have you not heard the song of the mothercrystal? Seek out its scintillating rhapsody. Each step yields rewards.',
             }
             player:printToPlayer(lines[maxTierUnlocked], 0, npc:getPacketName())
+            npc:timer(3500, function(npcArg)
+                npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+            end)
         end,
     })
 
