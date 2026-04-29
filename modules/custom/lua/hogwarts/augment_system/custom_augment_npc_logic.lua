@@ -1,7 +1,10 @@
 require('scripts/globals/player')
 require('scripts/globals/npc_util')
 
-local augmentData = require('modules/custom/lua/hogwarts/augment_system/custom_augment_enum')
+local function loadAugmentData()
+    package.loaded['modules/custom/lua/hogwarts/augment_system/custom_augment_enum'] = nil
+    return require('modules/custom/lua/hogwarts/augment_system/custom_augment_enum')
+end
 
 local augmentNPCLogic = {}
 
@@ -41,7 +44,7 @@ local function buildTradeSignature(trade)
     return h
 end
 
-local DEFAULT_ROTATION = 27
+local DEFAULT_ROTATION = 180
 local SPEECH_RETURN_DELAY_MS = 1200
 local CRAFT_START_DELAY_MS = 1200
 local CRAFT_TOTAL_MS = 3800
@@ -83,18 +86,9 @@ local function buildCraftLine(craftChoice, chosenFacing)
     return string.format(template, craftChoice.key, craftChoice.safeFacing, craftChoice.hqFacing, chosenFacing)
 end
 
-local function getNormalRotation(npc)
-    local rot = npc:getLocalVar('CA_NORMAL_ROT')
-    if rot == 27 then
-        rot = npc:getRotation() or DEFAULT_ROTATION
-        npc:setLocalVar('CA_NORMAL_ROT', rot)
-    end
-    return rot
-end
-
 local function restoreNormalRotation(npc, delay)
     npc:timer(delay or SPEECH_RETURN_DELAY_MS, function(npcArg)
-        npcArg:setRotation(getNormalRotation(npcArg))
+        npc:setRotation(27)
     end)
 end
 
@@ -117,21 +111,30 @@ local function playCrystalSynthesisAnimation(npc, craftChoice, useHQ2Effect)
 end
 
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
-    player:printToPlayer('----- Augment Preview -----', 0, npc:getPacketName())
-    player:printToPlayer(string.format('Augmented item: %s (Tier %d)', augmentableName or tostring(augmentableItem), itemTier), 0, npc:getPacketName())
+    npc:timer(100, function(npcArg)
+		player:printToPlayer('Combine these, then?  Let\'s see what effect might they have...', 0, npcArg:getPacketName())
+	end)
+	npc:timer(1800, function(npcArg)
+		player:printToPlayer(string.format('Your %s is Tier %d and will receive these augments:', augmentableName or tostring(augmentableItem), itemTier), 0, npcArg:getPacketName())
 
-    for i = 1, math.min(#augments, 4) do
-        local a = augments[i]
-        local text = a.desc or (string.format('%s (AugmentID %d Power %d)', a.materialName or 'Material', a.augmentID or 0, a.power or 0))
-        player:printToPlayer(string.format('%d) %s', i, text), xi.msg.channel.SYSTEM_3, npc:getPacketName())
-    end
+		for i = 1, math.min(#augments, 4) do
+			local a = augments[i]
+			local text = a.desc or (string.format('%s (AugmentID %d Power %d)', a.materialName or 'Material', a.augmentID or 0, a.power or 0))
+			player:printToPlayer(string.format('%d) %s', i, text), xi.msg.channel.SYSTEM_3, npcArg:getPacketName())
+		end
+	end)
 
-    player:printToPlayer('If you\'re sure, hand me those same materials again and we will proceed.', 0, npc:getPacketName())
+	npc:timer(3600, function(npcArg)
+		player:printToPlayer('If you\'re sure, hand me those same materials again and we will proceed.', 0, npcArg:getPacketName())
+	end)
+	npc:timer(4500, function(npcArg)
+		npcArg:setRotation(27)
+	end)
 end
 
 function augmentNPCLogic.onTrade(player, npc, trade)
-    getNormalRotation(npc)
     npc:facePlayer(player)
+	local augmentData = loadAugmentData()
 
     local augmentableItem = nil
     local augmentableName = nil
@@ -146,7 +149,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
             if tier > 0 then
                 if augmentableItem then
                     player:printToPlayer('This is a delicate process. Please trade only one piece of equipment.', 0, npc:getPacketName())
-                    npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+                    npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
                     return
                 end
                 augmentableItem = itemID
@@ -158,7 +161,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
 
     if totalItems == 1 and not augmentableItem then
         player:printToPlayer('This is interesting, but it will not work for our current purpose.', 0, npc:getPacketName())
-        npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+        npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
         return
     end
 
@@ -171,13 +174,13 @@ function augmentNPCLogic.onTrade(player, npc, trade)
             [5] = 'Lunarian, perhaps? It will handle all we can muster.',
         }
         player:printToPlayer(hints[itemTier] or 'Hmm.', 0, npc:getPacketName())
-        npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+        npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
         return
     end
 
     if not augmentableItem then
         player:printToPlayer('Hmmm, I just don\'t see anything here I can work with.', 0, npc:getPacketName())
-        npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+        npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
         return
     end
 
@@ -203,7 +206,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
                     if augmentCount > 0 then
                         if totalAugmentCount + augmentCount > 4 then
                             player:printToPlayer('This is more than we can reasonably achieve. Why not try another combination?', 0, npc:getPacketName())
-                            npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+                            npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
                             return
                         end
                         for _ = 1, augmentCount do
@@ -219,7 +222,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
 
     if #selectedAugments == 0 then
         player:printToPlayer('These materials are not suitable for augmentation.', 0, npc:getPacketName())
-        npc:timer(3500, function(npcArg) npcArg:setRotation(getNormalRotation(npcArg)) end)
+        npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
         return
     end
 
@@ -273,13 +276,12 @@ function augmentNPCLogic.onTrade(player, npc, trade)
         end
 
         npcArg:timer(1200, function(npcDoneArg)
-            npcDoneArg:setRotation(getNormalRotation(npcDoneArg))
+            npcDoneArg:setRotation(27)
         end)
     end)
 end
 
 function augmentNPCLogic.onTrigger(player, npc)
-    getNormalRotation(npc)
     npc:facePlayer(player)
     player:printToPlayer('It is good to see you.', 0, npc:getPacketName())
     player:setLocalVar('CA_PENDING_SIG', 0)
