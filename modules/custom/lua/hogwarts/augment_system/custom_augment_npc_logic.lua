@@ -50,6 +50,8 @@ local CRAFT_START_DELAY_MS = 1200
 local CRAFT_TOTAL_MS = 3800
 local CRAFT_FINISH_DELAY_MS = 900
 local CRAFT_ANIM_PULSE_MS = 1100
+local CRAFT_ACK_DELAY_MS = 900
+local CRAFT_LINE_DELAY_MS = 2200
 local SYNTH_EFFECT_NORMAL = 0
 local SYNTH_EFFECT_HQ2 = 3
 
@@ -65,12 +67,12 @@ local directionToRotation = {
 }
 
 local crystalCraftFlow = {
-    { key = 'earth', safeFacing = 'southeast', hqFacing = 'south', synthEffect = 0x0013 },
-    { key = 'water', safeFacing = 'southwest', hqFacing = 'west', synthEffect = 0x0010 },
-    { key = 'fire', safeFacing = 'west', hqFacing = 'northwest', synthEffect = 0x0012 },
-    { key = 'lightning', safeFacing = 'south', hqFacing = 'southwest', synthEffect = 0x0014 },
-    { key = 'air', safeFacing = 'east', hqFacing = 'southeast', synthEffect = 0x0011 },
-    { key = 'ice', safeFacing = 'northwest', hqFacing = 'north', synthEffect = 0x0015 },
+    { key = 'earth', safeFacing = 'southeast', hqFacing = 'south', synthEffect = 0x0013, synergyAnim = xi.animationString.SYNERGY_EARTH_FEWELL },
+    { key = 'water', safeFacing = 'southwest', hqFacing = 'west', synthEffect = 0x0010, synergyAnim = xi.animationString.SYNERGY_WATER_FEWELL },
+    { key = 'fire', safeFacing = 'west', hqFacing = 'northwest', synthEffect = 0x0012, synergyAnim = xi.animationString.SYNERGY_FIRE_FEWELL },
+    { key = 'lightning', safeFacing = 'south', hqFacing = 'southwest', synthEffect = 0x0014, synergyAnim = xi.animationString.SYNERGY_LIGHTNING_FEWELL },
+    { key = 'air', safeFacing = 'east', hqFacing = 'southeast', synthEffect = 0x0011, synergyAnim = xi.animationString.SYNERGY_WIND_FEWELL },
+    { key = 'ice', safeFacing = 'northwest', hqFacing = 'north', synthEffect = 0x0015, synergyAnim = xi.animationString.SYNERGY_ICE_FEWELL },
 }
 
 local craftLineTemplates = {
@@ -92,10 +94,13 @@ local function restoreNormalRotation(npc, delay)
     end)
 end
 
-local function playCrystalSynthesisAnimation(npc, craftChoice, useHQ2Effect)
+local function playCrystalSynthesisAnimation(player, npc, craftChoice, useHQ2Effect)
     local loops = math.max(1, math.floor(CRAFT_TOTAL_MS / CRAFT_ANIM_PULSE_MS))
     local effect = useHQ2Effect and (craftChoice.synthEffectHQ or craftChoice.synthEffect) or craftChoice.synthEffect
     local effectType = useHQ2Effect and SYNTH_EFFECT_HQ2 or SYNTH_EFFECT_NORMAL
+
+	npc:entityAnimationPacket(xi.animationString.CAST_ITEM_START)
+    npc:entityAnimationPacket(xi.animationString.SKILL_START)
 
     local function pulse(npcArg, remaining)
         npcArg:synthesisEffectPacket(effect, effectType)
@@ -103,11 +108,18 @@ local function playCrystalSynthesisAnimation(npc, craftChoice, useHQ2Effect)
             return
         end
         npcArg:timer(CRAFT_ANIM_PULSE_MS, function(npcTimerArg)
+		npcArg:entityAnimationPacket(craftChoice.synergyAnim or xi.animationString.SYNERGY_COMPLETE)
             pulse(npcTimerArg, remaining - 1)
         end)
     end
 
     pulse(npc, loops)
+
+    npc:timer(CRAFT_TOTAL_MS, function(npcArg)
+        npcArg:entityAnimationPacket(xi.animationString.SKILL_INTERRUPT)
+        npcArg:entityAnimationPacket(xi.animationString.CAST_ITEM_STOP)
+        npcArg:entityAnimationPacket(xi.animationString.SYNERGY_COMPLETE)
+    end)
 end
 
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
@@ -248,13 +260,26 @@ function augmentNPCLogic.onTrade(player, npc, trade)
     local chosenRotation = directionToRotation[chosenFacing] or DEFAULT_ROTATION
     local craftLine = buildCraftLine(craftChoice, chosenFacing)
 
+	npc:timer(CRAFT_ACK_DELAY_MS, function(npcArg)
+        player:printToPlayer('Hmmm...', 0, npcArg:getPacketName())
+    end)
+
+    npc:timer(CRAFT_LINE_DELAY_MS, function(npcArg)
+        player:printToPlayer(craftLine, 0, npcArg:getPacketName())
+    end)
+
     npc:timer(CRAFT_START_DELAY_MS, function(npcArg)
         npcArg:setRotation(chosenRotation)
         player:printToPlayer(craftLine, 0, npcArg:getPacketName())
         playCrystalSynthesisAnimation(npcArg, craftChoice, useHQDirection)
     end)
 
-    npc:timer(CRAFT_START_DELAY_MS + CRAFT_TOTAL_MS + CRAFT_FINISH_DELAY_MS, function(npcArg)
+    npc:timer(CRAFT_START_DELAY_MS + CRAFT_LINE_DELAY_MS, function(npcArg)
+        npcArg:setRotation(chosenRotation)
+        playCrystalSynthesisAnimation(player, npcArg, craftChoice, useHQDirection)
+    end)
+
+    npc:timer(CRAFT_START_DELAY_MS + CRAFT_LINE_DELAY_MS + CRAFT_TOTAL_MS + CRAFT_FINISH_DELAY_MS, function(npcArg)
         npcArg:facePlayer(player)
         local itemData = { id = augmentableItem, quantity = 1 }
         local augments = {}
