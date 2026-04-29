@@ -53,6 +53,7 @@ local function buildTradeSignature(trade)
 end
 
 local DEFAULT_ROTATION = 27
+local SPEECH_RETURN_DELAY_MS = 1200
 local CRAFT_START_DELAY_MS = 1200
 local CRAFT_TOTAL_MS = 3800
 local CRAFT_FINISH_DELAY_MS = 900
@@ -62,14 +63,14 @@ local SYNTH_EFFECT_HQ2 = 3
 
 local directionToRotation =
 {
-    north = 128,
-    northeast = 160,
-    east = 192,
-    southeast = 224,
-    south = 0,
-    southwest = 32,
-    west = 64,
-    northwest = 96,
+    east = 0,
+    north = 190,
+    west = 130,
+    south = 65,
+    southeast = 34,
+    northeast = 228,
+    northwest = 166,
+    southwest = 97,
 }
 
 local crystalCraftFlow =
@@ -96,24 +97,39 @@ local function buildCraftLine(craftChoice, chosenFacing)
     return string.format(template, craftChoice.key, craftChoice.safeFacing, craftChoice.hqFacing, chosenFacing)
 end
 
+local function getNormalRotation(npc)
+    local rot = npc:getLocalVar('CA_NORMAL_ROT')
+    if rot == 27 then
+        rot = npc:getRotation() or DEFAULT_ROTATION
+        npc:setLocalVar('CA_NORMAL_ROT', rot)
+    end
+    return rot
+end
+
+local function restoreNormalRotation(npc, delay)
+    npc:timer(delay or SPEECH_RETURN_DELAY_MS, function(npcArg)
+        npcArg:setRotation(getNormalRotation(npcArg))
+    end)
+end
+
 local function playCrystalSynthesisAnimation(player, craftChoice, useHQ2Effect)
     local loops = math.max(1, math.floor(CRAFT_TOTAL_MS / CRAFT_ANIM_PULSE_MS))
     local effect = useHQ2Effect and (craftChoice.synthEffectHQ or craftChoice.synthEffect) or craftChoice.synthEffect
     local effectType = useHQ2Effect and SYNTH_EFFECT_HQ2 or SYNTH_EFFECT_NORMAL
 
-    local function pulse(playerArg, remaining)
-        playerArg:synthesisEffectPacket(effect, effectType)
+    local function pulse(npcArg, remaining)
+        npcArg:synthesisEffectPacket(effect, effectType)
 
         if remaining <= 1 then
             return
         end
 
-        playerArg:timer(CRAFT_ANIM_PULSE_MS, function(playerTimerArg)
-            pulse(playerTimerArg, remaining - 1)
+        npcArg:timer(CRAFT_ANIM_PULSE_MS, function(npcTimerArg)
+            pulse(npcTimerArg, remaining - 1)
         end)
     end
 
-    pulse(player, loops)
+    pulse(npc, loops)
 end
 
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
@@ -143,6 +159,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
         widescan = 1,
 
         onTrade = function(player, npc, trade)
+            getNormalRotation(npc)
 			npc:facePlayer(player)
 
             local augmentableItem = nil
@@ -160,7 +177,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                         if augmentableItem then
                             player:printToPlayer('This is a delicate process. Please trade only one piece of equipment.', 0, npc:getPacketName())
 							npc:timer(3500, function(npcArg)
-                                npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+                                npcArg:setRotation(getNormalRotation(npcArg))
                             end)
                             return
                         end
@@ -175,7 +192,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
             if totalItems == 1 and not augmentableItem then
                 player:printToPlayer('This is interesting, but it will not work for our current purpose.', 0, npc:getPacketName())
 				npc:timer(3500, function(npcArg)
-					npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+					npcArg:setRotation(getNormalRotation(npcArg))
 				end)
 				return
             end
@@ -191,15 +208,15 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                 }
                 player:printToPlayer(hints[itemTier] or 'Hmm.', 0, npc:getPacketName())
 				npc:timer(3500, function(npcArg)
-					npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+					npcArg:setRotation(getNormalRotation(npcArg))
 				end)
                 return
             end
 
             if not augmentableItem then
-                player:printToPlayer('Hmmm, I just don’t see anything here I can work with.', 0, npc:getPacketName())
+                player:printToPlayer('Hmmm, I just don\'t see anything here I can work with.', 0, npc:getPacketName())
                 npc:timer(3500, function(npcArg)
-					npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+					npcArg:setRotation(getNormalRotation(npcArg))
 				end)
 				return
             end
@@ -232,7 +249,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                             if tier > maxTierUnlocked then
                                 player:printToPlayer('Some of these materials would result in augments beyond your current means to wield.', 0, npc:getPacketName())
                                 npc:timer(3500, function(npcArg)
-									npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+									npcArg:setRotation(getNormalRotation(npcArg))
 								end)
 								return
                             end
@@ -243,7 +260,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                                 if totalAugmentCount + augmentCount > 4 then
                                     player:printToPlayer('This is more than we can reasonably achieve. Why not try another combination?', 0, npc:getPacketName())
                                     npc:timer(3500, function(npcArg)
-										npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+										npcArg:setRotation(getNormalRotation(npcArg))
 									end)
 									return
                                 end
@@ -269,7 +286,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
             if #selectedAugments == 0 then
                 player:printToPlayer('These materials are not suitable for augmentation.', 0, npc:getPacketName())
             	npc:timer(3500, function(npcArg)
-					npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+					npcArg:setRotation(getNormalRotation(npcArg))
 				end)
 				return
             end
@@ -308,7 +325,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                 npcArg:setRotation(chosenRotation)
                 player:printToPlayer(craftLine, 0, npcArg:getPacketName())
 
-                playCrystalSynthesisAnimation(player, craftChoice, useHQDirection)
+                playCrystalSynthesisAnimation(npcArg, craftChoice, useHQDirection)
             end)
 
             npc:timer(CRAFT_START_DELAY_MS + CRAFT_TOTAL_MS + CRAFT_FINISH_DELAY_MS, function(npcArg)
@@ -345,19 +362,20 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
 
                 if obtained then
                     player:printToPlayer('Make fine use of this.', 0, npcArg:getPacketName())
-                    player:printToPlayer(string.format('Augmented %s received.', augmentableName), 0, xi.msg.channel.SYSTEM_3)
+                    player:printToPlayer(string.format('Augmented %s received.', augmentableName), xi.msg.channel.SYSTEM_3, npcArg:getPacketName())
                 else
                     
-					player:printToPlayer(string.format('The augmentation failed during item return.'), 0, xi.msg.channel.SYSTEM_3)
+					player:printToPlayer(string.format('The augmentation failed during item return.'), xi.msg.channel.SYSTEM_3, npcArg:getPacketName())
                 end
 
                 npcArg:timer(1200, function(npcDoneArg)
-                    npcDoneArg:setRotation(npcDoneArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
+                    npcDoneArg:setRotation(getNormalRotation(npcDoneArg))
                 end)
             end)
         end,
 
         onTrigger = function(player, npc)
+            getNormalRotation(npc)
             npc:facePlayer(player)
             player:printToPlayer('It is good to see you.', 0, npc:getPacketName())
 
@@ -383,9 +401,7 @@ m:addOverride('xi.zones.Southern_San_dOria.Zone.onInitialize', function(zone)
                 [0] = 'Have you not heard the song of the mothercrystal? Seek out its scintillating rhapsody. Each step yields rewards.',
             }
             player:printToPlayer(lines[maxTierUnlocked], 0, npc:getPacketName())
-            npc:timer(3500, function(npcArg)
-                npcArg:setRotation(npcArg:getLocalVar('CA_NORMAL_ROT') or DEFAULT_ROTATION)
-            end)
+            restoreNormalRotation(npc)
         end,
     })
 
