@@ -30,7 +30,7 @@ augmentData.augmentTable = {
         [4358] = { augmentID = 69, requiredQty = 1, power = 1, materialName = "Hare Meat", tier = 0, desc = "Ranged Accuracy/Ranged Attack +2" }, -- Ranged Accuracy/Ranged Attack +2
         [768] = { augmentID = 362, requiredQty = 1, power = 0, materialName = "Flint Stone", tier = 0, desc = "Magic Damage +1" }, -- Magic Damage +1
         [912] = { augmentID = 134, requiredQty = 1, power = 1, materialName = "Beehive Chip", tier = 0, desc = "Magic Defense Bonus +2" }, -- Magic Defense Bonus +2
-        [859] = { augmentID = 137, requiredQty = 1, power = 3, materialName = "Ram Skin", tier = 0, desc = "Regen +4" }, -- Regen +4
+        [859] = { augmentID = 137, requiredQty = 1, power = 0, materialName = "Ram Skin", tier = 0, desc = "Regen +1" }, -- Regen +1
         [895] = { augmentID = 138, requiredQty = 1, power = 0, materialName = "Ram Horn", tier = 0, desc = "Refresh +1" }, -- Refresh +1
         [846] = { augmentID = 142, requiredQty = 1, power = 1, materialName = "Insect Wing", tier = 0, desc = "Store TP +2" }, -- Store TP +2
         [922] = { augmentID = 195, requiredQty = 1, power = 1, materialName = "Bat Wing", tier = 0, desc = "Subtle Blow +2" }, -- Subtle Blow +2
@@ -118,44 +118,44 @@ augmentData.augmentTable = {
 -- Tier 4 Augments
 [4] = {
     [8960] = { augmentID = 39,   requiredQty = 1, power = 9,   materialName = "Leaforb Stone",     tier = 4, desc = "Enmity +10" }, -- Enmity +10
-    [8961] = { augmentID = 44,   requiredQty = 1, power = 9,   materialName = "Leaftip Stone",     tier = 4, desc = "Store TP/Subtle Blow +10" }, -- Store TP/Subtle Blow +10
+    [8942] = { augmentID = 44,   requiredQty = 1, power = 9,   materialName = "Leaftip Stone",     tier = 4, desc = "Store TP/Subtle Blow +10" }, -- Store TP/Subtle Blow +10
     [8957] = { augmentID = 81,   requiredQty = 1, power = 11,  materialName = "Snoworb Stone",     tier = 4, desc = "Evasion/Magic Evasion +12" }, -- Evasion/Magic Evasion +12
-    [8950] = { augmentID = 29,   requiredQty = 1, power = 4,   materialName = "Wailing Stone",     tier = 4, desc = "Pet: Enmity +5" }, -- Pet: Enmity +5
-    [8949] = { augmentID = 137,  requiredQty = 1, power = 24,  materialName = "Ghastly Stone",     tier = 4, desc = "Pet: Regen +25" }, -- Pet: Regen +25
-    [8959] = { augmentID = 134,  requiredQty = 1, power = 4,   materialName = "Verdigris Stone",   tier = 4, desc = "Pet: Magic Defense Bonus +5" }, -- Pet: Magic Defense Bonus +5
-    [8962] = { augmentID = 134,  requiredQty = 1, power = 11,  materialName = "Leafslit Stone",    tier = 4, desc = "Magic Defense Bonus +12" }, -- Magic Defense Bonus +12
+    [3951] = { augmentID = 29,   requiredQty = 1, power = 4,   materialName = "Wailing Stone",     tier = 4, desc = "Pet: Enmity +5" }, -- Pet: Enmity +5
+    [3954] = { augmentID = 137,  requiredQty = 1, power = 24,  materialName = "Ghastly Stone",     tier = 4, desc = "Pet: Regen +25" }, -- Pet: Regen +25
+    [4033] = { augmentID = 134,  requiredQty = 1, power = 4,   materialName = "Verdigris Stone",   tier = 4, desc = "Pet: Magic Defense Bonus +5" }, -- Pet: Magic Defense Bonus +5
+    [8933] = { augmentID = 134,  requiredQty = 1, power = 11,  materialName = "Leafslit Stone",    tier = 4, desc = "Magic Defense Bonus +12" }, -- Magic Defense Bonus +12
     [3974] = { augmentID = 137,  requiredQty = 1, power = 19,  materialName = "Airlixir",          tier = 4, desc = "Regen +20" }, -- Regen +20
     [3895] = { augmentID = 138,  requiredQty = 1, power = 19,  materialName = "Rala Visage I",     tier = 4, desc = "Refresh +20" }, -- Refresh +20
-    [8958] = { augmentID = 144,  requiredQty = 1, power = 2,   materialName = "Snowtip Stone",     tier = 4, desc = "Triple Attack +3%" }, -- Triple Attack +3%
+    [8939] = { augmentID = 144,  requiredQty = 1, power = 2,   materialName = "Snowtip Stone",     tier = 4, desc = "Triple Attack +3%" }, -- Triple Attack +3%
     [8954] = { augmentID = 145,  requiredQty = 1, power = 9,   materialName = "Duskdim Stone",     tier = 4, desc = "Counter +10%" }, -- Counter +10%
     [3910] = { augmentID = 146,  requiredQty = 1, power = 7,   materialName = "Cirdas Visage I",   tier = 4, desc = "Dual Wield +8" }, -- Dual Wield +8
     [8956] = { augmentID = 325,  requiredQty = 1, power = 2,   materialName = "Duskorb Stone",     tier = 4, desc = "Quick Draw Ability Delay -2" }, -- Quick Draw Ability Delay -2
     [8741] = { augmentID = 329,  requiredQty = 1, power = 3,   materialName = "Rakaznar Visage I", tier = 4, desc = "Cure Potency +4%" }, -- Cure Potency +4%
     [4037] = { augmentID = 332,  requiredQty = 1, power = 1,   materialName = "Yorcia Visage I",   tier = 4, desc = "Skillchain Damage +2%" }, -- Skillchain Damage +2%
-    [8963] = { augmentID = 334,  requiredQty = 1, power = 9,   materialName = "Snowslit Stone",    tier = 4, desc = "Magic Burst Bonus +10%" }, -- Magic Burst Bonus +10%
-    [8955] = { augmentID = 353,   requiredQty = 1, power = 4,  materialName = "Duskslit Stone",    tier = 4, desc = "TP Bonus +50" }, -- TP Bonus +50
-    [8952] = { augmentID = 371,  requiredQty = 1, power = 4,   materialName = "Dusktip Stone",     tier = 4, desc = "Regen Potency +5%" }, -- Regen Potency +5%
-    [8953] = { augmentID = 740,  requiredQty = 1, power = 7,   materialName = "Leafdim Stone",     tier = 4, desc = "Main Hand Damage +8" }, -- Main Hand Damage +8
-    [8951] = { augmentID = 1249, requiredQty = 1, power = 7,   materialName = "Snowdim Stone",     tier = 4, desc = "Helix Effect Duration +8" }, -- Helix Effect Duration +8
+    [8930] = { augmentID = 334,  requiredQty = 1, power = 9,   materialName = "Snowslit Stone",    tier = 4, desc = "Magic Burst Bonus +10%" }, -- Magic Burst Bonus +10%
+    [8936] = { augmentID = 353,   requiredQty = 1, power = 4,  materialName = "Duskslit Stone",    tier = 4, desc = "TP Bonus +250" }, -- TP Bonus +250
+    [8945] = { augmentID = 371,  requiredQty = 1, power = 4,   materialName = "Dusktip Stone",     tier = 4, desc = "Regen Potency +5%" }, -- Regen Potency +5%
+    [8951] = { augmentID = 740,  requiredQty = 1, power = 7,   materialName = "Leafdim Stone",     tier = 4, desc = "Main Hand Damage +8" }, -- Main Hand Damage +8
+    [8948] = { augmentID = 1249, requiredQty = 1, power = 7,   materialName = "Snowdim Stone",     tier = 4, desc = "Helix Effect Duration +8" }, -- Helix Effect Duration +8
 },
 -- Tier 5 Augments
 [5] = {
     [8946] = { augmentID = 41,  requiredQty = 1, power = 7,  materialName = "Dusktip Stone +1",    tier = 5, desc = "Critical Hit Rate +8%" }, -- Critical Hit Rate +8%
     [8940] = { augmentID = 40,  requiredQty = 1, power = 9,  materialName = "Snowtip Stone +1",    tier = 5, desc = "Magic Critical Hit Rate +10%" }, -- Magic Critical Hit Rate +10%
-    [8938] = { augmentID = 50,  requiredQty = 1, power = 2,  materialName = "Snowdim Stone +1",    tier = 5, desc = "Occ. Resist Status Effects +3" }, -- Occ. Resist Status Effects +3
-    [8941] = { augmentID = 132, requiredQty = 1, power = 4,  materialName = "Snowslit Stone +1",   tier = 5, desc = "Pet: Double Attack/Critical Hit Rate +5%" }, -- Pet: Double Attack/Critical Hit Rate +5%
+    [8948] = { augmentID = 50,  requiredQty = 1, power = 2,  materialName = "Snowdim Stone +1",    tier = 5, desc = "Occ. Resist Status Effects +3" }, -- Occ. Resist Status Effects +3
+    [8931] = { augmentID = 132, requiredQty = 1, power = 4,  materialName = "Snowslit Stone +1",   tier = 5, desc = "Pet: Double Attack/Critical Hit Rate +5%" }, -- Pet: Double Attack/Critical Hit Rate +5%
     [3896] = { augmentID = 142, requiredQty = 1, power = 9,  materialName = "Rala Visage II",      tier = 5, desc = "Pet: Store TP +10" }, -- Pet: Store TP +10
     [3911] = { augmentID = 25,  requiredQty = 1, power = 9,  materialName = "Cirdas Visage II",    tier = 5, desc = "Pet: Magic Evasion +10" }, -- Pet: Magic Evasion +10
     [8742] = { augmentID = 52,  requiredQty = 1, power = 9,  materialName = "Rakaznar Visage II",  tier = 5, desc = "Pet: Breath +10" }, -- Pet: Breath +10
     [3975] = { augmentID = 53,  requiredQty = 1, power = 3, materialName = "Airlixir +1",         tier = 5, desc = "Pet: TP Bonus +40" }, -- Pet: TP Bonus +40
     [4034] = { augmentID = 131, requiredQty = 1, power = 9,  materialName = "Verdigris Stone +1",  tier = 5, desc = "Magic Accuracy/Magic Attack Bonus +10" }, -- Magic Accuracy/Magic Attack Bonus +10
-    [8944] = { augmentID = 140, requiredQty = 1, power = 15, materialName = "Duskslit Stone +1",   tier = 5, desc = "Fast Cast +16%" }, -- Fast Cast +16%
-    [3948] = { augmentID = 194, requiredQty = 1, power = 14, materialName = "Wailing Stone +1",    tier = 5, desc = "Kick Attacks +15" }, -- Kick Attacks +15
+    [8937] = { augmentID = 140, requiredQty = 1, power = 15, materialName = "Duskslit Stone +1",   tier = 5, desc = "Fast Cast +16%" }, -- Fast Cast +16%
+    [3952] = { augmentID = 194, requiredQty = 1, power = 14, materialName = "Wailing Stone +1",    tier = 5, desc = "Kick Attacks +15" }, -- Kick Attacks +15
     [4038] = { augmentID = 335, requiredQty = 1, power = 3,  materialName = "Yorcia Visage II",    tier = 5, desc = "Magic Critical Hit Damage +4%" }, -- Magic Critical Hit Damage +4%
     [8943] = { augmentID = 351, requiredQty = 1, power = 4,  materialName = "Leaftip Stone +1",    tier = 5, desc = "Occ. Quickens Spellcasting +5%" }, -- Occ. Quickens Spellcasting +5%
-    [8945] = { augmentID = 360, requiredQty = 1, power = 4, materialName = "Leafslit Stone +1",   tier = 5, desc = "Save TP +50" }, -- Save TP +50
+    [8934] = { augmentID = 360, requiredQty = 1, power = 4, materialName = "Leafslit Stone +1",   tier = 5, desc = "Save TP +50" }, -- Save TP +50
     [8952] = { augmentID = 512, requiredQty = 1, power = 7,  materialName = "Leafdim Stone +1",    tier = 5, desc = "STR +8" }, -- STR +8
-    [8949] = { augmentID = 513, requiredQty = 1, power = 7,  materialName = "Duskdim Stone +1",    tier = 5, desc = "DEX +8" }, -- DEX +8
+    [8955] = { augmentID = 513, requiredQty = 1, power = 7,  materialName = "Duskdim Stone +1",    tier = 5, desc = "DEX +8" }, -- DEX +8
     [8958] = { augmentID = 515, requiredQty = 1, power = 7,  materialName = "Snoworb Stone +1",    tier = 5, desc = "AGI +8" }, -- AGI +8
     [8964] = { augmentID = 516, requiredQty = 1, power = 7,  materialName = "Duskorb Stone +1",    tier = 5, desc = "INT +8" }, -- INT +8
     [8961] = { augmentID = 517, requiredQty = 1, power = 7,  materialName = "Leaforb Stone +1",    tier = 5, desc = "MND +8" }, -- MND +8
