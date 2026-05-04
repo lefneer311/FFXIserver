@@ -1,6 +1,7 @@
 require('scripts/globals/player')
 require('scripts/globals/npc_util')
 
+-- Allows for hotfixing augment system matrices without reloading xi_map.exe
 local function loadAugmentData()
     package.loaded['modules/custom/lua/hogwarts/augment_system/custom_augment_enum'] = nil
     return require('modules/custom/lua/hogwarts/augment_system/custom_augment_enum')
@@ -67,19 +68,20 @@ local directionToRotation = {
 }
 
 local crystalCraftFlow = {
-    { key = 'earth', safeFacing = 'southeast', hqFacing = 'south', synthEffect = 0x0013, synergyAnim = xi.animationString.SYNERGY_EARTH_FEWELL },
-    { key = 'water', safeFacing = 'southwest', hqFacing = 'west', synthEffect = 0x0010, synergyAnim = xi.animationString.SYNERGY_WATER_FEWELL },
-    { key = 'fire', safeFacing = 'west', hqFacing = 'northwest', synthEffect = 0x0012, synergyAnim = xi.animationString.SYNERGY_FIRE_FEWELL },
-    { key = 'lightning', safeFacing = 'south', hqFacing = 'southwest', synthEffect = 0x0014, synergyAnim = xi.animationString.SYNERGY_LIGHTNING_FEWELL },
-    { key = 'air', safeFacing = 'east', hqFacing = 'southeast', synthEffect = 0x0011, synergyAnim = xi.animationString.SYNERGY_WIND_FEWELL },
-    { key = 'ice', safeFacing = 'northwest', hqFacing = 'north', synthEffect = 0x0015, synergyAnim = xi.animationString.SYNERGY_ICE_FEWELL },
+    { key = 'earth',        safeFacing = 'Southeast',   hqFacing = 'South',         synthEffect = 0x0013, synergyAnim = xi.animationString.SYNERGY_EARTH_FEWELL     },
+    { key = 'water',        safeFacing = 'Southwest',   hqFacing = 'West',          synthEffect = 0x0010, synergyAnim = xi.animationString.SYNERGY_WATER_FEWELL     },
+    { key = 'fire',         safeFacing = 'West',        hqFacing = 'Northwest',     synthEffect = 0x0012, synergyAnim = xi.animationString.SYNERGY_FIRE_FEWELL      },
+    { key = 'lightning',    safeFacing = 'South',       hqFacing = 'Southwest',     synthEffect = 0x0014, synergyAnim = xi.animationString.SYNERGY_LIGHTNING_FEWELL },
+    { key = 'air',          safeFacing = 'East',        hqFacing = 'Southeast',     synthEffect = 0x0011, synergyAnim = xi.animationString.SYNERGY_WIND_FEWELL      },
+    { key = 'ice',          safeFacing = 'Northwest',   hqFacing = 'North',         synthEffect = 0x0015, synergyAnim = xi.animationString.SYNERGY_ICE_FEWELL       },
 }
 
+-- Flavor text for crafting sequence
 local craftLineTemplates = {
-    "Let's see... %s. Safe says %s, HQ says %s. Yeah, %s is the way.",
-    "Um... let's see, %s. Safe synth says %s, but HQ superstition says %s. I'll go with %s.",
+    "Let's see... %s. %s to be safe, but better results facing %s? Yes, %s is the way.",
+    "Um... let's see, %s. Safe synth says %s, but HQ says %s. I'll go with %s.",
     "%s crystal, right. %s keeps it stable, %s chases the big result... %s it is!",
-    "Compass nonsense says %s likes %s for success and %s for better odds. Hah! %s it is.",
+    "The crafting compass says %s takes %s for success and %s for better odds. Hah! %s it is.",
     "If I follow old tavern wisdom: %s wants %s to play it safe, or %s to gamble. Today we face %s.",
 }
 
@@ -108,7 +110,7 @@ local function playCrystalSynthesisAnimation(player, npc, craftChoice, useHQ2Eff
             return
         end
         npcArg:timer(CRAFT_ANIM_PULSE_MS, function(npcTimerArg)
-		npcArg:entityAnimationPacket(craftChoice.synergyAnim or xi.animationString.SYNERGY_COMPLETE)
+		    npcTimerArg:entityAnimationPacket(craftChoice.synergyAnim or xi.animationString.SYNERGY_COMPLETE)
             pulse(npcTimerArg, remaining - 1)
         end)
     end
@@ -123,11 +125,11 @@ local function playCrystalSynthesisAnimation(player, npc, craftChoice, useHQ2Eff
 end
 
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
-    npc:timer(100, function(npcArg)
+    npc:timer(50, function(npcArg)
 		player:printToPlayer('Combine these, then?  Let\'s see what effect might they have...', 0, npcArg:getPacketName())
 	end)
 	npc:timer(1800, function(npcArg)
-		player:printToPlayer(string.format('Your %s is Tier %d and will receive these augments:', augmentableName or tostring(augmentableItem), itemTier), 0, npcArg:getPacketName())
+		player:printToPlayer(string.format('Your %s is will receive these augments:', augmentableName or tostring(augmentableItem), itemTier), 0, npcArg:getPacketName())
 
 		for i = 1, math.min(#augments, 4) do
 			local a = augments[i]
@@ -160,7 +162,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
             local tier = augmentData.getItemTier(itemID)
             if tier > 0 then
                 if augmentableItem then
-                    player:printToPlayer('This is a delicate process. Please trade only one piece of equipment.', 0, npc:getPacketName())
+                    player:printToPlayer('This is a delicate process. Let\'s focus on one piece at a time.', 0, npc:getPacketName())
                     npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
                     return
                 end
@@ -269,12 +271,6 @@ function augmentNPCLogic.onTrade(player, npc, trade)
     end)
 
     npc:timer(CRAFT_START_DELAY_MS, function(npcArg)
-        npcArg:setRotation(chosenRotation)
-        player:printToPlayer(craftLine, 0, npcArg:getPacketName())
-        playCrystalSynthesisAnimation(npcArg, craftChoice, useHQDirection)
-    end)
-
-    npc:timer(CRAFT_START_DELAY_MS + CRAFT_LINE_DELAY_MS, function(npcArg)
         npcArg:setRotation(chosenRotation)
         playCrystalSynthesisAnimation(player, npcArg, craftChoice, useHQDirection)
     end)

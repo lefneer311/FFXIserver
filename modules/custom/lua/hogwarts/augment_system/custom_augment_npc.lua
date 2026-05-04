@@ -6,6 +6,7 @@ require('scripts/zones/Southern_San_dOria/Zone')
 
 local m = Module:new('Custom_Augment_Shop')
 
+-- Keeps NPC logic dynamic for adjustments without restarting xi_map.exe
 local function loadAugmentNPCLogic()
     package.loaded['modules/custom/lua/hogwarts/augment_system/custom_augment_npc_logic'] = nil
     return require('modules/custom/lua/hogwarts/augment_system/custom_augment_npc_logic')

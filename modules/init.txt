@@ -44,13 +44,14 @@ custom/lua/homepoint_heal.lua
 custom/lua/mission_wardrobe_unlocks.lua
 custom/lua/replace_trust_with_cornelia.lua
 custom/lua/custom_HNM_system.lua
+custom/lua/test_npcs_in_gm_home.lua
 
 #Custom
 custom/lua/hogwarts/augment_system/
 custom/lua/hogwarts/commands/
 custom/lua/hogwarts/new_player_mods/
 custom/lua/hogwarts/trust_mods/trust_overrides/
-custom/lua/test_npcs_in_gm_home.lua
+custom/lua/hogwarts/workarounds/
 custom/sql/hogwarts/
 
 #Rhapsody Related Mods
