@@ -47,6 +47,7 @@
 #include "packets/s2c/0x020_item_attr.h"
 #include "packets/s2c/0x026_item_subcontainer.h"
 #include "packets/s2c/0x02d_battle_message2.h"
+#include "packets/s2c/0x04f_equip_clear.h"
 #include "packets/s2c/0x050_equip_list.h"
 #include "packets/s2c/0x051_grap_list.h"
 #include "packets/s2c/0x055_scenarioitem.h"
@@ -1989,6 +1990,9 @@ uint32 UpdateItem(CCharEntity* PChar, uint8 LocationID, uint8 slotID, int32 quan
             }
         }
         luautils::OnItemDrop(PChar, PItem);
+
+        // Remove soon to be stale PItem pointer from sync state
+        PChar->inventorySyncState().removeEquipChange(PItem);
     }
     return ItemID;
 }
@@ -3048,30 +3052,61 @@ void SaveJobChangeGear(CCharEntity* PChar)
     uint16 ring2  = getEquipIdFromSlot(PChar, SLOT_RING2);
     uint16 back   = getEquipIdFromSlot(PChar, SLOT_BACK);
 
-    db::preparedStmt("REPLACE INTO char_equip_saved SET "
-                     "charid = ?, jobid = ?, main = ?, sub = ?, "
-                     "ranged = ?, ammo = ?, head = ?, body = ?, "
-                     "hands = ?, legs = ?, feet = ?, neck = ?, "
-                     "waist = ?, ear1 = ?, ear2 = ?, ring1 = ?, "
-                     "ring2 = ?, back = ?",
-                     PChar->id,
-                     PChar->GetMJob(),
-                     main,
-                     sub,
-                     ranged,
-                     ammo,
-                     head,
-                     body,
-                     hands,
-                     legs,
-                     feet,
-                     neck,
-                     waist,
-                     ear1,
-                     ear2,
-                     ring1,
-                     ring2,
-                     back);
+    db::preparedStmt(
+        "INSERT INTO char_equip_saved SET "
+        "charid = ?, "
+        "jobid = ?, "
+        "main = ?, "
+        "sub = ?, "
+        "ranged = ?, "
+        "ammo = ?, "
+        "head = ?, "
+        "body = ?, "
+        "hands = ?, "
+        "legs = ?, "
+        "feet = ?, "
+        "neck = ?, "
+        "waist = ?, "
+        "ear1 = ?, "
+        "ear2 = ?, "
+        "ring1 = ?, "
+        "ring2 = ?, "
+        "back = ? "
+        "ON DUPLICATE KEY UPDATE "
+        "main = VALUES(main), "
+        "sub = VALUES(sub), "
+        "ranged = VALUES(ranged), "
+        "ammo = VALUES(ammo), "
+        "head = VALUES(head), "
+        "body = VALUES(body), "
+        "hands = VALUES(hands), "
+        "legs = VALUES(legs), "
+        "feet = VALUES(feet), "
+        "neck = VALUES(neck), "
+        "waist = VALUES(waist), "
+        "ear1 = VALUES(ear1), "
+        "ear2 = VALUES(ear2), "
+        "ring1 = VALUES(ring1), "
+        "ring2 = VALUES(ring2), "
+        "back = VALUES(back)",
+        PChar->id,
+        PChar->GetMJob(),
+        main,
+        sub,
+        ranged,
+        ammo,
+        head,
+        body,
+        hands,
+        legs,
+        feet,
+        neck,
+        waist,
+        ear1,
+        ear2,
+        ring1,
+        ring2,
+        back);
 }
 
 void LoadJobChangeGear(CCharEntity* PChar)
@@ -3316,8 +3351,14 @@ void EquipItem(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 contai
                 PChar->PLatentEffectContainer->CheckLatentsEquip(equipSlotID);
                 PChar->addPetModifiers(&PItem->petModList);
 
-                // Only call the lua onEquip if its a valid equip - e.g. has passed EquipArmor and other checks above
+                // Only call the lua onEquip if it's a valid equip - e.g. has passed EquipArmor and other checks above
                 luautils::OnItemEquip(PChar, PItem);
+
+                // queue look update on valid equip
+                if (PItem != nullptr && PItem->isType(ITEM_EQUIPMENT))
+                {
+                    PChar->inventorySyncState().queueEquipChange(static_cast<CONTAINER_ID>(containerID), slotID, static_cast<SLOTTYPE>(equipSlotID), PItem, Equipping::Yes);
+                }
             }
         }
     }
@@ -3343,11 +3384,6 @@ void EquipItem(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 contai
 
     charutils::BuildingCharSkillsTable(PChar);
     PChar->UpdateHealth();
-
-    if (PItem != nullptr && PItem->isType(ITEM_EQUIPMENT))
-    {
-        PChar->inventorySyncState().queueEquipChange(static_cast<CONTAINER_ID>(containerID), slotID, static_cast<SLOTTYPE>(equipSlotID), PItem, Equipping::Yes);
-    }
 
     PChar->updatemask |= UPDATE_HP;
     PChar->updatemask |= UPDATE_LOOK;
@@ -5250,7 +5286,7 @@ void DistributeExperiencePoints(CCharEntity* PChar, CMobEntity* PMob)
 
                     exp = charutils::AddExpBonus(PMember, exp);
 
-                    charutils::AddExperiencePoints(false, PMember, PMob, (uint32)exp, mobCheck, chainactive);
+                    charutils::AddExperiencePoints(false, true, false, PMember, PMob, (uint32)exp, mobCheck, chainactive);
                 }
             }
         });
@@ -5570,7 +5606,7 @@ void DelExperiencePoints(CCharEntity* PChar, float retainPercent, uint16 forcedX
  *                                                                       *
  ************************************************************************/
 
-void AddExperiencePoints(bool expFromRaise, CCharEntity* PChar, CBaseEntity* PMob, uint32 exp, EMobDifficulty mobCheck, bool isexpchain)
+void AddExperiencePoints(bool expFromRaise, bool awardRegionPoints, bool fromScripts, CCharEntity* PChar, CBaseEntity* PMob, uint32 exp, EMobDifficulty mobCheck, bool isexpchain)
 {
     TracyZoneScoped;
 
@@ -5579,7 +5615,8 @@ void AddExperiencePoints(bool expFromRaise, CCharEntity* PChar, CBaseEntity* PMo
         return;
     }
 
-    if (!expFromRaise)
+    // Scripts have their own settings in main.lua settings. This is for exp from combat.
+    if (!expFromRaise && !fromScripts)
     {
         exp = (uint32)(exp * settings::get<float>("map.EXP_RATE"));
     }
@@ -5655,7 +5692,7 @@ void AddExperiencePoints(bool expFromRaise, CCharEntity* PChar, CBaseEntity* PMo
         PChar->jobs.exp[PChar->GetMJob()] += exp;
     }
 
-    if (!expFromRaise)
+    if (!expFromRaise && !fromScripts && awardRegionPoints)
     {
         REGION_TYPE region = PChar->loc.zone->GetRegionID();
 
@@ -5672,6 +5709,8 @@ void AddExperiencePoints(bool expFromRaise, CCharEntity* PChar, CBaseEntity* PMo
             charutils::AddPoints(PChar, "imperial_standing", (int32)(exp * 0.1f));
             PChar->pushPacket<GP_SERV_COMMAND_CONQUEST>(PChar);
         }
+
+        // TODO: WOTG Expansion Sigil
 
         // Cruor Drops in Abyssea zones.
         uint16 Pzone = PChar->getZone();
@@ -7738,26 +7777,53 @@ void WriteHistory(const CCharEntity* PChar)
         return;
     }
 
-    // Replace will also handle insert if it doesn't exist
-    db::preparedStmt("REPLACE INTO char_history "
-                     "(charid, enemies_defeated, times_knocked_out, mh_entrances, joined_parties, joined_alliances, spells_cast, "
-                     "abilities_used, ws_used, items_used, chats_sent, npc_interactions, battles_fought, gm_calls, distance_travelled) "
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                     PChar->id,
-                     PChar->m_charHistory.enemiesDefeated,
-                     PChar->m_charHistory.timesKnockedOut,
-                     PChar->m_charHistory.mhEntrances,
-                     PChar->m_charHistory.joinedParties,
-                     PChar->m_charHistory.joinedAlliances,
-                     PChar->m_charHistory.spellsCast,
-                     PChar->m_charHistory.abilitiesUsed,
-                     PChar->m_charHistory.wsUsed,
-                     PChar->m_charHistory.itemsUsed,
-                     PChar->m_charHistory.chatsSent,
-                     PChar->m_charHistory.npcInteractions,
-                     PChar->m_charHistory.battlesFought,
-                     PChar->m_charHistory.gmCalls,
-                     PChar->m_charHistory.distanceTravelled);
+    db::preparedStmt(
+        "INSERT INTO char_history SET "
+        "charid = ?, "
+        "enemies_defeated = ?, "
+        "times_knocked_out = ?, "
+        "mh_entrances = ?, "
+        "joined_parties = ?, "
+        "joined_alliances = ?, "
+        "spells_cast = ?, "
+        "abilities_used = ?, "
+        "ws_used = ?, "
+        "items_used = ?, "
+        "chats_sent = ?, "
+        "npc_interactions = ?, "
+        "battles_fought = ?, "
+        "gm_calls = ?, "
+        "distance_travelled = ? "
+        "ON DUPLICATE KEY UPDATE "
+        "enemies_defeated = VALUES(enemies_defeated), "
+        "times_knocked_out = VALUES(times_knocked_out), "
+        "mh_entrances = VALUES(mh_entrances), "
+        "joined_parties = VALUES(joined_parties), "
+        "joined_alliances = VALUES(joined_alliances), "
+        "spells_cast = VALUES(spells_cast), "
+        "abilities_used = VALUES(abilities_used), "
+        "ws_used = VALUES(ws_used), "
+        "items_used = VALUES(items_used), "
+        "chats_sent = VALUES(chats_sent), "
+        "npc_interactions = VALUES(npc_interactions), "
+        "battles_fought = VALUES(battles_fought), "
+        "gm_calls = VALUES(gm_calls), "
+        "distance_travelled = VALUES(distance_travelled)",
+        PChar->id,
+        PChar->m_charHistory.enemiesDefeated,
+        PChar->m_charHistory.timesKnockedOut,
+        PChar->m_charHistory.mhEntrances,
+        PChar->m_charHistory.joinedParties,
+        PChar->m_charHistory.joinedAlliances,
+        PChar->m_charHistory.spellsCast,
+        PChar->m_charHistory.abilitiesUsed,
+        PChar->m_charHistory.wsUsed,
+        PChar->m_charHistory.itemsUsed,
+        PChar->m_charHistory.chatsSent,
+        PChar->m_charHistory.npcInteractions,
+        PChar->m_charHistory.battlesFought,
+        PChar->m_charHistory.gmCalls,
+        PChar->m_charHistory.distanceTravelled);
 }
 
 uint8 getMaxItemLevel(CCharEntity* PChar)
