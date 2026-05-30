@@ -182,6 +182,8 @@ local function normalizePhysicalSkillParams(skillParams)
         result[paramName] = utils.defaultIfNil(skillParams[paramName], defaultValue)
     end
 
+    result.baseDamage = skillParams.baseDamage
+
     return result
 end
 
@@ -402,6 +404,15 @@ local function handleSinglePhysicalHit(mob, target, baseHitDamage, params)
     -- TODO: Fan Dance Reduction
 
     hitDamage = math.floor(target:checkDamageCap(hitDamage))
+
+    -- Pre phalanx check - if stoneskin breaks we can get TP from shield mastery
+    if
+        blockedWithShieldMastery and
+        math.max(hitDamage - target:getMod(xi.mod.STONESKIN), 0) > 0
+    then
+        target:addTP(target:getMod(xi.mod.SHIELD_MASTERY_TP))
+    end
+
     hitDamage = utils.handlePhalanx(target, hitDamage)
 
     if not params.skipStoneskin then
@@ -745,7 +756,7 @@ xi.mobskills.mobRangedMove = function(mob, target, skill, action, skillParams)
     totalDamage = resolveMissMessage(skill, hitsLanded, hitsYaegasumi, hitsAnticipated, hitsAbsorbed, shadowsAbsorbed, params.primaryMessage, totalDamage)
 
     -- Mob only gets TP for hitting the initial target. AOE hits do not count.
-    xi.mobskills.calculateSkillTPReturn(damage, mob, skill, target, params.attackType, hitsLanded)
+    xi.mobskills.calculateSkillTPReturn(totalDamage, mob, skill, target, params.attackType, hitsLanded)
 
     returnInfo.damage       = totalDamage
     returnInfo.hybridDamage = magicDamage
@@ -980,7 +991,7 @@ xi.mobskills.mobPhysicalMove = function(mob, target, skill, action, skillParams)
     ----------------------------------
     -- Handle TP Returns
     ----------------------------------
-    xi.mobskills.calculateSkillTPReturn(damage, mob, skill, target, params.attackType, hitsLanded)
+    xi.mobskills.calculateSkillTPReturn(totalDamage, mob, skill, target, params.attackType, hitsLanded)
 
     returnInfo.damage       = totalDamage
     returnInfo.hybridDamage = magicDamage
@@ -1691,15 +1702,6 @@ xi.mobskills.unequipRandomSlots = function(target, numberToUnequip)
         local index = math.random(#slots)
         target:unequipItem(table.remove(slots, index))
     end
-end
-
----@param target CBaseEntity
----@param attacker CBaseEntity
----@param skill CMobSkill
----@param action CAction
----@return xi.action.knockback
-xi.mobskills.calculateKnockback = function(target, attacker, skill, action)
-    return utils.clamp(skill:getKnockback() - target:getMod(xi.mod.KNOCKBACK_REDUCTION), xi.action.knockback.NONE, xi.action.knockback.LEVEL7)
 end
 
 ---@param target CBaseEntity

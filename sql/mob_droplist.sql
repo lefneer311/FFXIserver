@@ -1109,6 +1109,7 @@ INSERT INTO `mob_droplist` VALUES (127,0,0,1000,17662,@RARE);    -- Company Swor
 INSERT INTO `mob_droplist` VALUES (127,0,0,1000,1432,@UNCOMMON); -- Paladins Testimony (Uncommon, 10%)
 INSERT INTO `mob_droplist` VALUES (127,0,0,1000,645,@ALWAYS);    -- Chunk Of Darksteel Ore (Always, 100%)
 INSERT INTO `mob_droplist` VALUES (127,0,0,1000,1118,@COMMON);   -- Antican Pauldron (Common, 15%)
+INSERT INTO `mob_droplist` VALUES (127,2,0,1000,748,0);          -- Gold Beastcoin (Steal)
 
 -- ZoneID: 208 - Antican Magister
 INSERT INTO `mob_droplist` VALUES (128,0,0,1000,16686,@UNCOMMON); -- Arcanabane (Uncommon, 10%)
@@ -1127,6 +1128,7 @@ INSERT INTO `mob_droplist` VALUES (130,0,0,1000,645,@VCOMMON);   -- Chunk Of Dar
 INSERT INTO `mob_droplist` VALUES (130,0,0,1000,1429,@VCOMMON);  -- Black Mages Testimony (Very Common, 24%)
 INSERT INTO `mob_droplist` VALUES (130,0,0,1000,4770,@UNCOMMON); -- Scroll Of Stone Iv (Uncommon, 10%)
 INSERT INTO `mob_droplist` VALUES (130,0,0,1000,4799,@UNCOMMON); -- Scroll Of Stonega Iii (Uncommon, 10%)
+INSERT INTO `mob_droplist` VALUES (130,2,0,1000,748,0);          -- Gold Beastcoin (Steal)
 
 -- ZoneID: 208 - Antican Princeps
 INSERT INTO `mob_droplist` VALUES (131,0,0,1000,16995,@COMMON);  -- Piece Of Rotten Meat (Common, 15%)
@@ -17425,7 +17427,7 @@ INSERT INTO `mob_droplist` VALUES (2135,4,0,1000,5755,0);         -- Slab Of Rus
 -- ZoneID:   2 - Sabertooth Tiger
 -- ZoneID: 105 - Sabertooth Tiger
 -- ZoneID: 120 - Sabertooth Tiger
-INSERT INTO `mob_droplist` VALUES (2136,0,0,1000,884,@COMMON);   -- Black Tiger Fang (Common, 15%)
+INSERT INTO `mob_droplist` VALUES (2136,0,0,1000,884,@VCOMMON);  -- Black Tiger Fang (Very Common, 24%)
 INSERT INTO `mob_droplist` VALUES (2136,0,0,1000,861,@UNCOMMON); -- Black Tiger Hide (Uncommon, 10%)
 INSERT INTO `mob_droplist` VALUES (2136,2,0,1000,4372,0);        -- Slice Of Giant Sheep Meat (Steal)
 INSERT INTO `mob_droplist` VALUES (2136,2,0,1000,4400,0);        -- Slice Of Land Crab Meat (Steal)

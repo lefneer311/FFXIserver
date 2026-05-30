@@ -97,6 +97,7 @@ void CTargetFind::findWithinArea(CBattleEntity* PTarget, AOE_RADIUS radiusType, 
     }
 
     TracyZoneScoped;
+
     m_findFlags   = findFlags;
     m_targetFlags = targetFlags;
     m_radius      = radius;
@@ -304,6 +305,7 @@ void CTargetFind::addAllInMobList(CBattleEntity* PTarget, bool withPet)
 void CTargetFind::addAllInZone(CBattleEntity* PTarget, bool withPet)
 {
     TracyZoneScoped;
+
     // clang-format off
     zoneutils::GetZone(PTarget->getZone())->ForEachCharInstance(PTarget, [&](CCharEntity* PChar)
     {
@@ -511,6 +513,15 @@ bool CTargetFind::validEntity(CBattleEntity* PTarget)
 
     // Super Jump or otherwise untargetable
     if (PTarget->PAI->IsUntargetable())
+    {
+        return false;
+    }
+
+    // m_Locked targets should not be able to be attacked or have any ability or spell cast on them, including AoEs.
+    // TODO: Should a locked player's pet or trust be excluded as well? Verify on retail. Can add that check by changing PTarget to findMaster(PTarget).
+    // m_Locked is only in a CCharEntity, not all CBattleEntity which do not have m_Locked. Need to account for that.
+    CCharEntity* PChar = dynamic_cast<CCharEntity*>(PTarget);
+    if (PChar != nullptr && PChar->m_Locked)
     {
         return false;
     }

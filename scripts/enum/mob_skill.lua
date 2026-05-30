@@ -124,6 +124,8 @@ xi.mobSkill =
 
     DETONATOR_1                   =  215,
 
+    URIEL_BLADE_1                 =  238,
+
     NETHERSPIKES_1                =  241,
     CARNAL_NIGHTMARE_1            =  242,
     AEGIS_SCHISM_1                =  243,
@@ -214,6 +216,12 @@ xi.mobSkill =
     INFRASONICS_1                 =  372,
     SECRETION_1                   =  373,
 
+    FOUL_BREATH_1                 =  376,
+    FROST_BREATH_1                =  377,
+    THUNDERBOLT_RAPTOR            =  378,
+
+    SCYTHE_TAIL_1                 =  380,
+
     TAIL_ROLL                     =  382,
     TUSK                          =  383,
     SCUTUM                        =  384,
@@ -233,7 +241,7 @@ xi.mobSkill =
 
     BALEFUL_GAZE_COCKATRICE       =  411,
     RANGED_ATTACK_2               =  412,
-    -- EES_?                         =  413,
+    EAGLE_EYE_SHOT_HUMANOID       =  413,
 
     SCISSION_THRUST               =  419, -- Mammet-800
 
@@ -257,9 +265,10 @@ xi.mobSkill =
     METALLIC_BODY_1               =  448,
 
     GRAVITY_WHEEL                 =  457, -- Mammet-800
-
+    INK_JET_1                     =  458,
+    HARD_MEMBRANE_1               =  459,
     CROSS_ATTACK_1                =  460,
-
+    REGENERATION_1                =  461,
     MAELSTROM_1                   =  462,
 
     PSYCHOMANCY                   =  464, -- Mammet-800
@@ -383,6 +392,10 @@ xi.mobSkill =
     FLAME_ARMOR                   =  632,
     HOWL_BEHEMOTH                 =  633,
     FINAL_METEOR                  =  634, -- Final Meteor Chlevnik
+    BURST                         =  635,
+    FLAME_ARROW                   =  636,
+    FIREBOMB                      =  637,
+    BLASTBOMB                     =  638,
 
     RECOIL_DIVE_1                 =  641,
 
@@ -642,7 +655,7 @@ xi.mobSkill =
     ASTRAL_FLOW_MAAT              = 1023,
 
     DRAGON_BREATH_2               = 1041,
-
+    SUPER_BUFF                    = 1053,
     HOWL                          = 1062,
 
     -- EES_?                         = 1065,
@@ -777,6 +790,7 @@ xi.mobSkill =
     GERJIS_GRIP                   = 1322,
 
     -- EES_?                         = 1327,
+    INK_JET_ATTACK                = 1328,
 
     HOOF_VOLLEY                   = 1330,
     COUNTERSTANCE_3               = 1331, -- The Waughroon Kid
@@ -965,6 +979,11 @@ xi.mobSkill =
 
     PROBOSCIS_SHOWER              = 1708,
 
+    KIBOSH                        = 1725,
+    CUTPURSE                      = 1726,
+    SANDSPRAY                     = 1727,
+    FAZE                          = 1728,
+
     FORCEFUL_BLOW                 = 1731, -- Used with Mamool's weapons break.
 
     FIRESPIT                      = 1733,
@@ -1055,6 +1074,16 @@ xi.mobSkill =
 
     -- HUNDRED_FISTS                 = 2020,
 
+    TENEBROUS_MIST                = 2022,
+    THUNDERSTRIKE                 = 2023,
+    TOURBILLION                   = 2024,
+    DREADSTORM                    = 2025,
+    FOSSILIZING_BREATH            = 2026,
+    PLAGUE_SWIPE                  = 2027,
+    FULMINATION                   = 2028,
+
+    ROAR_KHIMAIRA                 = 2030,
+
     DAZE                          = 2066,
     KNOCKOUT                      = 2067,
 
@@ -1079,6 +1108,8 @@ xi.mobSkill =
     -- EES_?                         = 2148,
 
     GRIM_GLOWER                   = 2156,
+
+    NOX_BLAST                     = 2175,
 
     PEDAL_PIROUETTE               = 2210,
 
@@ -1215,9 +1246,9 @@ xi.mobSkill =
 
     CROSS_REAVER_3                = 3706, -- Ark Angel HM Trust
 
-    ARROGANCE_INCARNATE_2         = 3710, -- Ark Angel EV Trust
-
-    DOMINION_SLASH_2              = 3712, -- Ark Angel EV Trust
+    ARROGANCE_INCARNATE_TRUST     = 3710, -- Ark Angel EV Trust
+    DOMINION_SLASH_TRUST          = 3712, -- Ark Angel EV Trust
+    SHIELD_STRIKE_TRUST           = 3714, -- Ark Angel EV Trust
 
     ARROGANCE_INCARNATE_3         = 3728,
 

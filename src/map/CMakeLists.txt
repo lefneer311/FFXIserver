@@ -101,6 +101,8 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/map_socket.h
     ${CMAKE_CURRENT_SOURCE_DIR}/map_statistics.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/map_statistics.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/maze.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/maze.h
     ${CMAKE_CURRENT_SOURCE_DIR}/merit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/merit.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mob_modifier.h
@@ -120,6 +122,8 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/navmesh/navmesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/navmesh/navmesh_builder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/navmesh/navmesh_config.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/nominate_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/nominate_manager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/notoriety_container.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/notoriety_container.h
     ${CMAKE_CURRENT_SOURCE_DIR}/packet_system.cpp

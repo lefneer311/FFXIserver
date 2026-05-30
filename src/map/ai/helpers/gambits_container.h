@@ -83,31 +83,36 @@ enum class G_CONDITION : uint16
     READYING_MS        = 18,
     READYING_JA        = 19,
     CASTING_MA         = 20,
-    RANDOM             = 21,
-    NO_SAMBA           = 22,
-    NO_STORM           = 23,
-    PT_HAS_TANK        = 24,
-    NOT_PT_HAS_TANK    = 25,
-    IS_ECOSYSTEM       = 26,
-    HP_MISSING         = 27,
-    CASTING_ELEMENT_MA = 28,
-    CAST_ELE_MA_SELF   = 29,
-    CASTING_ELE_MA_AOE = 30,
-    NEED_ELE_BAREFFECT = 31,
-    NO_MAX_RUNE        = 32,
-    HAS_RUNES          = 33,
-    LUNGE_MB_AVAILABLE = 34,
-    SUB_ANIMATION      = 35,
+    CASTING_DEBUFF     = 21,
+    RANDOM             = 22,
+    NO_SAMBA           = 23,
+    NO_STORM           = 24,
+    PT_HAS_TANK        = 25,
+    NOT_PT_HAS_TANK    = 26,
+    IS_ECOSYSTEM       = 27,
+    HP_MISSING         = 28,
+    CASTING_ELEMENT_MA = 29,
+    CAST_ELE_MA_SELF   = 30,
+    CASTING_ELE_MA_AOE = 31,
+    NEED_ELE_BAREFFECT = 32,
+    NO_MAX_RUNE        = 33,
+    HAS_RUNES          = 34,
+    LUNGE_MB_AVAILABLE = 35,
+    SUB_ANIMATION      = 36,
+    JA_ON_COOLDOWN     = 37,
+    VAL_URIEL_CHECK    = 38,
+    TIMER              = 39, // condition_arg in seconds
 };
 
 enum class G_REACTION : uint16
 {
-    ATTACK  = 0,
-    RATTACK = 1,
-    MA      = 2,
-    JA      = 3,
-    WS      = 4,
-    MS      = 5,
+    ATTACK      = 0,
+    RATTACK     = 1,
+    MA          = 2,
+    JA          = 3,
+    WS          = 4,
+    MS          = 5,
+    ANIM_STRING = 6,
 };
 
 enum class G_SELECT : uint16
@@ -131,6 +136,7 @@ enum class G_SELECT : uint16
     HELIX_MOB_WEAKNESS  = 16,
     DEF_BAR_ELEMENT     = 17,
     RUNE_DAY            = 18,
+    RANDOM_ANIMATION    = 19,
 };
 
 enum class G_TP_TRIGGER : uint16
@@ -301,7 +307,7 @@ public:
     uint16                    tp_value;
 
 private:
-    bool CheckTrigger(const CBattleEntity* triggerTarget, PredicateGroup_t& predicateGroup);
+    bool CheckTrigger(const CBattleEntity* triggerTarget, const Gambit_t& gambit, size_t predicateGroupIndex, PredicateGroup_t& predicateGroup);
     bool TryTrustSkill();
     bool PartyHasHealer();
     bool PartyHasTank();
@@ -309,6 +315,8 @@ private:
     CTrustEntity*         POwner;
     timer::time_point     m_lastAction;
     std::vector<Gambit_t> gambits;
+
+    std::unordered_map<std::string, timer::time_point> m_timerConditionLastTrigger;
 
     std::set<JOBTYPE> melee_jobs = {
         JOB_WAR,

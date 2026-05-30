@@ -1,4 +1,4 @@
-﻿/*
+/*
 ===========================================================================
 
   Copyright (c) 2010-2015 Darkstar Dev Teams
@@ -27,6 +27,8 @@
 #include "gmcall_container.h"
 #include "inventory_sync_state.h"
 #include "item_container.h"
+#include "items/craft_state.h"
+#include "items/transaction.h"
 #include "map_session.h"
 #include "monstrosity.h"
 
@@ -38,6 +40,7 @@
 #include <bitset>
 #include <deque>
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
 #include <unordered_map>
@@ -45,6 +48,8 @@
 
 #include "automatonentity.h"
 #include "battleentity.h"
+#include "linkshell.h"
+#include "maze.h"
 #include "packets/s2c/base.h"
 #include "petentity.h"
 
@@ -288,6 +293,8 @@ constexpr uint8 EquipSlotCount = 18;
 
 class CCharEntity : public CBattleEntity
 {
+    friend class CBattleEntity;
+
 public:
     uint32 accid{}; // Account ID associated with the character.
 
@@ -434,6 +441,19 @@ public:
         }
     }
 
+    template <typename F, typename... Args>
+    void ForLinkshell(const uint8 slot, F func, Args&&... args)
+    {
+        const auto* PLinkshell = (slot == 1) ? this->PLinkshell1 : this->PLinkshell2;
+        if (PLinkshell != nullptr)
+        {
+            for (auto* PMember : PLinkshell->members)
+            {
+                func(PMember, std::forward<Args>(args)...);
+            }
+        }
+    }
+
     CBattleEntity* PClaimedMob = nullptr;
 
     // These missions do not need a list of completed, because client automatically
@@ -495,7 +515,69 @@ public:
     CTradeContainer* TradeContainer; // Container used specifically for trading.
     CTradeContainer* Container;      // Universal container for exchange, synthesis, store, etc.
     CUContainer*     UContainer;     // Container used for universal actions -- used for trading at least despite the dedicated trading container above
-    CTradeContainer* CraftContainer; // Container used for crafting actions.
+
+    auto craftState() -> CCraftState&
+    {
+        return craftState_;
+    }
+
+    auto craftState() const -> const CCraftState&
+    {
+        return craftState_;
+    }
+
+    template <typename T>
+    auto activeTransaction() const -> T*
+    {
+        for (const auto& transaction : transactions_)
+        {
+            if (auto* typed = dynamic_cast<T*>(transaction.get()); typed != nullptr && typed->isOpen())
+            {
+                return typed;
+            }
+        }
+        return nullptr;
+    }
+
+    // Only one transaction of each type may be active at a time. Aborts
+    // on null input or duplicate type.
+    template <typename T>
+    auto addTransaction(std::unique_ptr<T> transaction) -> T*
+    {
+        if (!transaction)
+        {
+            ShowErrorFmt("CCharEntity::addTransaction: null transaction of type {}", typeid(T).name());
+            std::abort();
+        }
+
+        if (this->activeTransaction<T>())
+        {
+            ShowErrorFmt("CCharEntity::addTransaction: a transaction of type {} is already active", typeid(T).name());
+            std::abort();
+        }
+
+        this->transactions_.push_back(std::move(transaction));
+        return static_cast<T*>(this->transactions_.back().get());
+    }
+
+    void removeTransaction(Transaction* transaction)
+    {
+        if (!transaction)
+        {
+            return;
+        }
+
+        std::erase_if(transactions_,
+                      [transaction](const auto& slot)
+                      {
+                          return slot.get() == transaction;
+                      });
+    }
+
+    void clearTransactions()
+    {
+        transactions_.clear();
+    }
 
     // TODO: All member instances of EntityID_t should be Maybe<EntityID_t> to allow for them not to be set,
     //     : instead of checking for entityId.id != 0, etc.
@@ -556,6 +638,10 @@ public:
     auto inMogHouse() const -> bool;
 
     auto gmCallContainer() -> GMCallContainer&;
+    auto lastProposalCloseTime() const -> timer::time_point;
+    void setLastProposalCloseTime(timer::time_point t);
+
+    auto maze() -> maze_t&;
 
     CharHistory_t m_charHistory{};
 
@@ -664,7 +750,6 @@ public:
     virtual void           OnCastInterrupted(CMagicState&, action_t&, MsgBasic msg, bool blockedCast) override;
     virtual void           OnWeaponSkillFinished(CWeaponSkillState&, action_t&) override;
     virtual void           OnAbility(CAbilityState&, action_t&) override;
-    virtual void           OnRangedAttack(CRangeState&, action_t&) override;
     virtual void           OnDeathTimer() override;
     virtual void           OnRaise() override;
 
@@ -680,7 +765,8 @@ public:
 
     void clearCharVarsWithPrefix(const std::string& prefix);
 
-    bool m_Locked{}; // Is the player locked in a cutscene
+    bool m_Locked{};         // Is the player locked in a cutscene
+    bool m_zoneInCutscene{}; // Is the player currently in a zone-in cutscene
 
     // Starts a synth with skillType X
     bool startSynth(SKILLTYPE synthSkill);
@@ -693,11 +779,17 @@ protected:
     void TrackArrowUsageForScavenge(CItemWeapon* PAmmo);
 
 private:
+    CCraftState                               craftState_{};
+    std::vector<std::unique_ptr<Transaction>> transactions_;
+
+    maze_t maze_{};
+
     std::array<CItem*, EquipSlotCount> equipped_{};
 
     // Lazily initialized AMAN data
     Maybe<CAMANContainer> m_AMAN;
     GMCallContainer       gmCallContainer_;
+    timer::time_point     lastProposalCloseTime_{}; // Time last /nominate closed
 
     std::unique_ptr<CItemContainer> m_Inventory;
     std::unique_ptr<CItemContainer> m_Mogsafe;

@@ -415,6 +415,7 @@ void CLatentEffectContainer::CheckLatentsDay()
 void CLatentEffectContainer::CheckLatentsMoonPhase()
 {
     TracyZoneScoped;
+
     ProcessLatentEffects(
         [this](CLatentEffect& latentEffect)
         {
@@ -466,6 +467,7 @@ void CLatentEffectContainer::CheckLatentsWeekDay()
 void CLatentEffectContainer::CheckLatentsHours()
 {
     TracyZoneScoped;
+
     ProcessLatentEffects(
         [this](CLatentEffect& latentEffect)
         {
@@ -731,8 +733,8 @@ void CLatentEffectContainer::CheckLatentsTargetChange()
             {
                 case LATENT::SIGNET_BONUS:
                 case LATENT::VS_ECOSYSTEM:
+                case LATENT::VS_SPECIES:
                 case LATENT::VS_FAMILY:
-                case LATENT::VS_SUPERFAMILY:
                     return ProcessLatentEffect(latentEffect);
                 default:
                     break;
@@ -767,6 +769,7 @@ void CLatentEffectContainer::ProcessLatentEffects(const std::function<bool(CLate
 bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bool isDuringWs)
 {
     TracyZoneScoped;
+
     // Our default case un-finds our latent prevent us from toggling a latent we don't have programmed
     auto expression  = false;
     auto latentFound = true;
@@ -1285,6 +1288,16 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
                 expression = static_cast<uint16>(PTarget->m_EcoSystem) == latentEffect.GetConditionsValue();
             }
             break;
+        case LATENT::VS_SPECIES:
+            if (CBattleEntity* PTarget = m_POwner->GetBattleTarget())
+            {
+                CMobEntity* PMob = dynamic_cast<CMobEntity*>(PTarget);
+                if (PMob)
+                {
+                    expression = PMob->m_Species == latentEffect.GetConditionsValue();
+                }
+            }
+            break;
         case LATENT::VS_FAMILY:
             if (CBattleEntity* PTarget = m_POwner->GetBattleTarget())
             {
@@ -1292,16 +1305,6 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
                 if (PMob)
                 {
                     expression = PMob->m_Family == latentEffect.GetConditionsValue();
-                }
-            }
-            break;
-        case LATENT::VS_SUPERFAMILY:
-            if (CBattleEntity* PTarget = m_POwner->GetBattleTarget())
-            {
-                CMobEntity* PMob = dynamic_cast<CMobEntity*>(PTarget);
-                if (PMob)
-                {
-                    expression = PMob->m_SuperFamily == latentEffect.GetConditionsValue();
                 }
             }
             break;
