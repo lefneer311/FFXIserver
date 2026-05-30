@@ -382,8 +382,8 @@ INSERT INTO `mob_spawn_points` VALUES (16789507,0,'Greater_Pugil','Greater Pugil
 INSERT INTO `mob_spawn_points` VALUES (16789508,0,'Kraken','Kraken',3,40,42,1.000,1.000,1.000,0);
 INSERT INTO `mob_spawn_points` VALUES (16789509,0,'Harajnite','Harajnite',4,51,51,1.000,1.000,1.000,0);
 INSERT INTO `mob_spawn_points` VALUES (16789510,0,'Cyclopean_Conch','Cyclopean Conch',5,55,55,1.000,1.000,1.000,0);
-INSERT INTO `mob_spawn_points` VALUES (16789511,0,'Cutter','Cutter',6,25,35,1.000,1.000,1.000,0);
 
+INSERT INTO `mob_spawn_points` VALUES (16789511,0,'Cutter','Cutter',6,25,35,5.242,-3.590,-13.648,38);
 INSERT INTO `mob_spawn_points` VALUES (16789512,0,'Fatty_Pugil','Fatty Pugil',7,25,35,-1.172,-3.529,-10.424,31);
 INSERT INTO `mob_spawn_points` VALUES (16789513,0,'Uragnite','Uragnite',8,30,37,5.242,-3.590,-13.648,38);
 INSERT INTO `mob_spawn_points` VALUES (16789514,0,'Uragnite','Uragnite',8,30,37,-7.155,-3.376,-7.715,68);
