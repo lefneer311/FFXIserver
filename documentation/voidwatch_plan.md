@@ -55,8 +55,8 @@ Scripted support already present:
 - The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, petrifacts, corundums, and route/tier/NM data.
 - The module has helpers for route lookup, maximum route tier, player abyssite tier, tier initiation checks, per-NM completion variables, tier-complete checks, abyssite-upgrade eligibility, starter route detection, and starter abyssite lookup/granting.
 - The module has voidstone helpers for carried key-item count, next key item, capacity, timer interval, stored stock, 20-hour accrual, periapt capacity/timer modifiers, withdrawing stored stones to key items, and one-pouch Voiddust trades.
-- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants.
-- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, and Voiddust trade behavior.
+- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants.  Teleportation and atmacite services are not yet implemented.
+- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, and starter-refiner abyssite examination outcomes.
 
 ## Completed implementation slices
 
@@ -92,6 +92,16 @@ Completed:
 5. Trading exactly one pouch of Voiddust to a starter officer awards one carried voidstone when the player meets requirements and has capacity.
 6. Coverage exists for capacity/timer calculations, accrual, withdrawal, and Voiddust trade handling.
 
+### Phase 3A: Starter-city Atmacite Refiner abyssite examination (complete for starter routes)
+
+Completed:
+
+1. Southern San d'Oria, Bastok Markets, and Windurst Walls Atmacite Refiner scripts call shared Voidwatch behavior.
+2. Refiner triggers guard on `ENABLE_VOIDWATCH`, level 75+, and Adventurer's Certificate.
+3. The shared refiner slice examines the starter San d'Oria, Bastok, and Windurst routes for upgrade eligibility.
+4. Eligible starter-route abyssites are replaced with the next-tier abyssite after all NMs in the current tier are marked complete.
+5. Disabled-content, missing-requirement, no-abyssite, incomplete-tier, successful-upgrade, maximum-tier, and starter-route coverage cases are covered by tests.
+
 ## Accuracy and completeness gaps
 
 ### Toggle and content gating
@@ -103,9 +113,9 @@ Completed:
 
 ### NPCs and object interaction
 
-- Present: shared module and the three starter-city `Voidwatch_Officer` scripts.
-- Missing: scripts for non-starter officers, Atmacite Refiners, Voidwatch Purveyors, Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
-- Missing: refiner behavior for abyssite upgrade checks, atmacite equip/upgrade, and teleport menus.
+- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, and the three starter-city `Atmacite_Refiner` scripts.
+- Missing: scripts for non-starter officers, non-starter Atmacite Refiners, Voidwatch Purveyors, Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
+- Missing: refiner behavior for non-starter abyssite upgrade checks, atmacite equip/upgrade, and teleport menus.
 - Missing: purveyor shops for phase displacers/ascent items and other retail services.
 - Missing: retail event/cutscene integration for officers and storyline NPCs. The current starter officer implementation is functional/system-message based, not a retail-accurate event flow.
 
@@ -159,23 +169,22 @@ Completed:
 
 ## Recommended next PR
 
-The next PR should move to **Phase 3A: Atmacite Refiner abyssite examination and starter-route upgrades**. This is the best next step because the shared module already has route/tier completion and upgrade-eligibility helpers, while Planar Rift battles and rewards are a much larger system that will benefit from a working progression NPC first.
+The next PR should move to **Phase 3B: limited Atmacite Refiner teleport destination validation and cruor costs for starter routes**. This is the best next step because starter-route refiner examination now exists, while Planar Rift battles and rewards are still a larger system that will benefit from a working refiner service foundation first.
 
 Recommended scope:
 
-1. Add reusable Atmacite Refiner Lua behavior for a small, explicit starter-city-compatible slice only.
-2. Wire the three starter-city Atmacite Refiners first, or another minimal set of refiners that can exercise San d'Oria/Bastok/Windurst route upgrade behavior without implementing teleportation or atmacite equipment yet.
-3. On trigger, guard on `xi.voidwatch.isEnabled()` and base requirements.
-4. For each starter route, use `xi.voidwatch.canUpgradeAbyssite(player, routeId)` to determine whether the current stratum abyssite can be upgraded.
-5. When eligible, remove or supersede the current-tier abyssite according to existing key-item semantics used elsewhere in the codebase, award the next-tier abyssite, and display a clear key-item message.
-6. Keep the PR intentionally narrow: do not add purveyor shops, teleport menus, atmacite equip/upgrade, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
-7. Add focused tests for disabled-content behavior, missing base requirements, no-current-abyssite behavior, incomplete-tier behavior, successful tier upgrade, maximum-tier no-op behavior, and starter-route-to-refiner coverage.
+1. Add a small, explicit starter-route teleport destination table for destinations the player can already initiate.
+2. Keep teleportation limited to the starter San d'Oria, Bastok, and Windurst route zones initially.
+3. On trigger, continue guarding on `xi.voidwatch.isEnabled()` and base requirements.
+4. Validate destination availability from the player's current starter-route abyssite tier without adding quest cutscene menus.
+5. Charge cruor only after destination validation succeeds, and fail cleanly when cruor is insufficient.
+6. Keep the PR intentionally narrow: do not add purveyor shops, atmacite equip/upgrade, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
+7. Add focused tests for destination gating, tier validation, cruor charging, insufficient-cruor behavior, disabled/missing-requirement behavior, and no-teleport behavior when no starter abyssite is held.
 
-After Phase 3A, the next practical slices are:
+After Phase 3B, the next practical slices are:
 
-1. **Phase 3B:** add limited Atmacite Refiner teleport destination validation and cruor costs for routes the player can initiate.
-2. **Phase 3C:** add Voidwatch Purveyor shops for phase displacers/ascent items.
-3. **Phase 4A:** add a single starter-route Planar Rift vertical slice that can validate initiation, spawn one NM, set completion credit, and leave pyxis/reward work stubbed or deliberately minimal.
+1. **Phase 3C:** add Voidwatch Purveyor shops for phase displacers/ascent items.
+2. **Phase 4A:** add a single starter-route Planar Rift vertical slice that can validate initiation, spawn one NM, set completion credit, and leave pyxis/reward work stubbed or deliberately minimal.
 
 ## Remaining completion plan
 

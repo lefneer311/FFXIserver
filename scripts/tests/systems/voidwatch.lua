@@ -393,4 +393,222 @@ describe('Voidwatch', function()
         zones = originalZones
     end)
 
+    it('covers each starter route with starter refiner examination order', function()
+        local coveredRoutes = {}
+
+        for _, routeId in ipairs(xi.voidwatch.starterRefinerRoutes) do
+            coveredRoutes[routeId] = true
+        end
+
+        assert(coveredRoutes[xi.voidwatch.routeName.SANDORIA])
+        assert(coveredRoutes[xi.voidwatch.routeName.BASTOK])
+        assert(coveredRoutes[xi.voidwatch.routeName.WINDURST])
+        assert(not coveredRoutes[xi.voidwatch.routeName.JEUNO])
+    end)
+
+    it('reports disabled content from starter refiner triggers', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local printedMessage = nil
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
+            end,
+
+            printToPlayer = function(_, message)
+                printedMessage = message
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        xi.voidwatch.onStarterRefinerTrigger(player, nil)
+
+        assert(printedMessage == xi.voidwatch.refinerMessage.DISABLED)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('blocks starter refiner examination when base requirements are missing', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local printedMessage = nil
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel - 1
+            end,
+
+            hasKeyItem = function()
+                return false
+            end,
+
+            printToPlayer = function(_, message)
+                printedMessage = message
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        xi.voidwatch.onStarterRefinerTrigger(player, nil)
+
+        assert(printedMessage == xi.voidwatch.refinerMessage.REQUIREMENTS)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('reports no current starter abyssite during starter refiner examination', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local upgraded, status = xi.voidwatch.examineStarterAbyssites(player)
+
+        assert(not upgraded)
+        assert(status == 'no_abyssite')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('reports incomplete starter tiers during starter refiner examination', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            getCharVar = function()
+                return 0
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local upgraded, status = xi.voidwatch.examineStarterAbyssites(player)
+
+        assert(not upgraded)
+        assert(status == 'incomplete')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('upgrades completed starter abyssites and replaces the previous key item', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+        }
+        local charVars = {}
+        local lostKeyItem = nil
+        local obtainedKeyItem = nil
+        local originalZones = zones
+        zones = zones or {}
+        local originalZoneEntry = zones[xi.zone.SOUTHERN_SAN_DORIA]
+        zones[xi.zone.SOUTHERN_SAN_DORIA] = originalZoneEntry or { text = { KEYITEM_LOST = 0, KEYITEM_OBTAINED = 1 } }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            addKeyItem = function(_, keyItem)
+                keyItems[keyItem] = true
+            end,
+
+            delKeyItem = function(_, keyItem)
+                keyItems[keyItem] = nil
+            end,
+
+            getCharVar = function(_, varName)
+                return charVars[varName] or 0
+            end,
+
+            setCharVar = function(_, varName, value)
+                charVars[varName] = value
+            end,
+
+            getZoneID = function()
+                return xi.zone.SOUTHERN_SAN_DORIA
+            end,
+
+            messageSpecial = function(_, message, keyItem)
+                if message == zones[xi.zone.SOUTHERN_SAN_DORIA].text.KEYITEM_LOST then
+                    lostKeyItem = keyItem
+                elseif message == zones[xi.zone.SOUTHERN_SAN_DORIA].text.KEYITEM_OBTAINED then
+                    obtainedKeyItem = keyItem
+                end
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        xi.voidwatch.setCompletedNM(player, xi.voidwatch.routeName.SANDORIA, 'Sarimanok')
+        xi.voidwatch.setCompletedNM(player, xi.voidwatch.routeName.SANDORIA, 'Cottus')
+        xi.voidwatch.onStarterRefinerTrigger(player, nil)
+
+        assert(lostKeyItem == xi.keyItem.CRIMSON_STRATUM_ABYSSITE)
+        assert(obtainedKeyItem == xi.keyItem.CRIMSON_STRATUM_ABYSSITE_II)
+        assert(not player:hasKeyItem(xi.keyItem.CRIMSON_STRATUM_ABYSSITE))
+        assert(player:hasKeyItem(xi.keyItem.CRIMSON_STRATUM_ABYSSITE_II))
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+        zones[xi.zone.SOUTHERN_SAN_DORIA] = originalZoneEntry
+        zones = originalZones
+    end)
+
+    it('reports maximum starter abyssite tiers as a no-op', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.JADE_STRATUM_ABYSSITE_IV] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local upgraded, status = xi.voidwatch.examineStarterAbyssites(player)
+
+        assert(not upgraded)
+        assert(status == 'maximum')
+        assert(player:hasKeyItem(xi.keyItem.JADE_STRATUM_ABYSSITE_IV))
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
 end)

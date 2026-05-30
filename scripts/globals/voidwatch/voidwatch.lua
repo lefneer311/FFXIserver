@@ -763,6 +763,42 @@ function xi.voidwatch.canUpgradeAbyssite(player, routeId)
     return tier > 0 and tier < xi.voidwatch.getRouteMaxTier(routeId) and xi.voidwatch.isTierComplete(player, routeId, tier)
 end
 
+function xi.voidwatch.upgradeAbyssite(player, routeId)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil, nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil, nil
+    end
+
+    local currentTier = xi.voidwatch.getPlayerAbyssiteTier(player, routeId)
+
+    if currentTier == 0 then
+        return false, 'no_abyssite', nil, nil
+    end
+
+    if currentTier >= xi.voidwatch.getRouteMaxTier(routeId) then
+        return false, 'maximum', xi.voidwatch.getAbyssiteForTier(routeId, currentTier), nil
+    end
+
+    if not xi.voidwatch.isTierComplete(player, routeId, currentTier) then
+        return false, 'incomplete', xi.voidwatch.getAbyssiteForTier(routeId, currentTier), nil
+    end
+
+    local currentKeyItem = xi.voidwatch.getAbyssiteForTier(routeId, currentTier)
+    local nextKeyItem = xi.voidwatch.getAbyssiteForTier(routeId, currentTier + 1)
+
+    if not currentKeyItem or not nextKeyItem then
+        return false, 'invalid', currentKeyItem, nextKeyItem
+    end
+
+    player:delKeyItem(currentKeyItem)
+    player:addKeyItem(nextKeyItem)
+
+    return true, 'upgraded', currentKeyItem, nextKeyItem
+end
+
 function xi.voidwatch.findOpByNM(nmName)
     for routeId, route in pairs(xi.voidwatch.routes) do
         for tier, ops in ipairs(route.tiers) do
@@ -795,6 +831,13 @@ xi.voidwatch.starterRoutes =
     [xi.voidwatch.routeName.SANDORIA] = true,
     [xi.voidwatch.routeName.BASTOK  ] = true,
     [xi.voidwatch.routeName.WINDURST] = true,
+}
+
+xi.voidwatch.starterRefinerRoutes =
+{
+    xi.voidwatch.routeName.SANDORIA,
+    xi.voidwatch.routeName.BASTOK,
+    xi.voidwatch.routeName.WINDURST,
 }
 
 function xi.voidwatch.isStarterRoute(routeId)
@@ -862,5 +905,90 @@ function xi.voidwatch.onStarterOfficerTrigger(player, npc, routeId)
         printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.STONES)
     elseif status == 'already' then
         printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.NO_STONES)
+    end
+end
+
+xi.voidwatch.refinerMessage =
+{
+    DISABLED     = 'Voidwatch is currently disabled.',
+    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to have your stratum abyssites examined.',
+    NO_ABYSSITE  = 'No starter-city stratum abyssite is available for examination.',
+    INCOMPLETE   = 'Defeat all required Voidwatch notorious monsters for your current starter-city stratum before requesting examination.',
+    MAXIMUM      = 'Your starter-city stratum abyssites are already at their current maximum tiers.',
+    INVALID      = 'This Atmacite Refiner is not ready to examine that stratum abyssite.',
+}
+
+local function printRefinerMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+local function getRefinerMessageForStatus(status)
+    if status == 'disabled' then
+        return xi.voidwatch.refinerMessage.DISABLED
+    elseif status == 'requirements' then
+        return xi.voidwatch.refinerMessage.REQUIREMENTS
+    elseif status == 'no_abyssite' then
+        return xi.voidwatch.refinerMessage.NO_ABYSSITE
+    elseif status == 'incomplete' then
+        return xi.voidwatch.refinerMessage.INCOMPLETE
+    elseif status == 'maximum' then
+        return xi.voidwatch.refinerMessage.MAXIMUM
+    end
+
+    return xi.voidwatch.refinerMessage.INVALID
+end
+
+function xi.voidwatch.examineStarterAbyssites(player)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil, nil, nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil, nil, nil
+    end
+
+    local hasAbyssite = false
+    local hasIncomplete = false
+    local hasMaximum = false
+
+    for _, routeId in ipairs(xi.voidwatch.starterRefinerRoutes) do
+        local tier = xi.voidwatch.getPlayerAbyssiteTier(player, routeId)
+
+        if tier > 0 then
+            hasAbyssite = true
+
+            if xi.voidwatch.canUpgradeAbyssite(player, routeId) then
+                local upgraded, status, oldKeyItem, newKeyItem = xi.voidwatch.upgradeAbyssite(player, routeId)
+                return upgraded, status, routeId, oldKeyItem, newKeyItem
+            elseif tier >= xi.voidwatch.getRouteMaxTier(routeId) then
+                hasMaximum = true
+            else
+                hasIncomplete = true
+            end
+        end
+    end
+
+    if not hasAbyssite then
+        return false, 'no_abyssite', nil, nil, nil
+    elseif hasIncomplete then
+        return false, 'incomplete', nil, nil, nil
+    elseif hasMaximum then
+        return false, 'maximum', nil, nil, nil
+    end
+
+    return false, 'invalid', nil, nil, nil
+end
+
+function xi.voidwatch.onStarterRefinerTrigger(player, npc)
+    local upgraded, status, _, oldKeyItem, newKeyItem = xi.voidwatch.examineStarterAbyssites(player)
+
+    if upgraded then
+        local ID = zones[player:getZoneID()]
+        player:messageSpecial(ID.text.KEYITEM_LOST, oldKeyItem)
+        player:messageSpecial(ID.text.KEYITEM_OBTAINED, newKeyItem)
+    else
+        printRefinerMessage(player, getRefinerMessageForStatus(status))
     end
 end
