@@ -13,8 +13,10 @@ xi.voidwatch.minimumLevel = 75
 
 xi.voidwatch.currency =
 {
-    cruor      = 'cruor',
-    voidstones = 'voidstones',
+    conquestPoints = 'conquestPoints',
+    cruor          = 'cruor',
+    gil            = 'gil',
+    voidstones     = 'voidstones',
 }
 
 xi.voidwatch.var =
@@ -32,6 +34,12 @@ xi.voidwatch.voidstone =
 xi.voidwatch.teleport =
 {
     starterCost = 1000,
+}
+
+xi.voidwatch.purveyor =
+{
+    conquestPointCost = 2000,
+    phaseDisplacerCost = 20000,
 }
 
 xi.voidwatch.stratum =
@@ -76,7 +84,8 @@ xi.voidwatch.items =
         JADE     = xi.item.JADE_CELL    ,
     },
 
-    voiddust = xi.item.POUCH_OF_VOIDDUST,
+    phaseDisplacer = xi.item.PHASE_DISPLACER,
+    voiddust       = xi.item.POUCH_OF_VOIDDUST,
 }
 
 xi.voidwatch.keyItems =
@@ -465,6 +474,16 @@ xi.voidwatch.routes =
     },
 }
 
+xi.voidwatch.purveyorStock =
+{
+    { id = xi.voidwatch.items.cells.COBALT  , cost = xi.voidwatch.purveyor.conquestPointCost , currency = xi.voidwatch.currency.conquestPoints },
+    { id = xi.voidwatch.items.cells.RUBICUND, cost = xi.voidwatch.purveyor.conquestPointCost , currency = xi.voidwatch.currency.conquestPoints },
+    { id = xi.voidwatch.items.cells.XANTHOUS, cost = xi.voidwatch.purveyor.conquestPointCost , currency = xi.voidwatch.currency.conquestPoints },
+    { id = xi.voidwatch.items.cells.JADE    , cost = xi.voidwatch.purveyor.conquestPointCost , currency = xi.voidwatch.currency.conquestPoints },
+    { id = xi.voidwatch.items.voiddust      , cost = xi.voidwatch.purveyor.conquestPointCost , currency = xi.voidwatch.currency.conquestPoints },
+    { id = xi.voidwatch.items.phaseDisplacer, cost = xi.voidwatch.purveyor.phaseDisplacerCost, currency = xi.voidwatch.currency.gil            },
+}
+
 local function printStarterOfficerMessage(player, message)
     local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
 
@@ -672,6 +691,131 @@ function xi.voidwatch.onOfficerTrade(player, npc, trade)
 
     local ID = zones[player:getZoneID()]
     player:messageSpecial(ID.text.KEYITEM_OBTAINED, keyItem)
+end
+
+xi.voidwatch.purveyorMessage =
+{
+    DISABLED     = 'Voidwatch is currently disabled.',
+    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to purchase Voidwatch supplies.',
+    SHOP         = 'Voidwatch cells, Voiddust, and phase displacers are available for purchase.',
+    INVALID      = 'That Voidwatch supply item is not available from this purveyor.',
+    NO_PAYMENT   = 'You do not possess enough currency for that Voidwatch supply item.',
+    NO_SPACE     = 'You cannot carry any more Voidwatch supply items.',
+    PURCHASE     = 'Voidwatch supply item purchased.',
+}
+
+local function printPurveyorMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+function xi.voidwatch.getPurveyorItem(itemId)
+    for _, stockItem in ipairs(xi.voidwatch.purveyorStock) do
+        if stockItem.id == itemId then
+            return stockItem
+        end
+    end
+
+    return nil
+end
+
+function xi.voidwatch.getPurveyorStock(player)
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return {}
+    end
+
+    return xi.voidwatch.purveyorStock
+end
+
+local function getPurveyorCurrency(player, currency)
+    if currency == xi.voidwatch.currency.conquestPoints then
+        return player:getCP()
+    elseif currency == xi.voidwatch.currency.gil then
+        return player:getGil()
+    end
+
+    return 0
+end
+
+local function chargePurveyorCurrency(player, currency, cost)
+    if currency == xi.voidwatch.currency.conquestPoints then
+        player:delCP(cost)
+    elseif currency == xi.voidwatch.currency.gil then
+        player:delGil(cost)
+    end
+end
+
+function xi.voidwatch.purchasePurveyorItem(player, itemId, quantity)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil
+    end
+
+    local stockItem = xi.voidwatch.getPurveyorItem(itemId)
+
+    if not stockItem then
+        return false, 'invalid', nil
+    end
+
+    local purchaseQuantity = math.max(quantity or 1, 1)
+    local totalCost = stockItem.cost * purchaseQuantity
+
+    if getPurveyorCurrency(player, stockItem.currency) < totalCost then
+        return false, 'no_payment', stockItem
+    end
+
+    if player:getFreeSlotsCount() == 0 then
+        return false, 'no_space', stockItem
+    end
+
+    if not player:addItem(stockItem.id, purchaseQuantity) then
+        return false, 'no_space', stockItem
+    end
+
+    chargePurveyorCurrency(player, stockItem.currency, totalCost)
+
+    return true, 'purchased', stockItem
+end
+
+local function getPurveyorMessageForStatus(status)
+    if status == 'disabled' then
+        return xi.voidwatch.purveyorMessage.DISABLED
+    elseif status == 'requirements' then
+        return xi.voidwatch.purveyorMessage.REQUIREMENTS
+    elseif status == 'no_payment' then
+        return xi.voidwatch.purveyorMessage.NO_PAYMENT
+    elseif status == 'no_space' then
+        return xi.voidwatch.purveyorMessage.NO_SPACE
+    end
+
+    return xi.voidwatch.purveyorMessage.INVALID
+end
+
+function xi.voidwatch.onStarterPurveyorTrigger(player, npc, itemId, quantity)
+    if not itemId then
+        if not xi.voidwatch.isEnabled() then
+            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.DISABLED)
+        elseif not xi.voidwatch.hasBaseRequirements(player) then
+            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.REQUIREMENTS)
+        else
+            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.SHOP)
+        end
+
+        return
+    end
+
+    local purchased, status, stockItem = xi.voidwatch.purchasePurveyorItem(player, itemId, quantity)
+
+    if purchased then
+        local ID = zones[player:getZoneID()]
+        player:messageSpecial(ID.text.ITEM_OBTAINED, stockItem.id)
+    else
+        printPurveyorMessage(player, getPurveyorMessageForStatus(status))
+    end
 end
 
 function xi.voidwatch.isEnabled()

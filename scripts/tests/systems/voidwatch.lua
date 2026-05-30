@@ -848,4 +848,239 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
+    it('defines starter purveyor stock for Voidwatch cells, Voiddust, and phase displacers', function()
+        local expectedItems =
+        {
+            [xi.item.COBALT_CELL] = true,
+            [xi.item.RUBICUND_CELL] = true,
+            [xi.item.XANTHOUS_CELL] = true,
+            [xi.item.JADE_CELL] = true,
+            [xi.item.POUCH_OF_VOIDDUST] = true,
+            [xi.item.PHASE_DISPLACER] = true,
+        }
+
+        for _, stockItem in ipairs(xi.voidwatch.purveyorStock) do
+            assert(expectedItems[stockItem.id])
+            assert(stockItem.cost > 0)
+            assert(stockItem.currency == xi.voidwatch.currency.conquestPoints or stockItem.currency == xi.voidwatch.currency.gil)
+            expectedItems[stockItem.id] = nil
+        end
+
+        for itemId, _ in pairs(expectedItems) do
+            error(string.format('Missing purveyor stock item %u.', itemId))
+        end
+    end)
+
+    it('blocks starter purveyor purchases when disabled or requirements are missing', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+        }
+        local level = xi.voidwatch.minimumLevel
+        local player =
+        {
+            getMainLvl = function()
+                return level
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        local purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.COBALT_CELL)
+        assert(not purchased)
+        assert(status == 'disabled')
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        level = xi.voidwatch.minimumLevel - 1
+        purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.COBALT_CELL)
+        assert(not purchased)
+        assert(status == 'requirements')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('rejects invalid starter purveyor item selections before charging currency', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local charged = false
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
+            end,
+
+            getCP = function()
+                return 999999
+            end,
+
+            delCP = function()
+                charged = true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.CATS_EYE)
+
+        assert(not purchased)
+        assert(status == 'invalid')
+        assert(not charged)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('does not charge starter purveyor currency when payment or inventory space is insufficient', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local conquestPoints = xi.voidwatch.purveyor.conquestPointCost - 1
+        local charged = false
+        local freeSlots = 1
+        local addItemSucceeds = true
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
+            end,
+
+            getCP = function()
+                return conquestPoints
+            end,
+
+            delCP = function()
+                charged = true
+            end,
+
+            getFreeSlotsCount = function()
+                return freeSlots
+            end,
+
+            addItem = function()
+                return addItemSucceeds
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.COBALT_CELL)
+        assert(not purchased)
+        assert(status == 'no_payment')
+        assert(not charged)
+
+        conquestPoints = xi.voidwatch.purveyor.conquestPointCost
+        freeSlots = 0
+        purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.COBALT_CELL)
+        assert(not purchased)
+        assert(status == 'no_space')
+        assert(not charged)
+
+        freeSlots = 1
+        addItemSucceeds = false
+        purchased, status = xi.voidwatch.purchasePurveyorItem(player, xi.item.COBALT_CELL)
+        assert(not purchased)
+        assert(status == 'no_space')
+        assert(not charged)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('adds starter purveyor items and charges only after a successful purchase', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local initialConquestPoints = xi.voidwatch.purveyor.conquestPointCost * 3
+        local conquestPoints = initialConquestPoints
+        local addedItem = nil
+        local addedQuantity = nil
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
+            end,
+
+            getCP = function()
+                return conquestPoints
+            end,
+
+            delCP = function(_, amount)
+                conquestPoints = conquestPoints - amount
+            end,
+
+            getFreeSlotsCount = function()
+                return 1
+            end,
+
+            addItem = function(_, itemId, quantity)
+                addedItem = itemId
+                addedQuantity = quantity
+                return true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local purchased, status, stockItem = xi.voidwatch.purchasePurveyorItem(player, xi.item.JADE_CELL, 3)
+
+        assert(purchased)
+        assert(status == 'purchased')
+        assert(stockItem.id == xi.item.JADE_CELL)
+        assert(addedItem == xi.item.JADE_CELL)
+        assert(addedQuantity == 3)
+        assert(conquestPoints == initialConquestPoints - xi.voidwatch.purveyor.conquestPointCost * 3)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('sells phase displacers from starter purveyors for gil', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local initialGil = xi.voidwatch.purveyor.phaseDisplacerCost
+        local gil = initialGil
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
+            end,
+
+            getGil = function()
+                return gil
+            end,
+
+            delGil = function(_, amount)
+                gil = gil - amount
+            end,
+
+            getFreeSlotsCount = function()
+                return 1
+            end,
+
+            addItem = function(_, itemId, quantity)
+                assert(itemId == xi.item.PHASE_DISPLACER)
+                assert(quantity == 1)
+                return true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local purchased, status, stockItem = xi.voidwatch.purchasePurveyorItem(player, xi.item.PHASE_DISPLACER)
+
+        assert(purchased)
+        assert(status == 'purchased')
+        assert(stockItem.currency == xi.voidwatch.currency.gil)
+        assert(gil == initialGil - xi.voidwatch.purveyor.phaseDisplacerCost)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
 end)

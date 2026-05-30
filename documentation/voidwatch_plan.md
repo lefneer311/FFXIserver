@@ -52,11 +52,11 @@ Static/data support already present:
 Scripted support already present:
 
 - `scripts/globals/voidwatch/voidwatch.lua` is the active shared module location. Do not add a competing root-level `scripts/globals/voidwatch.lua` module unless the codebase is intentionally refactored.
-- The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, petrifacts, corundums, and route/tier/NM data.
+- The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, phase displacers, petrifacts, corundums, and route/tier/NM data.
 - The module has helpers for route lookup, maximum route tier, player abyssite tier, tier initiation checks, per-NM completion variables, tier-complete checks, abyssite-upgrade eligibility, starter route detection, and starter abyssite lookup/granting.
 - The module has voidstone helpers for carried key-item count, next key item, capacity, timer interval, stored stock, 20-hour accrual, periapt capacity/timer modifiers, withdrawing stored stones to key items, and one-pouch Voiddust trades.
-- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants. Three starter-city `Atmacite_Refiner` scripts share the module for abyssite examination/upgrades and limited starter-route teleport validation/cost handling. Full atmacite services are not yet implemented.
-- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, and starter-route refiner teleport validation/cost handling.
+- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants. Three starter-city `Atmacite_Refiner` scripts share the module for abyssite examination/upgrades and limited starter-route teleport validation/cost handling. Three starter-city `Voidwatch_Purveyor` scripts share the module for limited cell, Voiddust, and phase-displacer purchases. Full atmacite services are not yet implemented.
+- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, starter-route refiner teleport validation/cost handling, and starter-purveyor stock/purchase validation.
 
 ## Completed implementation slices
 
@@ -70,7 +70,7 @@ Completed enough to support implementation PRs:
 4. Helpers for requirements, current abyssite tier, route/tier lookup, completed NM flags, and upgrade eligibility.
 5. Unit coverage for core table integrity and toggle behavior.
 
-Remaining Phase 1-style additions should be folded into implementation PRs only when consumed by real scripts, such as rift-to-NM IDs, pyxis state, reward/alignment structures, temporary-item helpers, phase displacer constants, and additional retail service constants.
+Remaining Phase 1-style additions should be folded into implementation PRs only when consumed by real scripts, such as rift-to-NM IDs, pyxis state, reward/alignment structures, temporary-item helpers, and additional retail service constants.
 
 ### Phase 2A: Starter-city officers and initial abyssites (complete)
 
@@ -109,8 +109,19 @@ Completed:
 1. The shared Voidwatch module defines explicit starter-route teleport destinations for San d'Oria, Bastok, and Windurst Voidwatch operation zones.
 2. Destination availability is validated from the player's current starter-route abyssite tier and the standard `ENABLE_VOIDWATCH`, level 75+, and Adventurer's Certificate requirements.
 3. Refiner teleports charge cruor only after destination validation succeeds and report insufficient-cruor failures without moving the player.
-4. The initial teleport slice remains intentionally narrow and does not add purveyor shops, atmacite equip/upgrade menus, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
+4. The initial teleport slice remains intentionally narrow and does not add atmacite equip/upgrade menus, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
 5. Tests cover destination table integrity, tier-based filtering, disabled/missing-requirement behavior, no-abyssite behavior, tier validation, insufficient-cruor handling, and successful cruor charging/teleport movement.
+
+### Phase 3C: Starter-city Voidwatch Purveyor shops (complete for starter routes)
+
+Completed:
+
+1. Southern San d'Oria, Bastok Markets, and Windurst Walls purveyor scripts call shared Voidwatch behavior.
+2. The shared module defines starter-purveyor stock for the four alignment cells, one-pouch Voiddust purchases, and phase displacers.
+3. Purveyor access is guarded by `ENABLE_VOIDWATCH`, level 75+, and Adventurer's Certificate requirements.
+4. Purchases validate the selected item, payment, and free inventory space before charging conquest points or gil.
+5. This slice remains intentionally narrow and does not add atmacite equip/upgrade menus, Planar Rift spawning, pyxides, alignment, rewards, pulse-cell exchanges, or quest cutscenes.
+6. Tests cover purveyor table integrity, disabled/missing-requirement behavior, invalid item selection, payment failures, inventory failures, and successful conquest-point/gil purchases.
 
 ## Accuracy and completeness gaps
 
@@ -122,10 +133,9 @@ Completed:
 
 ### NPCs and object interaction
 
-- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, and the three starter-city `Atmacite_Refiner` scripts.
-- Missing: scripts for non-starter officers, non-starter Atmacite Refiners, Voidwatch Purveyors, Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
+- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, the three starter-city `Atmacite_Refiner` scripts, and the three starter-city `Voidwatch_Purveyor` scripts.
+- Missing: scripts for non-starter officers, non-starter Atmacite Refiners, non-starter Voidwatch Purveyors, Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
 - Missing: refiner behavior for non-starter abyssite upgrade checks, atmacite equip/upgrade, and full retail teleport menus.
-- Missing: purveyor shops for phase displacers/ascent items and other retail services.
 - Missing: retail event/cutscene integration for officers and storyline NPCs. The current starter officer implementation is functional/system-message based, not a retail-accurate event flow.
 
 ### Progression and quests
@@ -178,21 +188,17 @@ Completed:
 
 ## Recommended next PR
 
-The next PR should move to **Phase 3C: Voidwatch Purveyor shops for phase displacers and ascent items**. Starter-route refiner examination and limited teleport validation are now present, while Planar Rift battles and rewards remain a larger system that will benefit from having the basic officer/refiner/purveyor service layer in place first.
+The next PR should move to **Phase 4A: one starter-route Planar Rift vertical slice**. Starter-route officer, refiner, teleport, and purveyor service layers are now present, while the first battle slice can remain intentionally narrow and defer pyxis/reward complexity.
 
 Recommended scope:
 
-1. Add starter-city Voidwatch Purveyor scripts in Southern San d'Oria, Bastok Markets, and Windurst Walls.
-2. Keep purveyor services limited to phase displacers and ascent items/cells needed by early Voidwatch flows.
-3. Continue guarding purveyor triggers and trades on `xi.voidwatch.isEnabled()` and base requirements.
-4. Use existing item constants where present and add narrowly scoped constants only where the enum lacks required Voidwatch purveyor items.
-5. Charge the appropriate currency or gil only after item and inventory validation succeeds, and fail cleanly when payment or inventory space is insufficient.
-6. Keep the PR intentionally narrow: do not add atmacite equip/upgrade menus, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
-7. Add focused tests for purveyor table integrity, disabled/missing-requirement behavior, item selection validation, payment failures, inventory failures, and successful purchases.
-
-After Phase 3C, the next practical slice is:
-
-1. **Phase 4A:** add a single starter-route Planar Rift vertical slice that can validate initiation, spawn one NM, set completion credit, and leave pyxis/reward work stubbed or deliberately minimal.
+1. Add one starter-route Planar Rift script for a single tier-1 operation.
+2. Validate `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, current-route abyssite tier, and voidstone availability before initiation.
+3. Spawn the mapped Voidwatch NM and associate minimal battle state with the rift/NM/initiator.
+4. On win, set the existing per-NM completion variable for the initiator so the current Atmacite Refiner upgrade path can observe real battle credit.
+5. Keep phase-displacer and ascent-cell handling minimal or stubbed unless the selected rift needs a small, tested hook.
+6. Keep the PR intentionally narrow: do not add full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
+7. Add focused tests for rift table integrity, disabled/missing-requirement behavior, tier validation, voidstone spending/failure cases, NM spawn state, and completion-credit setting.
 
 ## Remaining completion plan
 
@@ -203,7 +209,7 @@ After Phase 3C, the next practical slice is:
    - atmacite equip slots unlocked by emergence periapts,
    - atmacite cruor upgrades,
    - Voidwatch teleportation for accessible zones.
-2. Implement Voidwatch Purveyor shops and services, including phase displacers and ascent items.
+2. Extend Voidwatch Purveyor shops and services beyond starter cities, including allied-notes/imperial-standing variants and pulse-cell exchanges.
 3. Add teleport cost handling and destination validation by time period and stratum tier.
 
 ### Phase 4: Planar Rifts, battle lifecycle, and pyxides
@@ -260,8 +266,8 @@ ENABLE_VOIDWATCH = 1, -- set to 0 to disable
 
 Current expected behavior:
 
-- `ENABLE_VOIDWATCH = 1`: implemented Voidwatch scripts are enabled. Today this means the shared module, starter-city officers, starter abyssite grants, basic stored voidstone accrual/withdrawal, one-pouch Voiddust trades, starter-city refiner abyssite examination/upgrades, and limited starter-route refiner teleport validation/cost handling. Rifts, pyxides, purveyors, quests, rewards, full atmacite services, full teleport menus, and Provenance access are not yet implemented.
-- `ENABLE_VOIDWATCH = 0`: implemented Voidwatch scripts return disabled-content messages and do not award starter abyssites, issue stones, accept Voiddust, or progress current Voidwatch state.
+- `ENABLE_VOIDWATCH = 1`: implemented Voidwatch scripts are enabled. Today this means the shared module, starter-city officers, starter abyssite grants, basic stored voidstone accrual/withdrawal, one-pouch Voiddust trades, starter-city refiner abyssite examination/upgrades, limited starter-route refiner teleport validation/cost handling, and starter-city purveyor purchases for cells, Voiddust, and phase displacers. Rifts, pyxides, quests, rewards, full atmacite services, full teleport menus, non-starter purveyor variants, pulse-cell exchanges, and Provenance access are not yet implemented.
+- `ENABLE_VOIDWATCH = 0`: implemented Voidwatch scripts return disabled-content messages and do not award starter abyssites, issue stones, accept Voiddust, sell purveyor supplies, teleport players, or progress current Voidwatch state.
 - `RESTRICT_CONTENT = 1` plus `ENABLE_VOIDWATCH = 0`: content-tagged `VOIDWATCH` NPC/object rows are not loaded, hiding Planar Rifts, Riftworn Pyxides, officers, refiners, purveyors, and related static content.
 - `RESTRICT_CONTENT = 0` plus `ENABLE_VOIDWATCH = 0`: static NPC/object rows may still appear, so all scripts must still check `ENABLE_VOIDWATCH` at runtime.
 
