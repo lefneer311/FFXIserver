@@ -341,3 +341,23 @@ The implementation is ready when:
 - Tests cover campaign windows, rollover, point grants, tier packing, and purchase validation.
 - Client verification confirms the visible retail-like menu and purchase behavior.
 - Any procedural generation is offline, deterministic, reviewed, and clearly marked as custom unless it exactly matches a source-backed retail month.
+
+## Implemented Runtime Foundation
+
+The login campaign runtime now follows the registry-first path described above:
+
+- `scripts/events/login_campaign_registry.lua` owns campaign IDs, display dates, JST earn windows, JST redeem windows, and the monthly reward file attached to each campaign.
+- `scripts/events/login_campaigns/YYYY_MM.lua` files hold explicit reviewed reward tables with source metadata comments.
+- `scripts/events/login_campaign_data.lua` remains as a compatibility shim for older requires, but new campaign data should not be added there.
+- `scripts/events/login_campaign_rewards.lua` centralizes reward table validation and Greeter Moogle tier packing helpers.
+- `tools/validate_login_campaigns.py` validates registry uniqueness, JST window ordering, reward file source metadata, allowed tier keys, positive prices, 1-20 item slots per tier, named `xi.item` constants, and duplicate item IDs within a tier.
+
+### Adding the Next Monthly Campaign
+
+1. Create `scripts/events/login_campaigns/YYYY_MM.lua` by copying the previous month or another reviewed monthly file.
+2. Update the source metadata comments at the top of the file. Mark custom or extrapolated data clearly if the file is not source-backed retail data.
+3. Prefer `xi.item` constants for every visible reward. Add missing constants to `scripts/enum/item.lua` only after checking repository data.
+4. Keep top-level reward tier keys limited to `1`, `5`, `9`, `13`, `17`, `21`, `25`, and `29`.
+5. Keep each visible tier to 1-20 items so the Greeter Moogle client packing remains valid.
+6. Add the campaign entry to `scripts/events/login_campaign_registry.lua` with a unique `YYYYMM` campaign ID and JST `earnStart`, `earnEnd`, and `redeemEnd` fields.
+7. Run `python3 tools/validate_login_campaigns.py` before testing in game.
