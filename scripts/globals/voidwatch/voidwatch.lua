@@ -11,6 +11,23 @@ xi.voidwatch = xi.voidwatch or {}
 xi.voidwatch.varPrefix = '[Voidwatch]'
 xi.voidwatch.minimumLevel = 75
 
+xi.voidwatch.currency =
+{
+    voidstones = 'voidstones',
+}
+
+xi.voidwatch.var =
+{
+    nextVoidstone = xi.voidwatch.varPrefix .. 'NextVoidstone',
+}
+
+xi.voidwatch.voidstone =
+{
+    baseCapacity = 3,
+    baseInterval = 20 * 60 * 60,
+    explorationReduction = 4 * 60 * 60,
+}
+
 xi.voidwatch.stratum =
 {
     CRIMSON  = 1,
@@ -442,6 +459,215 @@ xi.voidwatch.routes =
     },
 }
 
+local function printStarterOfficerMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+function xi.voidwatch.getHeldVoidstoneCount(player)
+    if not player then
+        return 0
+    end
+
+    local count = 0
+
+    for _, keyItem in ipairs(xi.voidwatch.keyItems.voidstones) do
+        if player:hasKeyItem(keyItem) then
+            count = count + 1
+        end
+    end
+
+    return count
+end
+
+function xi.voidwatch.getNextVoidstoneKeyItem(player)
+    if not player then
+        return nil
+    end
+
+    for _, keyItem in ipairs(xi.voidwatch.keyItems.voidstones) do
+        if not player:hasKeyItem(keyItem) then
+            return keyItem
+        end
+    end
+
+    return nil
+end
+
+function xi.voidwatch.getVoidstoneCapacity(player)
+    if not player then
+        return xi.voidwatch.voidstone.baseCapacity
+    end
+
+    local capacity = xi.voidwatch.voidstone.baseCapacity
+
+    for _, keyItem in ipairs(xi.voidwatch.keyItems.periapts.frontiers) do
+        if player:hasKeyItem(keyItem) then
+            capacity = capacity + 1
+        end
+    end
+
+    return math.min(capacity, #xi.voidwatch.keyItems.voidstones)
+end
+
+function xi.voidwatch.getVoidstoneInterval(player)
+    local interval = xi.voidwatch.voidstone.baseInterval
+
+    if player then
+        for _, keyItem in ipairs(xi.voidwatch.keyItems.periapts.exploration) do
+            if player:hasKeyItem(keyItem) then
+                interval = interval - xi.voidwatch.voidstone.explorationReduction
+            end
+        end
+    end
+
+    return math.max(interval, xi.voidwatch.voidstone.explorationReduction)
+end
+
+function xi.voidwatch.getVoidstoneStock(player)
+    if not player then
+        return 0
+    end
+
+    return player:getCurrency(xi.voidwatch.currency.voidstones)
+end
+
+function xi.voidwatch.setVoidstoneStock(player, stock)
+    if player then
+        player:setCurrency(xi.voidwatch.currency.voidstones, math.max(stock, 0))
+    end
+end
+
+function xi.voidwatch.getTotalVoidstones(player)
+    return xi.voidwatch.getHeldVoidstoneCount(player) + xi.voidwatch.getVoidstoneStock(player)
+end
+
+function xi.voidwatch.canReceiveVoidstoneKeyItem(player)
+    return xi.voidwatch.getHeldVoidstoneCount(player) < xi.voidwatch.getVoidstoneCapacity(player) and
+        xi.voidwatch.getNextVoidstoneKeyItem(player) ~= nil
+end
+
+function xi.voidwatch.addVoidstoneKeyItem(player)
+    if not xi.voidwatch.canReceiveVoidstoneKeyItem(player) then
+        return false, nil
+    end
+
+    local keyItem = xi.voidwatch.getNextVoidstoneKeyItem(player)
+    player:addKeyItem(keyItem)
+
+    return true, keyItem
+end
+
+function xi.voidwatch.syncVoidstoneStock(player, now)
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return 0, xi.voidwatch.getVoidstoneStock(player)
+    end
+
+    local currentTime = now or GetSystemTime()
+    local capacity = xi.voidwatch.getVoidstoneCapacity(player)
+    local heldCount = xi.voidwatch.getHeldVoidstoneCount(player)
+    local stock = xi.voidwatch.getVoidstoneStock(player)
+    local total = heldCount + stock
+    local nextTime = player:getCharVar(xi.voidwatch.var.nextVoidstone)
+    local interval = xi.voidwatch.getVoidstoneInterval(player)
+
+    if total >= capacity then
+        if nextTime ~= 0 then
+            player:setCharVar(xi.voidwatch.var.nextVoidstone, 0)
+        end
+
+        return 0, stock
+    end
+
+    if nextTime <= 0 then
+        player:setCharVar(xi.voidwatch.var.nextVoidstone, currentTime + interval)
+        return 0, stock
+    end
+
+    if currentTime < nextTime then
+        return 0, stock
+    end
+
+    local earned = math.floor((currentTime - nextTime) / interval) + 1
+    earned = math.min(earned, capacity - total)
+
+    if earned <= 0 then
+        return 0, stock
+    end
+
+    stock = stock + earned
+    xi.voidwatch.setVoidstoneStock(player, stock)
+
+    if heldCount + stock >= capacity then
+        player:setCharVar(xi.voidwatch.var.nextVoidstone, 0)
+    else
+        player:setCharVar(xi.voidwatch.var.nextVoidstone, nextTime + earned * interval)
+    end
+
+    return earned, stock
+end
+
+function xi.voidwatch.withdrawVoidstones(player)
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return 0
+    end
+
+    local issued = 0
+    local stock = xi.voidwatch.getVoidstoneStock(player)
+
+    while stock > 0 and xi.voidwatch.canReceiveVoidstoneKeyItem(player) do
+        local added = xi.voidwatch.addVoidstoneKeyItem(player)
+
+        if not added then
+            break
+        end
+
+        issued = issued + 1
+        stock = stock - 1
+    end
+
+    xi.voidwatch.setVoidstoneStock(player, stock)
+
+    return issued
+end
+
+local function isSingleVoiddustTrade(trade)
+    return trade and
+        trade:getSlotCount() == 1 and
+        trade:getItemId(0) == xi.voidwatch.items.voiddust and
+        trade:getItemQty(xi.voidwatch.items.voiddust) == 1
+end
+
+function xi.voidwatch.onOfficerTrade(player, npc, trade)
+    if not xi.voidwatch.isEnabled() then
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.DISABLED)
+        return
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.REQUIREMENTS)
+        return
+    end
+
+    if not isSingleVoiddustTrade(trade) then
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.TRADE)
+        return
+    end
+
+    if not xi.voidwatch.canReceiveVoidstoneKeyItem(player) then
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.FULL)
+        return
+    end
+
+    trade:confirmItem(xi.voidwatch.items.voiddust, 1)
+    local _, keyItem = xi.voidwatch.addVoidstoneKeyItem(player)
+    player:confirmTrade()
+
+    local ID = zones[player:getZoneID()]
+    player:messageSpecial(ID.text.KEYITEM_OBTAINED, keyItem)
+end
+
 function xi.voidwatch.isEnabled()
     return xi.settings and xi.settings.main and xi.settings.main.ENABLE_VOIDWATCH == 1
 end
@@ -557,6 +783,11 @@ xi.voidwatch.starterOfficerMessage =
     REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to begin Voidwatch operations.',
     ALREADY      = 'You have already received the stratum abyssite issued by this officer.',
     INVALID      = 'This officer is not ready to issue Voidwatch operations.',
+    NO_STONES    = 'No voidstones are currently available.',
+    STONES       = 'Voidstones have been issued from your stock.',
+    VOIDSTONE    = 'A voidstone has been issued.',
+    FULL         = 'You cannot carry any more voidstones.',
+    TRADE        = 'Trade one pouch of Voiddust to receive a voidstone.',
 }
 
 xi.voidwatch.starterRoutes =
@@ -605,30 +836,31 @@ function xi.voidwatch.grantStarterAbyssite(player, routeId)
     return true, 'granted', keyItem
 end
 
-local function printStarterOfficerMessage(player, message)
-    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
-
-    player:printToPlayer(message, channel)
-end
-
 function xi.voidwatch.onStarterOfficerTrigger(player, npc, routeId)
     local granted, status, keyItem = xi.voidwatch.grantStarterAbyssite(player, routeId)
 
     if granted then
         local ID = zones[player:getZoneID()]
         player:messageSpecial(ID.text.KEYITEM_OBTAINED, keyItem)
+    elseif status ~= 'already' then
+        local message = xi.voidwatch.starterOfficerMessage.INVALID
+
+        if status == 'disabled' then
+            message = xi.voidwatch.starterOfficerMessage.DISABLED
+        elseif status == 'requirements' then
+            message = xi.voidwatch.starterOfficerMessage.REQUIREMENTS
+        end
+
+        printStarterOfficerMessage(player, message)
         return
     end
 
-    local message = xi.voidwatch.starterOfficerMessage.INVALID
+    xi.voidwatch.syncVoidstoneStock(player)
+    local issued = xi.voidwatch.withdrawVoidstones(player)
 
-    if status == 'disabled' then
-        message = xi.voidwatch.starterOfficerMessage.DISABLED
-    elseif status == 'requirements' then
-        message = xi.voidwatch.starterOfficerMessage.REQUIREMENTS
+    if issued > 0 then
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.STONES)
     elseif status == 'already' then
-        message = xi.voidwatch.starterOfficerMessage.ALREADY
+        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.NO_STONES)
     end
-
-    printStarterOfficerMessage(player, message)
 end
