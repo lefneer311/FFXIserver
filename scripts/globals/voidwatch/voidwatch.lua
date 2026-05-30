@@ -22,6 +22,8 @@ xi.voidwatch.currency =
 xi.voidwatch.var =
 {
     nextVoidstone = xi.voidwatch.varPrefix .. 'NextVoidstone',
+    riftInitiator = xi.voidwatch.varPrefix .. 'RiftInitiator',
+    riftNpc       = xi.voidwatch.varPrefix .. 'RiftNpc',
 }
 
 xi.voidwatch.voidstone =
@@ -484,6 +486,13 @@ xi.voidwatch.purveyorStock =
     { id = xi.voidwatch.items.phaseDisplacer, cost = xi.voidwatch.purveyor.phaseDisplacerCost, currency = xi.voidwatch.currency.gil            },
 }
 
+xi.voidwatch.starterRifts =
+{
+    [17191577] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191335 },
+    [17191578] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191336 },
+    [17191579] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191337 },
+}
+
 local function printStarterOfficerMessage(player, message)
     local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
 
@@ -580,6 +589,32 @@ function xi.voidwatch.addVoidstoneKeyItem(player)
 
     local keyItem = xi.voidwatch.getNextVoidstoneKeyItem(player)
     player:addKeyItem(keyItem)
+
+    return true, keyItem
+end
+
+function xi.voidwatch.getVoidstoneKeyItemToSpend(player)
+    if not player then
+        return nil
+    end
+
+    for _, keyItem in ipairs(xi.voidwatch.keyItems.voidstones) do
+        if player:hasKeyItem(keyItem) then
+            return keyItem
+        end
+    end
+
+    return nil
+end
+
+function xi.voidwatch.spendVoidstone(player)
+    local keyItem = xi.voidwatch.getVoidstoneKeyItemToSpend(player)
+
+    if not keyItem then
+        return false, nil
+    end
+
+    player:delKeyItem(keyItem)
 
     return true, keyItem
 end
@@ -691,6 +726,148 @@ function xi.voidwatch.onOfficerTrade(player, npc, trade)
 
     local ID = zones[player:getZoneID()]
     player:messageSpecial(ID.text.KEYITEM_OBTAINED, keyItem)
+end
+
+xi.voidwatch.riftMessage =
+{
+    DISABLED     = 'Voidwatch is currently disabled.',
+    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to initiate this Voidwatch operation.',
+    ABYSSITE     = 'Your stratum abyssite is not yet strong enough to initiate this operation.',
+    VOIDSTONE    = 'A voidstone is required to initiate this Voidwatch operation.',
+    BUSY         = 'A Voidwatch notorious monster is already present at this rift.',
+    INITIATED    = 'A Voidwatch notorious monster materializes from the rift.',
+    INVALID      = 'This planar rift is not ready for Voidwatch operations.',
+}
+
+local function printRiftMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+local function getRiftMessageForStatus(status)
+    if status == 'disabled' then
+        return xi.voidwatch.riftMessage.DISABLED
+    elseif status == 'requirements' then
+        return xi.voidwatch.riftMessage.REQUIREMENTS
+    elseif status == 'abyssite' then
+        return xi.voidwatch.riftMessage.ABYSSITE
+    elseif status == 'voidstone' then
+        return xi.voidwatch.riftMessage.VOIDSTONE
+    elseif status == 'busy' then
+        return xi.voidwatch.riftMessage.BUSY
+    end
+
+    return xi.voidwatch.riftMessage.INVALID
+end
+
+function xi.voidwatch.getStarterRift(riftNpcId)
+    return xi.voidwatch.starterRifts[riftNpcId]
+end
+
+function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil
+    end
+
+    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+
+    if not rift then
+        return false, 'invalid', nil
+    end
+
+    if not xi.voidwatch.canInitiateTier(player, rift.route, rift.tier) then
+        return false, 'abyssite', rift
+    end
+
+    if not xi.voidwatch.getVoidstoneKeyItemToSpend(player) then
+        return false, 'voidstone', rift
+    end
+
+    local mob = GetMobByID and GetMobByID(rift.mob) or nil
+
+    if mob and mob:isSpawned() then
+        return false, 'busy', rift
+    end
+
+    return true, 'available', rift
+end
+
+function xi.voidwatch.initiateStarterRift(player, riftNpcId)
+    local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
+
+    if not canInitiate then
+        return false, status, rift, nil
+    end
+
+    local spent, keyItem = xi.voidwatch.spendVoidstone(player)
+
+    if not spent then
+        return false, 'voidstone', rift, nil
+    end
+
+    local mob = SpawnMob(rift.mob)
+
+    if not mob then
+        return false, 'invalid', rift, keyItem
+    end
+
+    mob:setLocalVar(xi.voidwatch.var.riftInitiator, player:getID())
+    mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
+    mob:updateClaim(player)
+
+    return true, 'initiated', rift, keyItem
+end
+
+function xi.voidwatch.onStarterRiftTrigger(player, npc)
+    local initiated, status = xi.voidwatch.initiateStarterRift(player, npc:getID())
+
+    if initiated then
+        printRiftMessage(player, xi.voidwatch.riftMessage.INITIATED)
+    else
+        printRiftMessage(player, getRiftMessageForStatus(status))
+    end
+end
+
+function xi.voidwatch.onNMDeath(mob, player)
+    if not mob then
+        return false, 'invalid', nil
+    end
+
+    local riftNpcId = mob:getLocalVar(xi.voidwatch.var.riftNpc)
+    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+
+    if not rift then
+        return false, 'invalid', nil
+    end
+
+    local initiatorId = mob:getLocalVar(xi.voidwatch.var.riftInitiator)
+    local creditPlayer = nil
+
+    if player and player:getID() == initiatorId then
+        creditPlayer = player
+    elseif GetPlayerByID then
+        creditPlayer = GetPlayerByID(initiatorId)
+    end
+
+    if not creditPlayer then
+        return false, 'no_initiator', rift
+    end
+
+    xi.voidwatch.setCompletedNM(creditPlayer, rift.route, rift.nm)
+
+    return true, 'completed', rift
+end
+
+function xi.voidwatch.clearNMState(mob)
+    if mob then
+        mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
+        mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
+    end
 end
 
 xi.voidwatch.purveyorMessage =

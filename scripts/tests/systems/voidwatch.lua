@@ -1083,4 +1083,194 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
+    it('defines a starter San d\'Oria rift slice for Sarimanok', function()
+        local expectedMobIds =
+        {
+            [17191335] = true,
+            [17191336] = true,
+            [17191337] = true,
+        }
+
+        for riftNpcId, rift in pairs(xi.voidwatch.starterRifts) do
+            assert(riftNpcId >= 17191577)
+            assert(rift.route == xi.voidwatch.routeName.SANDORIA)
+            assert(rift.tier == 1)
+            assert(rift.nm == 'Sarimanok')
+            assert(expectedMobIds[rift.mob])
+
+            local routeId, tier, op = xi.voidwatch.findOpByNM(rift.nm)
+            assert(routeId == rift.route)
+            assert(tier == rift.tier)
+            assert(op.zone == xi.zone.EAST_RONFAURE)
+
+            expectedMobIds[rift.mob] = nil
+        end
+
+        for mobId, _ in pairs(expectedMobIds) do
+            error(string.format('Missing starter rift mob ID %u.', mobId))
+        end
+    end)
+
+    it('validates starter rift disabled, requirement, abyssite, and voidstone failures', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.VOIDSTONE1] = true,
+        }
+        local level = xi.voidwatch.minimumLevel
+        local player =
+        {
+            getMainLvl = function()
+                return level
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        GetMobByID = function()
+            return
+            {
+                isSpawned = function()
+                    return false
+                end,
+            }
+        end
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        local canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
+        assert(not canInitiate)
+        assert(status == 'disabled')
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        level = xi.voidwatch.minimumLevel - 1
+        canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
+        assert(not canInitiate)
+        assert(status == 'requirements')
+
+        level = xi.voidwatch.minimumLevel
+        keyItems[xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = nil
+        canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
+        assert(not canInitiate)
+        assert(status == 'abyssite')
+
+        keyItems[xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true
+        keyItems[xi.keyItem.VOIDSTONE1] = nil
+        canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
+        assert(not canInitiate)
+        assert(status == 'voidstone')
+
+        GetMobByID = originalGetMobByID
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('spends a voidstone and records starter rift NM spawn state', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local originalSpawnMob = SpawnMob
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.VOIDSTONE1] = true,
+        }
+        local mobLocalVars = {}
+        local claimedBy = nil
+        local player =
+        {
+            getID = function()
+                return 1001
+            end,
+
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            delKeyItem = function(_, keyItem)
+                keyItems[keyItem] = nil
+            end,
+        }
+
+        GetMobByID = function(mobId)
+            assert(mobId == 17191335)
+            return
+            {
+                isSpawned = function()
+                    return false
+                end,
+            }
+        end
+
+        SpawnMob = function(mobId)
+            assert(mobId == 17191335)
+            return
+            {
+                setLocalVar = function(_, name, value)
+                    mobLocalVars[name] = value
+                end,
+
+                updateClaim = function(_, claimant)
+                    claimedBy = claimant
+                end,
+            }
+        end
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local initiated, status, rift, keyItem = xi.voidwatch.initiateStarterRift(player, 17191577)
+
+        assert(initiated)
+        assert(status == 'initiated')
+        assert(rift.nm == 'Sarimanok')
+        assert(keyItem == xi.keyItem.VOIDSTONE1)
+        assert(not keyItems[xi.keyItem.VOIDSTONE1])
+        assert(mobLocalVars[xi.voidwatch.var.riftInitiator] == 1001)
+        assert(mobLocalVars[xi.voidwatch.var.riftNpc] == 17191577)
+        assert(claimedBy == player)
+
+        SpawnMob = originalSpawnMob
+        GetMobByID = originalGetMobByID
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('marks the initiator complete when a starter rift NM dies', function()
+        local charVars = {}
+        local player =
+        {
+            getID = function()
+                return 1001
+            end,
+
+            setCharVar = function(_, name, value)
+                charVars[name] = value
+            end,
+        }
+        local mob =
+        {
+            getLocalVar = function(_, name)
+                if name == xi.voidwatch.var.riftInitiator then
+                    return 1001
+                elseif name == xi.voidwatch.var.riftNpc then
+                    return 17191577
+                end
+
+                return 0
+            end,
+        }
+
+        local completed, status, rift = xi.voidwatch.onNMDeath(mob, player)
+
+        assert(completed)
+        assert(status == 'completed')
+        assert(rift.nm == 'Sarimanok')
+        assert(charVars[xi.voidwatch.getCompletionVar(xi.voidwatch.routeName.SANDORIA, 'Sarimanok')] == 1)
+    end)
+
 end)
