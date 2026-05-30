@@ -611,4 +611,241 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
+    it('defines starter refiner teleport destinations for starter route tiers', function()
+        local destinationIds = {}
+
+        for _, destination in ipairs(xi.voidwatch.starterTeleportDestinations) do
+            assert(destination.id ~= nil)
+            assert(destinationIds[destination.id] == nil)
+            destinationIds[destination.id] = true
+
+            assert(xi.voidwatch.isStarterRoute(destination.route))
+            assert(destination.tier > 0)
+            assert(destination.tier <= xi.voidwatch.getRouteMaxTier(destination.route))
+            assert(destination.zone ~= nil)
+            assert(xi.voidwatch.getStarterTeleportDestination(destination.id) == destination)
+        end
+
+        assert(destinationIds.sandoria_east_ronfaure)
+        assert(destinationIds.bastok_north_gustaberg)
+        assert(destinationIds.windurst_west_sarutabaruta)
+    end)
+
+    it('filters starter refiner teleport destinations by current abyssite tier', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE_II] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local destinations = xi.voidwatch.getStarterTeleportDestinations(player)
+        local destinationIds = {}
+
+        for _, destination in ipairs(destinations) do
+            destinationIds[destination.id] = true
+        end
+
+        assert(destinationIds.sandoria_east_ronfaure)
+        assert(destinationIds.sandoria_east_ronfaure_s)
+        assert(destinationIds.sandoria_ordelles_caves)
+        assert(not destinationIds.sandoria_jugner_forest)
+        assert(not destinationIds.bastok_north_gustaberg)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('rejects starter refiner teleport destinations when disabled or requirements are missing', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true,
+        }
+        local level = xi.voidwatch.minimumLevel
+        local player =
+        {
+            getMainLvl = function()
+                return level
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        local canUse, status = xi.voidwatch.canUseStarterTeleportDestination(player, 'bastok_north_gustaberg')
+        assert(not canUse)
+        assert(status == 'disabled')
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        level = xi.voidwatch.minimumLevel - 1
+        canUse, status = xi.voidwatch.canUseStarterTeleportDestination(player, 'bastok_north_gustaberg')
+        assert(not canUse)
+        assert(status == 'requirements')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('reports no starter refiner teleport access without a starter abyssite', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local destinations = xi.voidwatch.getStarterTeleportDestinations(player)
+        local canUse, status = xi.voidwatch.canUseStarterTeleportDestination(player, 'windurst_west_sarutabaruta')
+
+        assert(#destinations == 0)
+        assert(not canUse)
+        assert(status == 'no_teleport')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('blocks starter refiner teleport destinations above the current abyssite tier', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.JADE_STRATUM_ABYSSITE] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local canUse, status = xi.voidwatch.canUseStarterTeleportDestination(player, 'windurst_shakhrami')
+
+        assert(not canUse)
+        assert(status == 'incomplete')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('does not charge cruor or move the player when starter refiner teleport cruor is insufficient', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true,
+        }
+        local cruor = xi.voidwatch.teleport.starterCost - 1
+        local moved = false
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            getCurrency = function(_, currency)
+                assert(currency == xi.voidwatch.currency.cruor)
+                return cruor
+            end,
+
+            delCurrency = function()
+                error('Cruor should not be charged for a failed teleport.')
+            end,
+
+            setPos = function()
+                moved = true
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local teleported, status = xi.voidwatch.teleportToStarterDestination(player, 'bastok_north_gustaberg')
+
+        assert(not teleported)
+        assert(status == 'no_cruor')
+        assert(cruor == xi.voidwatch.teleport.starterCost - 1)
+        assert(not moved)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('charges cruor and moves the player for valid starter refiner teleports', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true,
+        }
+        local initialCruor = xi.voidwatch.teleport.starterCost + 500
+        local cruor = initialCruor
+        local movedTo = nil
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            getCurrency = function(_, currency)
+                assert(currency == xi.voidwatch.currency.cruor)
+                return cruor
+            end,
+
+            delCurrency = function(_, currency, amount)
+                assert(currency == xi.voidwatch.currency.cruor)
+                cruor = cruor - amount
+            end,
+
+            setPos = function(_, x, y, z, rot, zone)
+                movedTo = { x = x, y = y, z = z, rot = rot, zone = zone }
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local teleported, status, destination = xi.voidwatch.teleportToStarterDestination(player, 'bastok_north_gustaberg')
+
+        assert(teleported)
+        assert(status == 'teleported')
+        assert(cruor == initialCruor - xi.voidwatch.teleport.starterCost)
+        assert(movedTo.x == destination.x)
+        assert(movedTo.y == destination.y)
+        assert(movedTo.z == destination.z)
+        assert(movedTo.rot == destination.rot)
+        assert(movedTo.zone == xi.zone.NORTH_GUSTABERG)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
 end)

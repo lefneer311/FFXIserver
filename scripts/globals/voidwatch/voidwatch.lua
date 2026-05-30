@@ -13,6 +13,7 @@ xi.voidwatch.minimumLevel = 75
 
 xi.voidwatch.currency =
 {
+    cruor      = 'cruor',
     voidstones = 'voidstones',
 }
 
@@ -26,6 +27,11 @@ xi.voidwatch.voidstone =
     baseCapacity = 3,
     baseInterval = 20 * 60 * 60,
     explorationReduction = 4 * 60 * 60,
+}
+
+xi.voidwatch.teleport =
+{
+    starterCost = 1000,
 }
 
 xi.voidwatch.stratum =
@@ -840,6 +846,30 @@ xi.voidwatch.starterRefinerRoutes =
     xi.voidwatch.routeName.WINDURST,
 }
 
+xi.voidwatch.starterTeleportDestinations =
+{
+    { id = 'sandoria_east_ronfaure'      , route = routeName.SANDORIA, tier = 1, zone = xi.zone.EAST_RONFAURE           , x =  288.000, y = -61.000, z =  368.000, rot = 128 },
+    { id = 'sandoria_east_ronfaure_s'    , route = routeName.SANDORIA, tier = 1, zone = xi.zone.EAST_RONFAURE_S         , x =  288.000, y = -61.000, z =  368.000, rot = 128 },
+    { id = 'sandoria_ordelles_caves'     , route = routeName.SANDORIA, tier = 2, zone = xi.zone.ORDELLES_CAVES          , x = -200.000, y =  32.000, z =   -2.000, rot =   0 },
+    { id = 'sandoria_jugner_forest'      , route = routeName.SANDORIA, tier = 3, zone = xi.zone.JUGNER_FOREST           , x =   78.000, y =   0.000, z =  118.000, rot = 224 },
+    { id = 'sandoria_jugner_forest_s'    , route = routeName.SANDORIA, tier = 3, zone = xi.zone.JUGNER_FOREST_S         , x =   78.000, y =   0.000, z =  118.000, rot = 224 },
+    { id = 'sandoria_ranperres_tomb'     , route = routeName.SANDORIA, tier = 4, zone = xi.zone.KING_RANPERRES_TOMB     , x = -115.000, y =   9.000, z =   60.000, rot =   0 },
+
+    { id = 'bastok_north_gustaberg'      , route = routeName.BASTOK  , tier = 1, zone = xi.zone.NORTH_GUSTABERG         , x =  798.000, y =   0.000, z =  440.000, rot = 160 },
+    { id = 'bastok_north_gustaberg_s'    , route = routeName.BASTOK  , tier = 1, zone = xi.zone.NORTH_GUSTABERG_S       , x =  798.000, y =   0.000, z =  440.000, rot = 160 },
+    { id = 'bastok_gusgen_mines'         , route = routeName.BASTOK  , tier = 2, zone = xi.zone.GUSGEN_MINES            , x =   40.000, y = -11.000, z =  436.000, rot =  64 },
+    { id = 'bastok_pashhow_marshlands'   , route = routeName.BASTOK  , tier = 3, zone = xi.zone.PASHHOW_MARSHLANDS      , x = -420.000, y =  24.150, z = -230.000, rot =  64 },
+    { id = 'bastok_pashhow_marshlands_s' , route = routeName.BASTOK  , tier = 3, zone = xi.zone.PASHHOW_MARSHLANDS_S    , x = -420.000, y =  24.150, z = -230.000, rot =  64 },
+    { id = 'bastok_dangruf_wadi'         , route = routeName.BASTOK  , tier = 4, zone = xi.zone.DANGRUF_WADI            , x = -157.000, y =   4.000, z = -164.000, rot =   0 },
+
+    { id = 'windurst_west_sarutabaruta'  , route = routeName.WINDURST, tier = 1, zone = xi.zone.WEST_SARUTABARUTA       , x =  120.000, y =   4.000, z = -440.000, rot =   0 },
+    { id = 'windurst_west_sarutabaruta_s', route = routeName.WINDURST, tier = 1, zone = xi.zone.WEST_SARUTABARUTA_S     , x =  120.000, y =   4.000, z = -440.000, rot =   0 },
+    { id = 'windurst_shakhrami'          , route = routeName.WINDURST, tier = 2, zone = xi.zone.MAZE_OF_SHAKHRAMI       , x =  134.000, y =  20.000, z =  -89.000, rot =   0 },
+    { id = 'windurst_meriphataud'        , route = routeName.WINDURST, tier = 3, zone = xi.zone.MERIPHATAUD_MOUNTAINS   , x =  200.000, y =   0.000, z = -520.000, rot =   0 },
+    { id = 'windurst_meriphataud_s'      , route = routeName.WINDURST, tier = 3, zone = xi.zone.MERIPHATAUD_MOUNTAINS_S , x =  200.000, y =   0.000, z = -520.000, rot =   0 },
+    { id = 'windurst_outer_horutoto'     , route = routeName.WINDURST, tier = 4, zone = xi.zone.OUTER_HORUTOTO_RUINS    , x = -260.000, y =   0.000, z =  740.000, rot =   0 },
+}
+
 function xi.voidwatch.isStarterRoute(routeId)
     return xi.voidwatch.starterRoutes[routeId] == true
 end
@@ -916,6 +946,9 @@ xi.voidwatch.refinerMessage =
     INCOMPLETE   = 'Defeat all required Voidwatch notorious monsters for your current starter-city stratum before requesting examination.',
     MAXIMUM      = 'Your starter-city stratum abyssites are already at their current maximum tiers.',
     INVALID      = 'This Atmacite Refiner is not ready to examine that stratum abyssite.',
+    TELEPORT     = 'The Atmacite Refiner sends you to a Voidwatch operation site.',
+    NO_CRUOR     = 'You do not possess enough cruor for that teleportation service.',
+    NO_TELEPORT  = 'No starter-city Voidwatch teleport destination is available.',
 }
 
 local function printRefinerMessage(player, message)
@@ -935,9 +968,82 @@ local function getRefinerMessageForStatus(status)
         return xi.voidwatch.refinerMessage.INCOMPLETE
     elseif status == 'maximum' then
         return xi.voidwatch.refinerMessage.MAXIMUM
+    elseif status == 'no_cruor' then
+        return xi.voidwatch.refinerMessage.NO_CRUOR
+    elseif status == 'no_teleport' then
+        return xi.voidwatch.refinerMessage.NO_TELEPORT
     end
 
     return xi.voidwatch.refinerMessage.INVALID
+end
+
+function xi.voidwatch.getStarterTeleportDestination(destinationId)
+    for _, destination in ipairs(xi.voidwatch.starterTeleportDestinations) do
+        if destination.id == destinationId then
+            return destination
+        end
+    end
+
+    return nil
+end
+
+function xi.voidwatch.getStarterTeleportDestinations(player)
+    local destinations = {}
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return destinations
+    end
+
+    for _, destination in ipairs(xi.voidwatch.starterTeleportDestinations) do
+        if xi.voidwatch.canInitiateTier(player, destination.route, destination.tier) then
+            table.insert(destinations, destination)
+        end
+    end
+
+    return destinations
+end
+
+function xi.voidwatch.canUseStarterTeleportDestination(player, destinationId)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil
+    end
+
+    local destination = xi.voidwatch.getStarterTeleportDestination(destinationId)
+
+    if not destination then
+        return false, 'invalid', nil
+    end
+
+    local routeTier = xi.voidwatch.getPlayerAbyssiteTier(player, destination.route)
+
+    if routeTier == 0 then
+        return false, 'no_teleport', destination
+    elseif routeTier < destination.tier then
+        return false, 'incomplete', destination
+    end
+
+    return true, 'available', destination
+end
+
+function xi.voidwatch.teleportToStarterDestination(player, destinationId)
+    local canUse, status, destination = xi.voidwatch.canUseStarterTeleportDestination(player, destinationId)
+
+    if not canUse then
+        return false, status, destination
+    end
+
+    if player:getCurrency(xi.voidwatch.currency.cruor) < xi.voidwatch.teleport.starterCost then
+        return false, 'no_cruor', destination
+    end
+
+    player:delCurrency(xi.voidwatch.currency.cruor, xi.voidwatch.teleport.starterCost)
+    player:setPos(destination.x, destination.y, destination.z, destination.rot, destination.zone)
+
+    return true, 'teleported', destination
 end
 
 function xi.voidwatch.examineStarterAbyssites(player)
@@ -981,7 +1087,19 @@ function xi.voidwatch.examineStarterAbyssites(player)
     return false, 'invalid', nil, nil, nil
 end
 
-function xi.voidwatch.onStarterRefinerTrigger(player, npc)
+function xi.voidwatch.onStarterRefinerTrigger(player, npc, destinationId)
+    if destinationId then
+        local teleported, status = xi.voidwatch.teleportToStarterDestination(player, destinationId)
+
+        if teleported then
+            printRefinerMessage(player, xi.voidwatch.refinerMessage.TELEPORT)
+        else
+            printRefinerMessage(player, getRefinerMessageForStatus(status))
+        end
+
+        return
+    end
+
     local upgraded, status, _, oldKeyItem, newKeyItem = xi.voidwatch.examineStarterAbyssites(player)
 
     if upgraded then
