@@ -59,3 +59,4 @@ You should ask follow-up questions and refer to nearby script and code examples 
 - [NPC Script Header Guide](npc-header-guide.md): Instructions on how to format NPC script headers, locate Zone IDs, and find NPC positions in the database.
 - [Lua `setLocalVar` Naming Baseline](local-vars.md): Current length statistics and naming guidance for Lua local variable keys declared through `setLocalVar`.
 - [Symbol Alignment Guide](symbol-alignment.md): Baseline and guidance for preserving local alignment of `=`, `,`, and inline comments in code blocks.
+- [Whitespace Style Guide](whitespace-style.md): Baseline and guidance for final newlines, blank-line runs, and vertical spacing around functions and data blocks.
