@@ -23,7 +23,7 @@ The key retail requirements from those sources are:
 10. Provenance requires late Jeuno-line Voidwatch progress, uses Kupofried's corundum and petrifacts instead of ordinary voidstones for final access, contains the three Radiance fights and Provenance Watcher, and is entered through Walk of Echoes.
 11. Voidwatch has a 30-quest storyline/category footprint, including the city path, Jeuno path, Zilart, Tavnazia, Aht Urhgan, Provenance, and finale quests.
 
-## Current codebase inventory
+## Current codebase inventory (May 9, 2026)
 
 The repository contains a significant amount of static data for Voidwatch:
 
@@ -37,28 +37,85 @@ The repository contains a significant amount of static data for Voidwatch:
 
 However, the implementation is mostly static data. The repository currently lacks Lua scripts or C++ systems that make the listed NPCs, rifts, pyxides, quests, rewards, alignment, and progression function as retail Voidwatch.
 
+## Current codebase inventory (May 30, 2026)
+
+The repository now has both substantial static data and an initial Lua implementation slice for Voidwatch.
+
+Static/data support already present:
+
+- `settings/default/main.lua` exposes `ENABLE_VOIDWATCH` in the main settings table.
+- `sql/npc_list.sql` contains content-tagged Voidwatch NPCs and objects, including Planar Rifts, Riftworn Pyxides, Voidwatch Purveyors, Atmacite Refiners, and Voidwatch Officers.
+- `sql/char_points.sql` stores `voidstones` and `kupofried_corundums` point/currency fields that can back the officer and Provenance systems.
+- `sql/status_effects.sql` defines the hidden `voidwatcher` effect.
+- `sql/mob_pools.sql`, `sql/mob_groups.sql`, and `sql/mob_spawn_points.sql` include many named Voidwatch NMs, including starter-nation NMs, Jeuno/Zilart/Tavnazia/Aht Urhgan targets, Radiance encounters, and Provenance Watcher.
+
+Scripted support already present:
+
+- `scripts/globals/voidwatch/voidwatch.lua` is the active shared module location. Do not add a competing root-level `scripts/globals/voidwatch.lua` module unless the codebase is intentionally refactored.
+- The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, petrifacts, corundums, and route/tier/NM data.
+- The module has helpers for route lookup, maximum route tier, player abyssite tier, tier initiation checks, per-NM completion variables, tier-complete checks, abyssite-upgrade eligibility, starter route detection, and starter abyssite lookup/granting.
+- The module has voidstone helpers for carried key-item count, next key item, capacity, timer interval, stored stock, 20-hour accrual, periapt capacity/timer modifiers, withdrawing stored stones to key items, and one-pouch Voiddust trades.
+- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants.
+- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, and Voiddust trade behavior.
+
+## Completed implementation slices
+
+### Phase 1: Toggle, data model, and shared module foundation (complete for current needs)
+
+Completed enough to support implementation PRs:
+
+1. `ENABLE_VOIDWATCH` runtime guard through `xi.voidwatch.isEnabled()`.
+2. Constants/tables for current route, abyssite, periapt, atmacite, cell, Voiddust, petrifact, and corundum use.
+3. BG Wiki-derived route/tier/NM inventory for starter cities, Jeuno, Zilart, Tavnazia, Aht Urhgan, and Provenance.
+4. Helpers for requirements, current abyssite tier, route/tier lookup, completed NM flags, and upgrade eligibility.
+5. Unit coverage for core table integrity and toggle behavior.
+
+Remaining Phase 1-style additions should be folded into implementation PRs only when consumed by real scripts, such as rift-to-NM IDs, pyxis state, reward/alignment structures, temporary-item helpers, phase displacer constants, and additional retail service constants.
+
+### Phase 2A: Starter-city officers and initial abyssites (complete)
+
+Completed:
+
+1. Southern San d'Oria, Bastok Markets, and Windurst Walls officer scripts call shared Voidwatch behavior.
+2. Officer triggers guard on `ENABLE_VOIDWATCH`, level 75+, and Adventurer's Certificate.
+3. Starter officers grant the expected first-tier stratum abyssites: crimson for San d'Oria, indigo for Bastok, and jade for Windurst.
+4. Starter grants are idempotent and covered by tests.
+
+### Phase 2B: Basic voidstone storage/accrual and Voiddust trades (substantially complete)
+
+Completed:
+
+1. Stored voidstones use the `voidstones` char-point currency.
+2. Accrual uses a persistent `[Voidwatch]NextVoidstone` char variable and a 20-hour base interval.
+3. Frontiers periapts increase capacity, and exploration periapts reduce the timer interval.
+4. Starter officers withdraw stored voidstones into carried voidstone key items when possible.
+5. Trading exactly one pouch of Voiddust to a starter officer awards one carried voidstone when the player meets requirements and has capacity.
+6. Coverage exists for capacity/timer calculations, accrual, withdrawal, and Voiddust trade handling.
+
 ## Accuracy and completeness gaps
 
 ### Toggle and content gating
 
-- The main toggle exists as `ENABLE_VOIDWATCH`, but the comment says the system is not implemented.
+- The main toggle exists and the current Lua entry points guard on it.
 - Voidwatch SQL rows use the `VOIDWATCH` content tag, so the existing `RESTRICT_CONTENT` mechanism can hide most static Voidwatch NPC/object data when `ENABLE_VOIDWATCH = 0`.
-- Missing: a documented operator-facing procedure that explains that both `ENABLE_VOIDWATCH` and `RESTRICT_CONTENT` are required when administrators want the content-tagged data hidden.
-- Missing: runtime guards in any future Lua entry points so scripts exit early when `ENABLE_VOIDWATCH = 0` even if the static NPC rows are loaded.
+- Still needed: update the `settings/default/main.lua` comment to clarify that `ENABLE_VOIDWATCH` now gates a partial implementation rather than an entirely unimplemented system.
+- Still needed: continue adding runtime guards to every future Voidwatch Lua entry point, because static NPC rows may still be loaded when `RESTRICT_CONTENT = 0`.
 
 ### NPCs and object interaction
 
-- Missing: shared `scripts/globals/voidwatch.lua` module for requirement checks, tier data, rift-to-NM mapping, pyxis state, alignment, rewards, temporary items, and progression.
-- Missing: common NPC scripts or zone-local scripts for `Voidwatch_Officer`, `Atmacite_Refiner`, `Voidwatch_Purveyor`, `Planar_Rift`, `Riftworn_Pyxis`, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
-- Missing: officer behavior for first abyssites, voidstone timer accrual, Voiddust trades, and voidstone withdrawal/storage.
+- Present: shared module and the three starter-city `Voidwatch_Officer` scripts.
+- Missing: scripts for non-starter officers, Atmacite Refiners, Voidwatch Purveyors, Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
 - Missing: refiner behavior for abyssite upgrade checks, atmacite equip/upgrade, and teleport menus.
 - Missing: purveyor shops for phase displacers/ascent items and other retail services.
+- Missing: retail event/cutscene integration for officers and storyline NPCs. The current starter officer implementation is functional/system-message based, not a retail-accurate event flow.
 
 ### Progression and quests
 
+- Present: generic per-NM completion variable helpers, tier-complete checks, and abyssite-upgrade eligibility helpers.
+- Missing: actual battle code that sets completion flags.
 - Missing: all 30 Voidwatch quest scripts listed by BG Wiki's Voidwatch Quests category.
 - Missing: quest-region placement and NPC event handling for starter-city, Jeuno, Zilart, Tavnazia, Aht Urhgan, Provenance, and finale quests.
-- Missing: char variables and key-item award logic for per-route tier completion, Voidwatcher's emblems, petrifacts, Kupofried's corundums, and final storyline flags.
+- Missing: key-item award logic for Voidwatcher's emblems, non-starter route abyssites, petrifacts, Kupofried's corundums, and final storyline flags.
 - Missing: requirement links such as completing the three starter paths before Jeuno initiation and late Jeuno progress before Provenance access.
 
 ### Battles
@@ -100,29 +157,27 @@ However, the implementation is mostly static data. The repository currently lack
 4. Implement Voiddust trades for voidstone stock.
 5. Add clear disabled-content messaging when the toggle is off.
 
-### Status Update (May, 2026) -
+## Recommended next PR
 
-Current branch status: substantially started. Keep `settings/default/main.lua` as the authoritative toggle location, and continue using the existing `scripts/globals/voidwatch/voidwatch.lua` subfolder module rather than adding a root-level `scripts/globals/voidwatch.lua`. The branch already provides:
+The next PR should move to **Phase 3A: Atmacite Refiner abyssite examination and starter-route upgrades**. This is the best next step because the shared module already has route/tier completion and upgrade-eligibility helpers, while Planar Rift battles and rewards are a much larger system that will benefit from a working progression NPC first.
 
-1. `isEnabled()` using `xi.settings.main.ENABLE_VOIDWATCH`.
-2. Constants for stratum colors, route names, abyssite key items, selected periapts, atmacites, cells, Voiddust, petrifacts, and corundums.
-3. Route/tier/NM tables based on BG Wiki's Voidwatch Ops tables.
-4. Helpers for base requirement checks, current abyssite tier, completed NM flags, route lookup, and upgrade eligibility.
-5. Tests/specs for route table integrity and toggle behavior.
+Recommended scope:
 
-Remaining Phase 1 work should be folded into implementation PRs only when those PRs need it: rift-to-NM IDs, pyxis state, reward/alignment structures, temporary-item helpers, and any additional constants that are consumed by real scripts.
+1. Add reusable Atmacite Refiner Lua behavior for a small, explicit starter-city-compatible slice only.
+2. Wire the three starter-city Atmacite Refiners first, or another minimal set of refiners that can exercise San d'Oria/Bastok/Windurst route upgrade behavior without implementing teleportation or atmacite equipment yet.
+3. On trigger, guard on `xi.voidwatch.isEnabled()` and base requirements.
+4. For each starter route, use `xi.voidwatch.canUpgradeAbyssite(player, routeId)` to determine whether the current stratum abyssite can be upgraded.
+5. When eligible, remove or supersede the current-tier abyssite according to existing key-item semantics used elsewhere in the codebase, award the next-tier abyssite, and display a clear key-item message.
+6. Keep the PR intentionally narrow: do not add purveyor shops, teleport menus, atmacite equip/upgrade, Planar Rift spawning, pyxides, alignment, rewards, or quest cutscenes.
+7. Add focused tests for disabled-content behavior, missing base requirements, no-current-abyssite behavior, incomplete-tier behavior, successful tier upgrade, maximum-tier no-op behavior, and starter-route-to-refiner coverage.
 
-### Recommended next phase: Phase 2A starter-city officers and initial abyssites
+After Phase 3A, the next practical slices are:
 
-Given the current branch already has a shared Voidwatch module and tests, the next meaningful PR should implement the smallest player-visible vertical slice of Phase 2 rather than more documentation, comments, or standalone sanity checks. Recommended scope:
+1. **Phase 3B:** add limited Atmacite Refiner teleport destination validation and cruor costs for routes the player can initiate.
+2. **Phase 3C:** add Voidwatch Purveyor shops for phase displacers/ascent items.
+3. **Phase 4A:** add a single starter-route Planar Rift vertical slice that can validate initiation, spawn one NM, set completion credit, and leave pyxis/reward work stubbed or deliberately minimal.
 
-1. Add reusable Voidwatch Officer Lua behavior for the three starter-city officers only.
-2. Wire the starter officers to `scripts/globals/voidwatch/voidwatch.lua` so every interaction checks `xi.voidwatch.isEnabled()` and `xi.voidwatch.hasBaseRequirements(player)`.
-3. Award the initial city stratum abyssites: crimson for San d'Oria, indigo for Bastok, and jade for Windurst.
-4. Avoid implementing full voidstone accrual, Voiddust trades, Refiner upgrades, Purveyor shops, rift spawning, or quest cutscenes in this PR unless required to support the starter-officer flow.
-5. Add focused tests for disabled-content behavior, missing level/certificate requirements, idempotent abyssite grants, and the starter-city route-to-abyssite mapping.
-
-This creates the first usable Voidwatch interaction and validates the existing shared module through production scripts. Once that slice lands, follow-up Phase 2B can add voidstone storage/accrual and Voiddust handling to the same officer framework.
+## Remaining completion plan
 
 ### Phase 3: Atmacite Refiners, purveyors, and teleportation
 
@@ -136,7 +191,7 @@ This creates the first usable Voidwatch interaction and validates the existing s
 
 ### Phase 4: Planar Rifts, battle lifecycle, and pyxides
 
-1. Implement Planar Rift scripts for all tagged rifts using rift IDs mapped to zone, route, tier, NM, and pyxis IDs.
+1. Implement Planar Rift scripts for tagged rifts using rift IDs mapped to zone, route, tier, NM, and pyxis IDs.
 2. Validate initiator progression and participating-player reward eligibility.
 3. Accept phase displacers and ascent items before spawning.
 4. Spawn the correct NM and attach battle state to the rift, NM, and eligible players.
@@ -182,19 +237,19 @@ Voidwatch should be toggled from `settings/default/main.lua` or an overriding se
 -- Hide content-tagged SQL rows when disabled.
 RESTRICT_CONTENT = 1,
 
--- Enable or disable Voidwatch scripts and tagged content.
+-- Enable or disable currently implemented Voidwatch scripts and tagged content.
 ENABLE_VOIDWATCH = 1, -- set to 0 to disable
 ```
 
-Recommended behavior after the scripted system is implemented:
+Current expected behavior:
 
-- `ENABLE_VOIDWATCH = 1`: Voidwatch scripts, NPC interactions, rifts, rewards, quests, and Provenance access are enabled.
-- `ENABLE_VOIDWATCH = 0`: Voidwatch scripts return disabled-content messages and do not award key items, spend stones, spawn NMs, teleport players, or progress quests.
+- `ENABLE_VOIDWATCH = 1`: implemented Voidwatch scripts are enabled. Today this means the shared module, starter-city officers, starter abyssite grants, basic stored voidstone accrual/withdrawal, and one-pouch Voiddust trades. Rifts, pyxides, refiners, purveyors, quests, rewards, atmacite services, and Provenance access are not yet implemented.
+- `ENABLE_VOIDWATCH = 0`: implemented Voidwatch scripts return disabled-content messages and do not award starter abyssites, issue stones, accept Voiddust, or progress current Voidwatch state.
 - `RESTRICT_CONTENT = 1` plus `ENABLE_VOIDWATCH = 0`: content-tagged `VOIDWATCH` NPC/object rows are not loaded, hiding Planar Rifts, Riftworn Pyxides, officers, refiners, purveyors, and related static content.
 - `RESTRICT_CONTENT = 0` plus `ENABLE_VOIDWATCH = 0`: static NPC/object rows may still appear, so all scripts must still check `ENABLE_VOIDWATCH` at runtime.
 
 ## Feasibility of completing Voidwatch in one PR
 
-Completing retail-accurate Voidwatch is not feasible as a single small PR because the codebase currently lacks the core Lua/C++ systems for a multi-route battle system, all 30 quest scripts, progression storage, per-player reward pyxides, spectral alignment, atmacite/periapt effects, and Provenance finale access. The safe next PR should establish the shared module, runtime toggle guards, and officer/refiner/rift skeletons before filling in battle and quest content route by route. (Complete)
+Completing retail-accurate Voidwatch is not feasible as a single small PR. The codebase now has the shared module, starter officers, starter abyssite grants, and basic voidstone/Voiddust handling, but still lacks the core systems for refiner services, purveyor shops, Planar Rift battle initiation, pyxis rewards, spectral alignment, atmacite/periapt battle effects, all 30 quest scripts, route unlocks, and Provenance finale access.
 
-The safe next PR should implement the Phase 2A starter-city officer vertical slice described above before adding refiner, purveyor, rift, pyxis, battle, reward, or quest systems.
+Future PRs should keep landing small vertical slices that are player-visible, runtime-guarded by `ENABLE_VOIDWATCH`, and covered by focused Lua tests.
