@@ -550,3 +550,85 @@ function xi.voidwatch.findOpByNM(nmName)
 
     return nil, nil, nil
 end
+
+xi.voidwatch.starterOfficerMessage =
+{
+    DISABLED     = 'Voidwatch is currently disabled.',
+    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to begin Voidwatch operations.',
+    ALREADY      = 'You have already received the stratum abyssite issued by this officer.',
+    INVALID      = 'This officer is not ready to issue Voidwatch operations.',
+}
+
+xi.voidwatch.starterRoutes =
+{
+    [xi.voidwatch.routeName.SANDORIA] = true,
+    [xi.voidwatch.routeName.BASTOK  ] = true,
+    [xi.voidwatch.routeName.WINDURST] = true,
+}
+
+function xi.voidwatch.isStarterRoute(routeId)
+    return xi.voidwatch.starterRoutes[routeId] == true
+end
+
+function xi.voidwatch.getStarterAbyssite(routeId)
+    if not xi.voidwatch.isStarterRoute(routeId) then
+        return nil
+    end
+
+    return xi.voidwatch.getAbyssiteForTier(routeId, 1)
+end
+
+function xi.voidwatch.hasStarterAbyssite(player, routeId)
+    return xi.voidwatch.getPlayerAbyssiteTier(player, routeId) > 0
+end
+
+function xi.voidwatch.grantStarterAbyssite(player, routeId)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil
+    end
+
+    if not xi.voidwatch.isStarterRoute(routeId) then
+        return false, 'invalid', nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil
+    end
+
+    if xi.voidwatch.hasStarterAbyssite(player, routeId) then
+        return false, 'already', xi.voidwatch.getStarterAbyssite(routeId)
+    end
+
+    local keyItem = xi.voidwatch.getStarterAbyssite(routeId)
+    player:addKeyItem(keyItem)
+
+    return true, 'granted', keyItem
+end
+
+local function printStarterOfficerMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+function xi.voidwatch.onStarterOfficerTrigger(player, npc, routeId)
+    local granted, status, keyItem = xi.voidwatch.grantStarterAbyssite(player, routeId)
+
+    if granted then
+        local ID = zones[player:getZoneID()]
+        player:messageSpecial(ID.text.KEYITEM_OBTAINED, keyItem)
+        return
+    end
+
+    local message = xi.voidwatch.starterOfficerMessage.INVALID
+
+    if status == 'disabled' then
+        message = xi.voidwatch.starterOfficerMessage.DISABLED
+    elseif status == 'requirements' then
+        message = xi.voidwatch.starterOfficerMessage.REQUIREMENTS
+    elseif status == 'already' then
+        message = xi.voidwatch.starterOfficerMessage.ALREADY
+    end
+
+    printStarterOfficerMessage(player, message)
+end
