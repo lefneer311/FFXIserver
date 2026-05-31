@@ -1086,9 +1086,9 @@ describe('Voidwatch', function()
     it('defines a starter San d\'Oria rift slice for Sarimanok', function()
         local expectedMobIds =
         {
-            [17191335] = true,
-            [17191336] = true,
-            [17191337] = true,
+            [17191335] = 17191580,
+            [17191336] = 17191581,
+            [17191337] = 17191582,
         }
 
         for riftNpcId, rift in pairs(xi.voidwatch.starterRifts) do
@@ -1096,7 +1096,8 @@ describe('Voidwatch', function()
             assert(rift.route == xi.voidwatch.routeName.SANDORIA)
             assert(rift.tier == 1)
             assert(rift.nm == 'Sarimanok')
-            assert(expectedMobIds[rift.mob])
+            assert(rift.pyxis == expectedMobIds[rift.mob])
+            assert(select(2, xi.voidwatch.getStarterRiftByPyxis(rift.pyxis)) == rift)
 
             local routeId, tier, op = xi.voidwatch.findOpByNM(rift.nm)
             assert(routeId == rift.route)
@@ -1233,6 +1234,7 @@ describe('Voidwatch', function()
         assert(not keyItems[xi.keyItem.VOIDSTONE1])
         assert(mobLocalVars[xi.voidwatch.var.riftInitiator] == 1001)
         assert(mobLocalVars[xi.voidwatch.var.riftNpc] == 17191577)
+        assert(mobLocalVars[xi.voidwatch.var.riftPyxis] == 17191580)
         assert(claimedBy == player)
 
         SpawnMob = originalSpawnMob
@@ -1240,7 +1242,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('marks the initiator complete when a starter rift NM dies', function()
+    it('marks the initiator complete and pyxis-eligible when a starter rift NM dies', function()
         local charVars = {}
         local player =
         {
@@ -1271,6 +1273,68 @@ describe('Voidwatch', function()
         assert(status == 'completed')
         assert(rift.nm == 'Sarimanok')
         assert(charVars[xi.voidwatch.getCompletionVar(xi.voidwatch.routeName.SANDORIA, 'Sarimanok')] == 1)
+        assert(charVars[xi.voidwatch.getPyxisRewardVar(17191580)] == 1)
+    end)
+
+    it('gates starter pyxis placeholder rewards by content, requirements, and eligibility', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local charVars =
+        {
+            [xi.voidwatch.getPyxisRewardVar(17191580)] = 1,
+        }
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+        }
+        local level = xi.voidwatch.minimumLevel
+        local player =
+        {
+            getMainLvl = function()
+                return level
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            getCharVar = function(_, name)
+                return charVars[name] or 0
+            end,
+
+            setCharVar = function(_, name, value)
+                charVars[name] = value
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        local eligible, status = xi.voidwatch.inspectStarterPyxis(player, 17191580)
+        assert(not eligible)
+        assert(status == 'disabled')
+        assert(charVars[xi.voidwatch.getPyxisRewardVar(17191580)] == 1)
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        level = xi.voidwatch.minimumLevel - 1
+        eligible, status = xi.voidwatch.inspectStarterPyxis(player, 17191580)
+        assert(not eligible)
+        assert(status == 'requirements')
+
+        level = xi.voidwatch.minimumLevel
+        eligible, status = xi.voidwatch.inspectStarterPyxis(player, 17191583)
+        assert(not eligible)
+        assert(status == 'invalid')
+
+        charVars[xi.voidwatch.getPyxisRewardVar(17191580)] = 0
+        eligible, status = xi.voidwatch.inspectStarterPyxis(player, 17191580)
+        assert(not eligible)
+        assert(status == 'no_reward')
+
+        charVars[xi.voidwatch.getPyxisRewardVar(17191580)] = 1
+        eligible, status = xi.voidwatch.inspectStarterPyxis(player, 17191580)
+        assert(eligible)
+        assert(status == 'eligible')
+        assert(charVars[xi.voidwatch.getPyxisRewardVar(17191580)] == 0)
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
 end)

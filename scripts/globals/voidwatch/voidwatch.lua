@@ -22,8 +22,10 @@ xi.voidwatch.currency =
 xi.voidwatch.var =
 {
     nextVoidstone = xi.voidwatch.varPrefix .. 'NextVoidstone',
+    pyxisPrefix   = xi.voidwatch.varPrefix .. 'Pyxis:',
     riftInitiator = xi.voidwatch.varPrefix .. 'RiftInitiator',
     riftNpc       = xi.voidwatch.varPrefix .. 'RiftNpc',
+    riftPyxis     = xi.voidwatch.varPrefix .. 'RiftPyxis',
 }
 
 xi.voidwatch.voidstone =
@@ -488,9 +490,9 @@ xi.voidwatch.purveyorStock =
 
 xi.voidwatch.starterRifts =
 {
-    [17191577] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191335 },
-    [17191578] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191336 },
-    [17191579] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191337 },
+    [17191577] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191335, pyxis = 17191580 },
+    [17191578] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191336, pyxis = 17191581 },
+    [17191579] = { route = routeName.SANDORIA, tier = 1, nm = 'Sarimanok', mob = 17191337, pyxis = 17191582 },
 }
 
 local function printStarterOfficerMessage(player, message)
@@ -765,6 +767,36 @@ function xi.voidwatch.getStarterRift(riftNpcId)
     return xi.voidwatch.starterRifts[riftNpcId]
 end
 
+function xi.voidwatch.getStarterRiftByPyxis(pyxisNpcId)
+    for riftNpcId, rift in pairs(xi.voidwatch.starterRifts) do
+        if rift.pyxis == pyxisNpcId then
+            return riftNpcId, rift
+        end
+    end
+
+    return nil, nil
+end
+
+function xi.voidwatch.getPyxisRewardVar(pyxisNpcId)
+    return string.format('%s%s', xi.voidwatch.var.pyxisPrefix, pyxisNpcId)
+end
+
+function xi.voidwatch.setPyxisRewardEligible(player, pyxisNpcId)
+    if player and pyxisNpcId then
+        player:setCharVar(xi.voidwatch.getPyxisRewardVar(pyxisNpcId), 1)
+    end
+end
+
+function xi.voidwatch.hasPyxisRewardEligible(player, pyxisNpcId)
+    return player and pyxisNpcId and player:getCharVar(xi.voidwatch.getPyxisRewardVar(pyxisNpcId)) == 1
+end
+
+function xi.voidwatch.clearPyxisRewardEligible(player, pyxisNpcId)
+    if player and pyxisNpcId then
+        player:setCharVar(xi.voidwatch.getPyxisRewardVar(pyxisNpcId), 0)
+    end
+end
+
 function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
     if not xi.voidwatch.isEnabled() then
         return false, 'disabled', nil
@@ -818,6 +850,7 @@ function xi.voidwatch.initiateStarterRift(player, riftNpcId)
 
     mob:setLocalVar(xi.voidwatch.var.riftInitiator, player:getID())
     mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
+    mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
     mob:updateClaim(player)
 
     return true, 'initiated', rift, keyItem
@@ -859,6 +892,7 @@ function xi.voidwatch.onNMDeath(mob, player)
     end
 
     xi.voidwatch.setCompletedNM(creditPlayer, rift.route, rift.nm)
+    xi.voidwatch.setPyxisRewardEligible(creditPlayer, rift.pyxis)
 
     return true, 'completed', rift
 end
@@ -867,6 +901,68 @@ function xi.voidwatch.clearNMState(mob)
     if mob then
         mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
         mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
+        mob:setLocalVar(xi.voidwatch.var.riftPyxis, 0)
+    end
+end
+
+xi.voidwatch.pyxisMessage =
+{
+    DISABLED     = 'Voidwatch is currently disabled.',
+    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to inspect this Riftworn Pyxis.',
+    ELIGIBLE     = 'The Riftworn Pyxis hums softly. Full Voidwatch rewards are not yet implemented.',
+    NO_REWARD    = 'The Riftworn Pyxis is silent. No Voidwatch reward is available for you.',
+    INVALID      = 'This Riftworn Pyxis is not ready for Voidwatch operations.',
+}
+
+local function printPyxisMessage(player, message)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+
+    player:printToPlayer(message, channel)
+end
+
+function xi.voidwatch.inspectStarterPyxis(player, pyxisNpcId)
+    if not xi.voidwatch.isEnabled() then
+        return false, 'disabled', nil
+    end
+
+    if not xi.voidwatch.hasBaseRequirements(player) then
+        return false, 'requirements', nil
+    end
+
+    local _, rift = xi.voidwatch.getStarterRiftByPyxis(pyxisNpcId)
+
+    if not rift then
+        return false, 'invalid', nil
+    end
+
+    if not xi.voidwatch.hasPyxisRewardEligible(player, pyxisNpcId) then
+        return false, 'no_reward', rift
+    end
+
+    xi.voidwatch.clearPyxisRewardEligible(player, pyxisNpcId)
+
+    return true, 'eligible', rift
+end
+
+local function getPyxisMessageForStatus(status)
+    if status == 'disabled' then
+        return xi.voidwatch.pyxisMessage.DISABLED
+    elseif status == 'requirements' then
+        return xi.voidwatch.pyxisMessage.REQUIREMENTS
+    elseif status == 'no_reward' then
+        return xi.voidwatch.pyxisMessage.NO_REWARD
+    end
+
+    return xi.voidwatch.pyxisMessage.INVALID
+end
+
+function xi.voidwatch.onStarterPyxisTrigger(player, npc)
+    local eligible, status = xi.voidwatch.inspectStarterPyxis(player, npc:getID())
+
+    if eligible then
+        printPyxisMessage(player, xi.voidwatch.pyxisMessage.ELIGIBLE)
+    else
+        printPyxisMessage(player, getPyxisMessageForStatus(status))
     end
 end
 
