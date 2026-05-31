@@ -157,6 +157,15 @@ Completed:
 5. This slice intentionally excludes full pyxis rewards, spectral alignment, phase-displacer/ascent-cell effects, weakness/stagger systems, broader Windurst route coverage, and quest cutscenes.
 6. Tests cover starter-rift table integrity across all three nations and Windurst-specific jade abyssite validation.
 
+### Phase 4D: Starter pyxis placeholder cleanup (complete for current needs)
+
+Completed:
+
+1. Successful starter-rift initiation clears stale placeholder pyxis eligibility for the mapped pyxis before the new operation proceeds.
+2. Cleanup reuses the shared pyxis eligibility helper, so San d'Oria, Bastok, and Windurst starter slices share the same behavior.
+3. The cleanup remains intentionally narrow and does not add full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
+4. Tests cover mapped-rift pyxis cleanup and now validate San d'Oria, Bastok, and Windurst starter rift abyssite requirements independently by route.
+
 ## Accuracy and completeness gaps
 
 ### Toggle and content gating
@@ -223,16 +232,15 @@ Completed:
 
 ## Recommended next PR
 
-The next PR should move to **Phase 4D: broaden placeholder pyxis cleanup for starter rifts**. The current starter lifecycle now covers all three present-day starter-nation tier-1 rift paths, but placeholder pyxis state remains an indefinite per-player flag.
+The next PR should move to **Phase 4E: starter rift trade validation groundwork**. The current starter lifecycle covers all three present-day starter-nation tier-1 rift paths and now cleans stale placeholder pyxis eligibility when a mapped rift is reinitiated, but rift trades still do not distinguish ordinary triggers from future phase-displacer or ascent-cell inputs.
 
 Recommended scope:
 
-1. Add a narrow cleanup mechanism for placeholder starter pyxis eligibility, such as timestamped eligibility, timeout on inspection, or cleanup when a mapped rift is reinitiated.
-2. Keep the same runtime validation pattern: `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, and mapped starter pyxis/rift validation.
-3. Reuse the shared pyxis helpers and avoid route-specific duplicate logic.
-4. Add focused tests for eligibility setting, timeout or cleanup behavior, invalid pyxis IDs, disabled/missing-requirement behavior, and eligibility consumption.
-5. Keep the PR intentionally narrow: do not add full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage beyond cleanup, or quest cutscenes.
-6. Update scripts/tests/systems/voidwatch.lua to treat San d'Oria's branch the same as Bastok & Windurst; crimson_stratum_abyssite is currently required on every check, which is wrong, and it should only be checked on the San d'Oria branch.
+1. Add a narrow shared trade-validation helper for starter Planar Rifts that recognizes unsupported phase-displacer and ascent-cell trades without consuming items yet.
+2. Keep the same runtime validation pattern: `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, mapped starter rift validation, route-specific abyssite validation, voidstone availability, and already-spawned NM checks.
+3. Reuse shared starter-rift helpers and avoid route-specific duplicate logic in the San d'Oria, Bastok, and Windurst rift scripts.
+4. Add focused tests for invalid rift IDs, disabled/missing-requirement behavior, route-specific abyssite checks, invalid trade items, non-consumption of unsupported phase-displacer/ascent-cell trades, and normal trigger behavior remaining unchanged.
+5. Keep the PR intentionally narrow: do not add full phase-displacer effects, ascent-cell effects, full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
 
 ## Remaining completion plan
 
@@ -300,7 +308,7 @@ ENABLE_VOIDWATCH = 1, -- set to 0 to disable
 
 Current expected behavior:
 
-- `ENABLE_VOIDWATCH = 1`: implemented Voidwatch scripts are enabled. Today this means the shared module, starter-city officers, starter abyssite grants, basic stored voidstone accrual/withdrawal, one-pouch Voiddust trades, starter-city refiner abyssite examination/upgrades, limited starter-route refiner teleport validation/cost handling, and starter-city purveyor purchases for cells, Voiddust, and phase displacers, and starter-nation tier-1 rift initiation/completion with placeholder pyxis eligibility. Quests, full rewards, full atmacite services, full teleport menus, non-starter purveyor variants, pulse-cell exchanges, and Provenance access are not yet implemented.
+- `ENABLE_VOIDWATCH = 1`: implemented Voidwatch scripts are enabled. Today this means the shared module, starter-city officers, starter abyssite grants, basic stored voidstone accrual/withdrawal, one-pouch Voiddust trades, starter-city refiner abyssite examination/upgrades, limited starter-route refiner teleport validation/cost handling, starter-city purveyor purchases for cells, Voiddust, and phase displacers, and starter-nation tier-1 rift initiation/completion with placeholder pyxis eligibility plus stale eligibility cleanup on mapped-rift reinitiation. Quests, full rewards, full atmacite services, full teleport menus, non-starter purveyor variants, pulse-cell exchanges, and Provenance access are not yet implemented.
 - `ENABLE_VOIDWATCH = 0`: implemented Voidwatch scripts return disabled-content messages and do not award starter abyssites, issue stones, accept Voiddust, sell purveyor supplies, teleport players, or progress current Voidwatch state.
 - `RESTRICT_CONTENT = 1` plus `ENABLE_VOIDWATCH = 0`: content-tagged `VOIDWATCH` NPC/object rows are not loaded, hiding Planar Rifts, Riftworn Pyxides, officers, refiners, purveyors, and related static content.
 - `RESTRICT_CONTENT = 0` plus `ENABLE_VOIDWATCH = 0`: static NPC/object rows may still appear, so all scripts must still check `ENABLE_VOIDWATCH` at runtime.

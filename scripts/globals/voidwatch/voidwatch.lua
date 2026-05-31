@@ -858,6 +858,7 @@ function xi.voidwatch.initiateStarterRift(player, riftNpcId)
     mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
     mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
     mob:updateClaim(player)
+    xi.voidwatch.clearPyxisRewardEligible(player, rift.pyxis)
 
     return true, 'initiated', rift, keyItem
 end

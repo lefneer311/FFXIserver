@@ -1120,14 +1120,11 @@ describe('Voidwatch', function()
         end
     end)
 
-    it('validates starter rift disabled, requirement, abyssite, and voidstone failures', function()
+    it('validates starter rift disabled and requirement failures', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
-        local originalGetMobByID = GetMobByID
         local keyItems =
         {
             [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
-            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
-            [xi.keyItem.VOIDSTONE1] = true,
         }
         local level = xi.voidwatch.minimumLevel
         local player =
@@ -1141,15 +1138,6 @@ describe('Voidwatch', function()
             end,
         }
 
-        GetMobByID = function()
-            return
-            {
-                isSpawned = function()
-                    return false
-                end,
-            }
-        end
-
         xi.settings.main.ENABLE_VOIDWATCH = 0
         local canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
         assert(not canInitiate)
@@ -1161,25 +1149,79 @@ describe('Voidwatch', function()
         assert(not canInitiate)
         assert(status == 'requirements')
 
-        level = xi.voidwatch.minimumLevel
-        keyItems[xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = nil
-        canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
-        assert(not canInitiate)
-        assert(status == 'abyssite')
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
 
-        keyItems[xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true
-        keyItems[xi.keyItem.VOIDSTONE1] = nil
-        canInitiate, status = xi.voidwatch.canInitiateStarterRift(player, 17191577)
-        assert(not canInitiate)
-        assert(status == 'voidstone')
+    it('validates starter rift route-specific abyssite and voidstone failures', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local starterRiftCases =
+        {
+            { rift = 17191577, mob = 17191335, route = xi.voidwatch.routeName.SANDORIA, abyssite = xi.keyItem.CRIMSON_STRATUM_ABYSSITE, nm = 'Sarimanok'      },
+            { rift = 17212116, mob = 17211882, route = xi.voidwatch.routeName.BASTOK  , abyssite = xi.keyItem.INDIGO_STRATUM_ABYSSITE , nm = 'Sallow Seymour' },
+            { rift = 17167320, mob = 17248625, route = xi.voidwatch.routeName.WINDURST, abyssite = xi.keyItem.JADE_STRATUM_ABYSSITE   , nm = 'Virvatuli'      },
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+
+        for _, starterRiftCase in ipairs(starterRiftCases) do
+            local keyItems =
+            {
+                [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+                [xi.keyItem.VOIDSTONE1] = true,
+            }
+            local player =
+            {
+                getMainLvl = function()
+                    return xi.voidwatch.minimumLevel
+                end,
+
+                hasKeyItem = function(_, keyItem)
+                    return keyItems[keyItem] == true
+                end,
+            }
+
+        GetMobByID = function(mobId)
+                assert(mobId == starterRiftCase.mob)
+                return
+                {
+                    isSpawned = function()
+                        return false
+                    end,
+                }
+            end
+
+            local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, starterRiftCase.rift)
+            assert(not canInitiate)
+            assert(status == 'abyssite')
+            assert(rift.route == starterRiftCase.route)
+
+            keyItems[starterRiftCase.abyssite] = true
+            keyItems[xi.keyItem.VOIDSTONE1] = nil
+            canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, starterRiftCase.rift)
+            assert(not canInitiate)
+            assert(status == 'voidstone')
+            assert(rift.route == starterRiftCase.route)
+
+            keyItems[xi.keyItem.VOIDSTONE1] = true
+            canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, starterRiftCase.rift)
+            assert(canInitiate)
+            assert(status == 'available')
+            assert(rift.nm == starterRiftCase.nm)
+        end
 
         GetMobByID = originalGetMobByID
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('validates Bastok starter rifts against indigo abyssite progression', function()
+    it('clears stale starter pyxis eligibility when a mapped rift is reinitiated', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID
+        local originalSpawnMob = SpawnMob
+        local charVars =
+        {
+            [xi.voidwatch.getPyxisRewardVar(17191580)] = 1,
+        }
         local keyItems =
         {
             [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
@@ -1188,6 +1230,10 @@ describe('Voidwatch', function()
         }
         local player =
         {
+            getID = function()
+                return 1001
+            end,
+
             getMainLvl = function()
                 return xi.voidwatch.minimumLevel
             end,
@@ -1195,10 +1241,17 @@ describe('Voidwatch', function()
             hasKeyItem = function(_, keyItem)
                 return keyItems[keyItem] == true
             end,
+
+            delKeyItem = function(_, keyItem)
+                keyItems[keyItem] = nil
+            end,
+
+            setCharVar = function(_, name, value)
+                charVars[name] = value
+            end,
         }
 
-        GetMobByID = function(mobId)
-            assert(mobId == 17211882)
+        GetMobByID = function()
             return
             {
                 isSpawned = function()
@@ -1207,65 +1260,26 @@ describe('Voidwatch', function()
             }
         end
 
-        xi.settings.main.ENABLE_VOIDWATCH = 1
-        local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17212116)
-        assert(not canInitiate)
-        assert(status == 'abyssite')
-        assert(rift.route == xi.voidwatch.routeName.BASTOK)
-
-        keyItems[xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true
-        canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17212116)
-        assert(canInitiate)
-        assert(status == 'available')
-        assert(rift.nm == 'Sallow Seymour')
-
-        GetMobByID = originalGetMobByID
-        xi.settings.main.ENABLE_VOIDWATCH = originalValue
-    end)
-
-    it('validates Windurst starter rifts against jade abyssite progression', function()
-        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
-        local originalGetMobByID = GetMobByID
-        local keyItems =
-        {
-            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
-            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
-            [xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true,
-            [xi.keyItem.VOIDSTONE1] = true,
-        }
-        local player =
-        {
-            getMainLvl = function()
-                return xi.voidwatch.minimumLevel
-            end,
-
-            hasKeyItem = function(_, keyItem)
-                return keyItems[keyItem] == true
-            end,
-        }
-
-        GetMobByID = function(mobId)
-            assert(mobId == 17248625)
+        SpawnMob = function()
             return
             {
-                isSpawned = function()
-                    return false
+                setLocalVar = function()
+                end,
+
+                updateClaim = function()
                 end,
             }
         end
 
         xi.settings.main.ENABLE_VOIDWATCH = 1
-        local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17167320)
-        assert(not canInitiate)
-        assert(status == 'abyssite')
-        assert(rift.route == xi.voidwatch.routeName.WINDURST)
+        local initiated, status, rift = xi.voidwatch.initiateStarterRift(player, 17191577)
 
-        keyItems[xi.keyItem.JADE_STRATUM_ABYSSITE] = true
-        canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17167320)
-        assert(canInitiate)
-        assert(status == 'available')
-        assert(rift.nm == 'Virvatuli')
+        assert(initiated)
+        assert(status == 'initiated')
+        assert(rift.pyxis == 17191580)
+        assert(charVars[xi.voidwatch.getPyxisRewardVar(17191580)] == 0)
 
+        SpawnMob = originalSpawnMob
         GetMobByID = originalGetMobByID
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
@@ -1298,6 +1312,9 @@ describe('Voidwatch', function()
 
             delKeyItem = function(_, keyItem)
                 keyItems[keyItem] = nil
+            end,
+
+            setCharVar = function()
             end,
         }
 
