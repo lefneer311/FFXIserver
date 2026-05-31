@@ -489,7 +489,6 @@ describe('Voidwatch', function()
         local keyItems =
         {
             [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
-            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
         }
         local player =
         {
@@ -515,7 +514,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('upgrades completed starter abyssites and replaces the previous key item', function()
+    it('upgrades completed San dOria abyssites and replaces the previous key item', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local keyItems =
         {
@@ -583,7 +582,7 @@ describe('Voidwatch', function()
         zones = originalZones
     end)
 
-    it('reports maximum starter abyssite tiers as a no-op', function()
+    it('reports maximum Windurst abyssite tiers as a no-op', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local keyItems =
         {
@@ -631,7 +630,7 @@ describe('Voidwatch', function()
         assert(destinationIds.windurst_west_sarutabaruta)
     end)
 
-    it('filters starter refiner teleport destinations by current abyssite tier', function()
+    it('filters starter San dOria refiner teleport destinations by current abyssite tier', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local keyItems =
         {
@@ -666,7 +665,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('rejects starter refiner teleport destinations when disabled or requirements are missing', function()
+    it('rejects starter Bastok refiner teleport destinations when disabled or requirements are missing', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local keyItems =
         {
@@ -1181,7 +1180,7 @@ describe('Voidwatch', function()
                 end,
             }
 
-        GetMobByID = function(mobId)
+            GetMobByID = function(mobId)
                 assert(mobId == starterRiftCase.mob)
                 return
                 {
@@ -1214,7 +1213,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('validates starter rift trade inputs without consuming unsupported items', function()
+    it('validates starter San dOria rift trade inputs without consuming unsupported items', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID
         local confirmedItem = nil
@@ -1309,7 +1308,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('applies starter rift validation before inspecting traded items', function()
+    it('applies starter San dOriar ift validation before inspecting traded items', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID
         local keyItems =
@@ -1374,7 +1373,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('clears stale starter pyxis eligibility when a mapped rift is reinitiated', function()
+    it('clears stale starter San dOria pyxis eligibility when a mapped rift is reinitiated', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID
         local originalSpawnMob = SpawnMob
@@ -1444,7 +1443,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('spends a voidstone and records starter rift NM spawn state', function()
+    it('spends a voidstone and records starter San dOria rift NM spawn state', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID
         local originalSpawnMob = SpawnMob
@@ -1520,7 +1519,7 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('marks the initiator complete and pyxis-eligible when a starter rift NM dies', function()
+    it('marks the initiator complete and pyxis-eligible when a starter San dOria rift NM dies', function()
         local charVars = {}
         local player =
         {
@@ -1554,7 +1553,7 @@ describe('Voidwatch', function()
         assert(charVars[xi.voidwatch.getPyxisRewardVar(17191580)] == 1)
     end)
 
-    it('gates starter pyxis placeholder rewards by content, requirements, and eligibility', function()
+    it('gates starter San dOriapyxis placeholder rewards by content, requirements, and eligibility', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local charVars =
         {

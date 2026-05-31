@@ -21,11 +21,14 @@ xi.voidwatch.currency =
 
 xi.voidwatch.var =
 {
-    nextVoidstone = xi.voidwatch.varPrefix .. 'NextVoidstone',
-    pyxisPrefix   = xi.voidwatch.varPrefix .. 'Pyxis:',
-    riftInitiator = xi.voidwatch.varPrefix .. 'RiftInitiator',
-    riftNpc       = xi.voidwatch.varPrefix .. 'RiftNpc',
-    riftPyxis     = xi.voidwatch.varPrefix .. 'RiftPyxis',
+    nextVoidstone     = xi.voidwatch.varPrefix .. 'NextVoidstone',
+    participantCount  = xi.voidwatch.varPrefix .. 'PCount',
+    participantPrefix = xi.voidwatch.varPrefix .. 'P:',
+    pyxisPrefix       = xi.voidwatch.varPrefix .. 'Pyxis:',
+    riftInitiator     = xi.voidwatch.varPrefix .. 'RiftInitiator',
+    riftMob           = xi.voidwatch.varPrefix .. 'RiftMob',
+    riftNpc           = xi.voidwatch.varPrefix .. 'RiftNpc',
+    riftPyxis         = xi.voidwatch.varPrefix .. 'RiftPyxis',
 }
 
 xi.voidwatch.voidstone =
@@ -900,6 +903,85 @@ function xi.voidwatch.validateStarterRiftTrade(player, riftNpcId, trade)
     return false, 'invalid_trade', rift
 end
 
+function xi.voidwatch.getParticipantVar(participantIndex)
+    return string.format('%s%d', xi.voidwatch.var.participantPrefix, participantIndex)
+end
+
+function xi.voidwatch.recordStarterBattleState(mob, riftNpcId, rift, initiator)
+    if not mob or not rift or not initiator then
+        return false
+    end
+
+    local initiatorId = initiator:getID()
+
+    mob:setLocalVar(xi.voidwatch.var.riftInitiator, initiatorId)
+    mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
+    mob:setLocalVar(xi.voidwatch.var.riftMob, rift.mob or 0)
+    mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
+    mob:setLocalVar(xi.voidwatch.var.participantCount, 1)
+    mob:setLocalVar(xi.voidwatch.getParticipantVar(1), initiatorId)
+
+    return true
+end
+
+function xi.voidwatch.getStarterBattleState(mob)
+    if not mob then
+        return nil
+    end
+
+    local riftNpcId = mob:getLocalVar(xi.voidwatch.var.riftNpc)
+    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+
+    if not rift then
+        return nil
+    end
+
+    local mobId = mob:getLocalVar(xi.voidwatch.var.riftMob)
+
+    if mobId ~= 0 and mobId ~= rift.mob then
+        return nil
+    end
+
+    local participantCount = mob:getLocalVar(xi.voidwatch.var.participantCount)
+    local participants = {}
+
+    for participantIndex = 1, participantCount do
+        local participantId = mob:getLocalVar(xi.voidwatch.getParticipantVar(participantIndex))
+
+        if participantId ~= 0 then
+            participants[#participants + 1] = participantId
+        end
+    end
+
+    return
+    {
+        riftNpcId    = riftNpcId,
+        mobId        = mobId,
+        pyxisNpcId   = mob:getLocalVar(xi.voidwatch.var.riftPyxis),
+        initiatorId  = mob:getLocalVar(xi.voidwatch.var.riftInitiator),
+        participants = participants,
+        rift         = rift,
+    }
+end
+
+function xi.voidwatch.clearStarterBattleState(mob)
+    if not mob then
+        return
+    end
+
+    local participantCount = mob:getLocalVar(xi.voidwatch.var.participantCount)
+
+    mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftMob, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftPyxis, 0)
+    mob:setLocalVar(xi.voidwatch.var.participantCount, 0)
+
+    for participantIndex = 1, participantCount do
+        mob:setLocalVar(xi.voidwatch.getParticipantVar(participantIndex), 0)
+    end
+end
+
 function xi.voidwatch.initiateStarterRift(player, riftNpcId)
     local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
 
@@ -919,9 +1001,7 @@ function xi.voidwatch.initiateStarterRift(player, riftNpcId)
         return false, 'invalid', rift, keyItem
     end
 
-    mob:setLocalVar(xi.voidwatch.var.riftInitiator, player:getID())
-    mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
-    mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
+    xi.voidwatch.recordStarterBattleState(mob, riftNpcId, rift, player)
     mob:updateClaim(player)
     xi.voidwatch.clearPyxisRewardEligible(player, rift.pyxis)
 
@@ -959,14 +1039,14 @@ function xi.voidwatch.onNMDeath(mob, player)
         return false, 'invalid', nil
     end
 
-    local riftNpcId = mob:getLocalVar(xi.voidwatch.var.riftNpc)
-    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+    local battleState = xi.voidwatch.getStarterBattleState(mob)
 
     if not rift then
         return false, 'invalid', nil
     end
 
-    local initiatorId = mob:getLocalVar(xi.voidwatch.var.riftInitiator)
+    local rift = battleState.rift
+    local initiatorId = battleState.initiatorId
     local creditPlayer = nil
 
     if player and player:getID() == initiatorId then
@@ -986,11 +1066,7 @@ function xi.voidwatch.onNMDeath(mob, player)
 end
 
 function xi.voidwatch.clearNMState(mob)
-    if mob then
-        mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
-        mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
-        mob:setLocalVar(xi.voidwatch.var.riftPyxis, 0)
-    end
+    xi.voidwatch.clearStarterBattleState(mob)
 end
 
 xi.voidwatch.pyxisMessage =
