@@ -496,6 +496,9 @@ xi.voidwatch.starterRifts =
     [17212116] = { route = routeName.BASTOK  , tier = 1, nm = 'Sallow Seymour', mob = 17211882, pyxis = 17212119 },
     [17212117] = { route = routeName.BASTOK  , tier = 1, nm = 'Sallow Seymour', mob = 17211883, pyxis = 17212120 },
     [17212118] = { route = routeName.BASTOK  , tier = 1, nm = 'Sallow Seymour', mob = 17211884, pyxis = 17212121 },
+    [17167320] = { route = routeName.WINDURST, tier = 1, nm = 'Virvatuli'     , mob = 17248625, pyxis = 17167323 },
+    [17167321] = { route = routeName.WINDURST, tier = 1, nm = 'Virvatuli'     , mob = 17248626, pyxis = 17167324 },
+    [17167322] = { route = routeName.WINDURST, tier = 1, nm = 'Virvatuli'     , mob = 17248627, pyxis = 17167325 },
 }
 
 local function printStarterOfficerMessage(player, message)

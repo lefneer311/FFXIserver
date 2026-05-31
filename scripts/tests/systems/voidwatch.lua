@@ -1083,15 +1083,18 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
-    it('defines a starter San d\'Oria rift slice for Sarimanok', function()
-        local expectedMobIds =
+    it('defines starter nation rift slices', function()
+        local expectedRifts =
         {
-            [17191577] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191335, pyxis = 17191580, zone = xi.zone.EAST_RONFAURE   },
-            [17191578] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191336, pyxis = 17191581, zone = xi.zone.EAST_RONFAURE   },
-            [17191579] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191337, pyxis = 17191582, zone = xi.zone.EAST_RONFAURE   },
-            [17212116] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211882, pyxis = 17212119, zone = xi.zone.NORTH_GUSTABERG },
-            [17212117] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211883, pyxis = 17212120, zone = xi.zone.NORTH_GUSTABERG },
-            [17212118] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211884, pyxis = 17212121, zone = xi.zone.NORTH_GUSTABERG },
+            [17191577] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191335, pyxis = 17191580, zone = xi.zone.EAST_RONFAURE      },
+            [17191578] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191336, pyxis = 17191581, zone = xi.zone.EAST_RONFAURE      },
+            [17191579] = { route = xi.voidwatch.routeName.SANDORIA, nm = 'Sarimanok'     , mob = 17191337, pyxis = 17191582, zone = xi.zone.EAST_RONFAURE      },
+            [17212116] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211882, pyxis = 17212119, zone = xi.zone.NORTH_GUSTABERG    },
+            [17212117] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211883, pyxis = 17212120, zone = xi.zone.NORTH_GUSTABERG    },
+            [17212118] = { route = xi.voidwatch.routeName.BASTOK  , nm = 'Sallow Seymour', mob = 17211884, pyxis = 17212121, zone = xi.zone.NORTH_GUSTABERG    },
+            [17167320] = { route = xi.voidwatch.routeName.WINDURST, nm = 'Virvatuli'     , mob = 17248625, pyxis = 17167323, zone = xi.zone.WEST_SARUTABARUTA  },
+            [17167321] = { route = xi.voidwatch.routeName.WINDURST, nm = 'Virvatuli'     , mob = 17248626, pyxis = 17167324, zone = xi.zone.WEST_SARUTABARUTA  },
+            [17167322] = { route = xi.voidwatch.routeName.WINDURST, nm = 'Virvatuli'     , mob = 17248627, pyxis = 17167325, zone = xi.zone.WEST_SARUTABARUTA  },
         }
 
         for riftNpcId, rift in pairs(xi.voidwatch.starterRifts) do
@@ -1215,6 +1218,53 @@ describe('Voidwatch', function()
         assert(canInitiate)
         assert(status == 'available')
         assert(rift.nm == 'Sallow Seymour')
+
+        GetMobByID = originalGetMobByID
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('validates Windurst starter rifts against jade abyssite progression', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.INDIGO_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.VOIDSTONE1] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+
+        GetMobByID = function(mobId)
+            assert(mobId == 17248625)
+            return
+            {
+                isSpawned = function()
+                    return false
+                end,
+            }
+        end
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17167320)
+        assert(not canInitiate)
+        assert(status == 'abyssite')
+        assert(rift.route == xi.voidwatch.routeName.WINDURST)
+
+        keyItems[xi.keyItem.JADE_STRATUM_ABYSSITE] = true
+        canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, 17167320)
+        assert(canInitiate)
+        assert(status == 'available')
+        assert(rift.nm == 'Virvatuli')
 
         GetMobByID = originalGetMobByID
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
