@@ -1214,6 +1214,166 @@ describe('Voidwatch', function()
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
+    it('validates starter rift trade inputs without consuming unsupported items', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local confirmedItem = nil
+        local confirmedTrade = false
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.VOIDSTONE1] = true,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            confirmTrade = function()
+                confirmedTrade = true
+            end,
+        }
+
+        local function makeTrade(itemIds)
+            return
+            {
+                getSlotCount = function()
+                    return #itemIds
+                end,
+
+                getItemId = function(_, slot)
+                    return itemIds[slot + 1]
+                end,
+
+                getItemQty = function(_, itemId)
+                    local quantity = 0
+
+                    for _, tradedItemId in ipairs(itemIds) do
+                        if tradedItemId == itemId then
+                            quantity = quantity + 1
+                        end
+                    end
+
+                    return quantity
+                end,
+
+                confirmItem = function(_, itemId, quantity)
+                    confirmedItem = { itemId = itemId, quantity = quantity }
+                end,
+            }
+        end
+
+        GetMobByID = function()
+            return
+            {
+                isSpawned = function()
+                    return false
+                end,
+            }
+        end
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        local accepted, status, rift = xi.voidwatch.validateStarterRiftTrade(player, 17191577, makeTrade({ xi.item.CATS_EYE }))
+        assert(not accepted)
+        assert(status == 'invalid_trade')
+        assert(rift.nm == 'Sarimanok')
+
+        accepted, status, rift = xi.voidwatch.validateStarterRiftTrade(player, 17191577, makeTrade({ xi.voidwatch.items.phaseDisplacer }))
+        assert(not accepted)
+        assert(status == 'unsupported_trade')
+        assert(rift.nm == 'Sarimanok')
+        assert(not confirmedItem)
+        assert(not confirmedTrade)
+        assert(keyItems[xi.keyItem.VOIDSTONE1])
+
+        accepted, status, rift = xi.voidwatch.validateStarterRiftTrade(player, 17191577, makeTrade({ xi.voidwatch.items.cells.COBALT }))
+        assert(not accepted)
+        assert(status == 'unsupported_trade')
+        assert(rift.nm == 'Sarimanok')
+        assert(not confirmedItem)
+        assert(not confirmedTrade)
+        assert(keyItems[xi.keyItem.VOIDSTONE1])
+
+        accepted, status, rift = xi.voidwatch.validateStarterRiftTrade(player, 17191577, nil)
+        assert(accepted)
+        assert(status == 'trigger')
+        assert(rift.nm == 'Sarimanok')
+
+        GetMobByID = originalGetMobByID
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
+    it('applies starter rift validation before inspecting traded items', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local originalGetMobByID = GetMobByID
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+            [xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = true,
+            [xi.keyItem.VOIDSTONE1] = true,
+        }
+        local level = xi.voidwatch.minimumLevel
+        local player =
+        {
+            getMainLvl = function()
+                return level
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+        }
+        local trade =
+        {
+            getSlotCount = function()
+                return 1
+            end,
+
+            getItemId = function()
+                return xi.voidwatch.items.phaseDisplacer
+            end,
+        }
+
+        GetMobByID = function()
+            return
+            {
+                isSpawned = function()
+                    return false
+                end,
+            }
+        end
+
+        xi.settings.main.ENABLE_VOIDWATCH = 0
+        local accepted, status = xi.voidwatch.validateStarterRiftTrade(player, 17191577, trade)
+        assert(not accepted)
+        assert(status == 'disabled')
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        level = xi.voidwatch.minimumLevel - 1
+        accepted, status = xi.voidwatch.validateStarterRiftTrade(player, 17191577, trade)
+        assert(not accepted)
+        assert(status == 'requirements')
+
+        level = xi.voidwatch.minimumLevel
+        accepted, status = xi.voidwatch.validateStarterRiftTrade(player, 17191576, trade)
+        assert(not accepted)
+        assert(status == 'invalid')
+
+        keyItems[xi.keyItem.CRIMSON_STRATUM_ABYSSITE] = nil
+        accepted, status = xi.voidwatch.validateStarterRiftTrade(player, 17191577, trade)
+        assert(not accepted)
+        assert(status == 'abyssite')
+
+        GetMobByID = originalGetMobByID
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
+    end)
+
     it('clears stale starter pyxis eligibility when a mapped rift is reinitiated', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local originalGetMobByID = GetMobByID

@@ -738,13 +738,15 @@ end
 
 xi.voidwatch.riftMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
-    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to initiate this Voidwatch operation.',
-    ABYSSITE     = 'Your stratum abyssite is not yet strong enough to initiate this operation.',
-    VOIDSTONE    = 'A voidstone is required to initiate this Voidwatch operation.',
-    BUSY         = 'A Voidwatch notorious monster is already present at this rift.',
-    INITIATED    = 'A Voidwatch notorious monster materializes from the rift.',
-    INVALID      = 'This planar rift is not ready for Voidwatch operations.',
+    DISABLED          = 'Voidwatch is currently disabled.',
+    REQUIREMENTS      = 'You must be level 75 and possess an adventurer\'s certificate to initiate this Voidwatch operation.',
+    ABYSSITE          = 'Your stratum abyssite is not yet strong enough to initiate this operation.',
+    VOIDSTONE         = 'A voidstone is required to initiate this Voidwatch operation.',
+    BUSY              = 'A Voidwatch notorious monster is already present at this rift.',
+    UNSUPPORTED_TRADE = 'This Voidwatch trade option is not yet implemented.',
+    TRADE             = 'That item cannot be used to initiate this Voidwatch operation.',
+    INITIATED         = 'A Voidwatch notorious monster materializes from the rift.',
+    INVALID           = 'This planar rift is not ready for Voidwatch operations.',
 }
 
 local function printRiftMessage(player, message)
@@ -764,6 +766,10 @@ local function getRiftMessageForStatus(status)
         return xi.voidwatch.riftMessage.VOIDSTONE
     elseif status == 'busy' then
         return xi.voidwatch.riftMessage.BUSY
+    elseif status == 'unsupported_trade' then
+        return xi.voidwatch.riftMessage.UNSUPPORTED_TRADE
+    elseif status == 'invalid_trade' then
+        return xi.voidwatch.riftMessage.TRADE
     end
 
     return xi.voidwatch.riftMessage.INVALID
@@ -803,6 +809,47 @@ function xi.voidwatch.clearPyxisRewardEligible(player, pyxisNpcId)
     end
 end
 
+local function isAscentCellItem(itemId)
+    for _, cellItem in pairs(xi.voidwatch.items.cells) do
+        if itemId == cellItem then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function classifyStarterRiftTrade(trade)
+    if not trade or trade:getSlotCount() == 0 then
+        return 'trigger'
+    end
+
+    local hasPhaseDisplacer = false
+    local hasAscentCell = false
+
+    for slot = 0, trade:getSlotCount() - 1 do
+        local itemId = trade:getItemId(slot)
+
+        if itemId == xi.voidwatch.items.phaseDisplacer then
+            hasPhaseDisplacer = true
+        elseif isAscentCellItem(itemId) then
+            hasAscentCell = true
+        else
+            return 'invalid'
+        end
+    end
+
+    if hasPhaseDisplacer and hasAscentCell then
+        return 'invalid'
+    elseif hasPhaseDisplacer then
+        return 'phase_displacer'
+    elseif hasAscentCell then
+        return 'ascent_cell'
+    end
+
+    return 'invalid'
+end
+
 function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
     if not xi.voidwatch.isEnabled() then
         return false, 'disabled', nil
@@ -833,6 +880,24 @@ function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
     end
 
     return true, 'available', rift
+end
+
+function xi.voidwatch.validateStarterRiftTrade(player, riftNpcId, trade)
+    local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
+
+    if not canInitiate then
+        return false, status, rift
+    end
+
+    local tradeType = classifyStarterRiftTrade(trade)
+
+    if tradeType == 'trigger' then
+        return true, 'trigger', rift
+    elseif tradeType == 'phase_displacer' or tradeType == 'ascent_cell' then
+        return false, 'unsupported_trade', rift
+    end
+
+    return false, 'invalid_trade', rift
 end
 
 function xi.voidwatch.initiateStarterRift(player, riftNpcId)
@@ -868,6 +933,22 @@ function xi.voidwatch.onStarterRiftTrigger(player, npc)
 
     if initiated then
         printRiftMessage(player, xi.voidwatch.riftMessage.INITIATED)
+    else
+        printRiftMessage(player, getRiftMessageForStatus(status))
+    end
+end
+
+function xi.voidwatch.onStarterRiftTrade(player, npc, trade)
+    local accepted, status = xi.voidwatch.validateStarterRiftTrade(player, npc:getID(), trade)
+
+    if accepted then
+        local initiated, initiateStatus = xi.voidwatch.initiateStarterRift(player, npc:getID())
+
+        if initiated then
+            printRiftMessage(player, xi.voidwatch.riftMessage.INITIATED)
+        else
+            printRiftMessage(player, getRiftMessageForStatus(initiateStatus))
+        end
     else
         printRiftMessage(player, getRiftMessageForStatus(status))
     end

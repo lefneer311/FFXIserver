@@ -11,6 +11,10 @@ require('scripts/globals/voidwatch/voidwatch')
 ---@type TNpcEntity
 local entity = {}
 
+entity.onTrade = function(player, npc, trade)
+    xi.voidwatch.onStarterRiftTrade(player, npc, trade)
+end
+
 entity.onTrigger = function(player, npc)
     xi.voidwatch.onStarterRiftTrigger(player, npc)
 end
