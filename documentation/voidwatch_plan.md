@@ -55,9 +55,9 @@ Scripted support already present:
 - The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, phase displacers, petrifacts, corundums, and route/tier/NM data.
 - The module has helpers for route lookup, maximum route tier, player abyssite tier, tier initiation checks, per-NM completion variables, tier-complete checks, abyssite-upgrade eligibility, starter route detection, and starter abyssite lookup/granting.
 - The module has voidstone helpers for carried key-item count, next key item, capacity, timer interval, stored stock, 20-hour accrual, periapt capacity/timer modifiers, withdrawing stored stones to key items, one-pouch Voiddust trades, and voidstone spending for initiated rift battles.
-- The module has a narrow starter-rift slice for San d'Oria tier 1 Sarimanok rifts in East Ronfaure, including requirement validation, NM spawn state, and initiator completion credit.
+- The module has starter-rift slices for San d'Oria tier 1 Sarimanok rifts in East Ronfaure and Bastok tier 1 Sallow Seymour rifts in North Gustaberg, including requirement validation, NM spawn state, initiator completion credit, and placeholder pyxis reward eligibility.
 - Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants. Three starter-city `Atmacite_Refiner` scripts share the module for abyssite examination/upgrades and limited starter-route teleport validation/cost handling. Three starter-city `Voidwatch_Purveyor` scripts share the module for limited cell, Voiddust, and phase-displacer purchases. Full atmacite services are not yet implemented.
-- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, starter-route refiner teleport validation/cost handling, starter-purveyor stock/purchase validation, and the starter San d'Oria rift initiation/completion slice.
+- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, starter-route refiner teleport validation/cost handling, starter-purveyor stock/purchase validation, the starter San d'Oria rift initiation/completion/pyxis slice, and the Bastok Sallow Seymour starter-rift table/progression checks.
 
 ## Completed implementation slices
 
@@ -135,6 +135,17 @@ Completed:
 5. The slice intentionally excludes pyxis rewards, spectral alignment, phase-displacer/ascent-cell effects, weakness/stagger systems, broad route coverage, and quest cutscenes.
 6. Tests cover rift table integrity, disabled/missing-requirement behavior, abyssite and voidstone validation, voidstone spending, NM spawn state, and completion-credit setting.
 
+### Phase 4B: Starter pyxis placeholder and second starter-rift route (complete for current needs)
+
+Completed:
+
+1. East Ronfaure `Riftworn_Pyxis` scripting exposes a guarded placeholder interaction for the Sarimanok slice.
+2. Sarimanok death records per-initiator pyxis reward eligibility, and inspecting the mapped pyxis consumes that placeholder eligibility while deferring full loot/alignment generation.
+3. North Gustaberg `Planar_Rift`, `Riftworn_Pyxis`, and Sallow Seymour mob scripts reuse the shared starter-rift lifecycle for the Bastok tier-1 route.
+4. The shared rift table maps the three North Gustaberg rifts to the three Sallow Seymour mob IDs and their paired pyxides, with indigo abyssite progression validation.
+5. This slice intentionally excludes full pyxis rewards, spectral alignment, phase-displacer/ascent-cell effects, weakness/stagger systems, broad route coverage beyond the two starter slices, and quest cutscenes.
+6. Tests cover expanded rift/pyxis table integrity, disabled/missing-requirement behavior, pyxis eligibility consumption, and Bastok-specific indigo abyssite validation.
+
 ## Accuracy and completeness gaps
 
 ### Toggle and content gating
@@ -145,14 +156,14 @@ Completed:
 
 ### NPCs and object interaction
 
-- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, the three starter-city `Atmacite_Refiner` scripts, the three starter-city `Voidwatch_Purveyor` scripts, and the East Ronfaure `Planar_Rift` script for the San d'Oria tier-1 Sarimanok slice.
+- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, the three starter-city `Atmacite_Refiner` scripts, the three starter-city `Voidwatch_Purveyor` scripts, East Ronfaure `Planar_Rift`/`Riftworn_Pyxis` scripts for the San d'Oria tier-1 Sarimanok slice, and North Gustaberg `Planar_Rift`/`Riftworn_Pyxis` scripts for the Bastok tier-1 Sallow Seymour slice.
 - Missing: scripts for non-starter officers, non-starter Atmacite Refiners, non-starter Voidwatch Purveyors, most Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
 - Missing: refiner behavior for non-starter abyssite upgrade checks, atmacite equip/upgrade, and full retail teleport menus.
 - Missing: retail event/cutscene integration for officers and storyline NPCs. The current starter officer implementation is functional/system-message based, not a retail-accurate event flow.
 
 ### Progression and quests
 
-- Present: generic per-NM completion variable helpers, tier-complete checks, abyssite-upgrade eligibility helpers, and Sarimanok battle completion credit for the San d'Oria tier-1 starter slice.
+- Present: generic per-NM completion variable helpers, tier-complete checks, abyssite-upgrade eligibility helpers, and battle completion credit for the Sarimanok and Sallow Seymour starter slices.
 - Missing: battle code that sets completion flags for the remaining Voidwatch NMs.
 - Missing: all 30 Voidwatch quest scripts listed by BG Wiki's Voidwatch Quests category.
 - Missing: quest-region placement and NPC event handling for starter-city, Jeuno, Zilart, Tavnazia, Aht Urhgan, Provenance, and finale quests.
@@ -161,7 +172,7 @@ Completed:
 
 ### Battles
 
-- Present: a narrow East Ronfaure Sarimanok Planar Rift initiation flow with initiator requirement checks, carried-voidstone spending, spawned-NM state, and completion credit.
+- Present: narrow East Ronfaure Sarimanok and North Gustaberg Sallow Seymour Planar Rift initiation flows with initiator requirement checks, carried-voidstone spending, spawned-NM state, completion credit, and placeholder pyxis eligibility.
 - Missing: full Planar Rift initiation flow, including party/alliance validation, rank/key-item checks beyond the starter slice, participation eligibility for non-initiators, and broad route/rift coverage.
 - Missing: support for ascent item trades, phase displacer clusters, corundum spending, and battlefield reservation where applicable.
 - Missing: full battle status state that associates a spawned NM with all eligible players and pyxis state.
@@ -201,17 +212,17 @@ Completed:
 
 ## Recommended next PR
 
-The next PR should move to **Phase 4B: extend the starter-rift battle lifecycle to pyxis placeholders or a second starter route**. The San d'Oria tier-1 Sarimanok slice now proves the basic rift-to-NM-to-completion path, but reward eligibility and route breadth are still intentionally narrow.
+The next PR should move to **Phase 4C: add the Windurst tier-1 starter-rift slice or broaden placeholder pyxis cleanup**. The current starter lifecycle now covers Sarimanok and Sallow Seymour plus a minimal pyxis eligibility placeholder, but route breadth and reward cleanup remain intentionally narrow.
 
 Recommended scope:
 
-1. Either add a minimal Riftworn Pyxis placeholder for the Sarimanok slice or add one equivalent tier-1 rift slice for Bastok or Windurst.
-2. Preserve the same runtime validation pattern: `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, current-route abyssite tier, and voidstone availability.
-3. If adding pyxis behavior, keep it minimal: record that the initiator earned reward eligibility, expose a guarded interaction message, and defer full loot/alignment generation.
-4. If adding another route, reuse the shared rift helpers and add only the route-specific rift/NM table entries and mob/NPC scripts needed for that vertical slice.
+1. Prefer adding the Windurst tier-1 Virvatuli rift slice in West Sarutabaruta so all three starter nations have one present-day tier-1 rift path.
+2. Preserve the same runtime validation pattern: `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, current-route abyssite tier, voidstone availability, and already-spawned NM checks.
+3. Reuse the shared rift helpers and add only the Windurst route-specific rift/NM table entries plus the mob/NPC scripts needed for that vertical slice.
+4. If improving pyxis behavior instead, keep it placeholder-only: timeout or cleanup state for eligible players without adding retail loot/alignment generation.
 5. Keep phase-displacer and ascent-cell handling minimal or stubbed unless the selected scope needs a small, tested hook.
 6. Keep the PR intentionally narrow: do not add full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage beyond the selected slice, or quest cutscenes.
-7. Add focused tests for any new rift/pyxis table integrity, disabled/missing-requirement behavior, eligibility validation, voidstone spending/failure cases, state cleanup, and completion or reward-eligibility setting.
+7. Add focused tests for any new rift/pyxis table integrity, disabled/missing-requirement behavior, Windurst jade-abyssite validation, voidstone spending/failure cases, state cleanup, and completion or reward-eligibility setting.
 
 ## Remaining completion plan
 
