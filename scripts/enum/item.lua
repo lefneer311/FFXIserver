@@ -2408,6 +2408,7 @@ xi.item =
     CHEMISTRY_SET                       = 3749,
     QIQIRN_SACK                         = 3750,
     BESIGILED_TABLE                     = 3751,
+    PHASE_DISPLACER                     = 3853,
     VALKYRIES_TEAR                      = 3856,
     VALKYRIES_WING                      = 3867,
     VALKYRIES_SOUL                      = 3868,
