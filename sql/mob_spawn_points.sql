@@ -13766,7 +13766,8 @@ INSERT INTO `mob_spawn_points` VALUES (17002543,0,'Undead_Slime','Undead Slime',
 INSERT INTO `mob_spawn_points` VALUES (17002544,0,'Undead_Toad','Undead Toad',14,79,80,491.285,-5.183,303.974,90);
 
 -- demolition duty
--- ids 17002545 to 17002550 (Demolition Automaton, Wreckage) are NPCs
+INSERT INTO `mob_spawn_points` VALUES (17002545,0,'Demolition_Automaton','Demolition Automaton',38,0,0,0.000,0.000,0.000,0);
+-- ids 17002546 to 17002550 (Wreckage) are NPCs
 INSERT INTO `mob_spawn_points` VALUES (17002551,0,'Carrion_Crab','Carrion Crab',7,76,78,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17002552,0,'Carrion_Crab','Carrion Crab',7,76,78,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17002553,0,'Carrion_Crab','Carrion Crab',7,76,78,0.000,0.000,0.000,0);
@@ -13870,6 +13871,9 @@ INSERT INTO `mob_spawn_points` VALUES (17002650,0,'Qiqirn_Pecheur','Qiqirn Peche
 -- Bellerophon bliss @ -464 0.30 -540 rot 0
 INSERT INTO `mob_spawn_points` VALUES (17002651,0,'Khimaira_14X','Khimaira 14X',35,80,82,-395.000,-1.878,-560.000,162);
 INSERT INTO `mob_spawn_points` VALUES (17002652,0,'Martial_Maestro_Megomak','Martial Maestro Megomak',36,78,80,-393.730,-2.499,-553.414,150);
+
+-- Escort Professor Chanoix
+INSERT INTO `mob_spawn_points` VALUES (17002659,0,'Clavauert_B_Chanoix','Clavauert B Chanoix',37,0,0,0.000,0.000,0.000,0);
 
 -- ------------------------------------------------------------
 -- Periqia (Zone 56)
@@ -14038,7 +14042,12 @@ INSERT INTO `mob_spawn_points` VALUES (17006762,0,'K23H1-LAMIA','K23H1-LAMIA',25
 INSERT INTO `mob_spawn_points` VALUES (17006763,0,'K23H1-LAMIA','K23H1-LAMIA',25,71,73,179.826,-7.960,-331.734,115);
 
 -- wake the puppet
--- ids 17006764 to 17006769 (Maymuns) are NPCs
+INSERT INTO `mob_spawn_points` VALUES (17006764,0,'Maymun_33','Maymun 33',1959,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17006765,0,'Maymun_09','Maymun 09',1956,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17006766,0,'Maymun_74','Maymun 74',1961,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17006767,0,'Maymun_53','Maymun 53',1960,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17006768,0,'Maymun_21','Maymun 21',1957,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17006769,0,'Maymun_27','Maymun 27',1958,0,0,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17006770,0,'Wight','Wight',26,66,66,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17006771,0,'Wight','Wight',26,66,66,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17006772,0,'Wight','Wight',26,66,66,0.000,0.000,0.000,0);
@@ -15456,7 +15465,10 @@ INSERT INTO `mob_spawn_points` VALUES (17035463,0,'Vulcanian_Bomb','Vulcanian Bo
 INSERT INTO `mob_spawn_points` VALUES (17035464,0,'Vulcanian_Bomb','Vulcanian Bomb',12,72,74,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17035465,0,'Vulcanian_Bomb','Vulcanian Bomb',12,72,74,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17035466,0,'Vulcanian_Bomb','Vulcanian Bomb',12,72,74,0.000,0.000,0.000,0);
--- ids 17035467 to 17035469 (Kudjreel, Yanshaal, Djahama) are NPCs
+-- Operation: Black Pearl
+INSERT INTO `mob_spawn_points` VALUES (17035467,0,'Kudjreel','Kudjreel',101,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17035468,0,'Yanshaal','Yanshaal',102,0,0,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17035469,0,'Djahama','Djahama',103,0,0,0.000,0.000,0.000,0);
 
 -- Better than one
 INSERT INTO `mob_spawn_points` VALUES (17035470,0,'Black_Shuck','Black Shuck',21,80,82,480.000,-0.500,-403.000,64);
@@ -15466,6 +15478,7 @@ INSERT INTO `mob_spawn_points` VALUES (17035473,0,'Nocuous_Inferno','Nocuous Inf
 INSERT INTO `mob_spawn_points` VALUES (17035474,0,'Nocuous_Inferno','Nocuous Inferno',22,75,75,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17035475,0,'Nocuous_Inferno','Nocuous Inferno',22,75,75,0.000,0.000,0.000,0);
 INSERT INTO `mob_spawn_points` VALUES (17035476,0,'Nocuous_Inferno','Nocuous Inferno',22,75,75,0.000,0.000,0.000,0);
+INSERT INTO `mob_spawn_points` VALUES (17035488,0,'Kadjaya','Kadjaya',104,0,0,0.000,0.000,0.000,0);
 
 -- ------------------------------------------------------------
 -- Navukgo Execution Chamber (Zone 64)
@@ -26167,6 +26180,7 @@ INSERT INTO `mob_spawn_points` VALUES (17126052,0,'Auroral_Alicorn','Auroral Ali
 -- ------------------------------------------------------------
 -- Everbloom Hollow(Zone 86)
 -- ------------------------------------------------------------
+
 -- Honor under fire
 INSERT INTO `mob_spawn_points` VALUES (17129602,0,'Arch_Ahriman','Arch Ahriman',0,0,0,-145.617,1.221,182.235,150);
 -- ahriman morphs into volker nicolaus or 5moons
@@ -30735,6 +30749,10 @@ INSERT INTO `mob_spawn_points` VALUES (17154755,0,'Auroral_Alicorn','Auroral Ali
 -- ------------------------------------------------------------
 -- Ruhotz Silvermines (Zone 93)
 -- ------------------------------------------------------------
+
+INSERT INTO `mob_spawn_points` VALUES (17158188,0,'Republic_Garrison','Republic Garrison',4651,0,0,0.000,0.000,0.000,0); -- Capture needed
+INSERT INTO `mob_spawn_points` VALUES (17158189,0,'Republic_Garrison','Republic Garrison',4651,0,0,0.000,0.000,0.000,0); -- Capture needed
+INSERT INTO `mob_spawn_points` VALUES (17158190,0,'Republic_Garrison','Republic Garrison',4651,0,0,0.000,0.000,0.000,0); -- Capture needed
 
 -- Light in the Darkness
 INSERT INTO `mob_spawn_points` VALUES (17158192,0,'Sapphirine_Quadav','Sapphirine Quadav',4653,60,60,-40.590,-0.500,40.919,231);
@@ -76431,6 +76449,7 @@ INSERT INTO `mob_spawn_points` VALUES (17629661,0,'Sand_Tarantula','Sand Tarantu
 INSERT INTO `mob_spawn_points` VALUES (17629662,0,'Sand_Lizard','Sand Lizard',48,139,139,-536.640,-0.500,-421.020,37);                      -- TVR: Raebrimm's Rebirth
 INSERT INTO `mob_spawn_points` VALUES (17629663,0,'Sand_Lizard','Sand Lizard',48,139,139,-536.470,-0.500,-423.440,150);                     -- TVR: Raebrimm's Rebirth
 INSERT INTO `mob_spawn_points` VALUES (17629664,0,'Uran-Mafran','Uran-Mafran',45,139,139,-61.030,-16.230,275.180,206);                      -- TVR: Uran-Mafran of the Maelstrom
+INSERT INTO `mob_spawn_points` VALUES (17629665,0,'Oggbi','Oggbi',49,139,139,-58.149,-16.399,278.045,96);                                   -- TVR: Uran-Mafran of the Maelstrom
 
 -- ------------------------------------------------------------
 -- Cloister of Tremors (Zone 209)

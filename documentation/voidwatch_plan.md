@@ -59,6 +59,28 @@ Scripted support already present:
 - Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants. Three starter-city `Atmacite_Refiner` scripts share the module for abyssite examination/upgrades and limited starter-route teleport validation/cost handling. Three starter-city `Voidwatch_Purveyor` scripts share the module for limited cell, Voiddust, and phase-displacer purchases. Full atmacite services are not yet implemented.
 - `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, starter-route refiner teleport validation/cost handling, starter-purveyor stock/purchase validation, starter nation rift initiation/completion/pyxis slices, Bastok Sallow Seymour starter-rift table/progression checks, and Windurst Virvatuli jade-abyssite validation.
 
+## Current codebase inventory (May 31, 2026)
+
+The repository now has both substantial static data and an initial Lua implementation slice for Voidwatch.
+
+Static/data support already present:
+
+- `settings/default/main.lua` exposes `ENABLE_VOIDWATCH` in the main settings table.
+- `sql/npc_list.sql` contains content-tagged Voidwatch NPCs and objects, including Planar Rifts, Riftworn Pyxides, Voidwatch Purveyors, Atmacite Refiners, and Voidwatch Officers.
+- `sql/char_points.sql` stores `voidstones` and `kupofried_corundums` point/currency fields that can back the officer and Provenance systems.
+- `sql/status_effects.sql` defines the hidden `voidwatcher` effect.
+- `sql/mob_pools.sql`, `sql/mob_groups.sql`, and `sql/mob_spawn_points.sql` include many named Voidwatch NMs, including starter-nation NMs, Jeuno/Zilart/Tavnazia/Aht Urhgan targets, Radiance encounters, and Provenance Watcher.
+
+Scripted support already present:
+
+- `scripts/globals/voidwatch/voidwatch.lua` is the active shared module location. Do not add a competing root-level `scripts/globals/voidwatch.lua` module unless the codebase is intentionally refactored.
+- The module has an `xi.settings.main.ENABLE_VOIDWATCH` runtime guard, level/certificate base requirement checks, route names, stratum mappings, abyssite key-item tables, selected periapt lists, atmacite lists, cells, Voiddust, phase displacers, petrifacts, corundums, and route/tier/NM data.
+- The module has helpers for route lookup, maximum route tier, player abyssite tier, tier initiation checks, per-NM completion variables, tier-complete checks, abyssite-upgrade eligibility, starter route detection, and starter abyssite lookup/granting.
+- The module has voidstone helpers for carried key-item count, next key item, capacity, timer interval, stored stock, 20-hour accrual, periapt capacity/timer modifiers, withdrawing stored stones to key items, one-pouch Voiddust trades, and voidstone spending for initiated rift battles.
+- The module has starter-rift slices for San d'Oria tier 1 Sarimanok rifts in East Ronfaure, Bastok tier 1 Sallow Seymour rifts in North Gustaberg, and Windurst tier 1 Virvatuli rifts in West Sarutabaruta, including requirement validation, unsupported phase-displacer/ascent-cell trade recognition, compact starter battle state, initiator completion credit, and placeholder pyxis reward eligibility.
+- Three starter-city `Voidwatch_Officer` scripts exist in Southern San d'Oria, Bastok Markets, and Windurst Walls. They share the module for trigger/trade handling and route-specific starter abyssite grants. Three starter-city `Atmacite_Refiner` scripts share the module for abyssite examination/upgrades and limited starter-route teleport validation/cost handling. Three starter-city `Voidwatch_Purveyor` scripts share the module for limited cell, Voiddust, and phase-displacer purchases. Full atmacite services are not yet implemented.
+- `scripts/tests/systems/voidwatch.lua` covers toggle behavior, base requirements, route table consistency, starter abyssite mapping and idempotency, disabled/missing-requirement cases, periapt capacity/timer helpers, stock accrual, voidstone withdrawal, Voiddust trade behavior, starter-refiner abyssite examination outcomes, starter-route refiner teleport validation/cost handling, starter-purveyor stock/purchase validation, starter nation rift initiation/completion/pyxis slices, route-specific rift abyssite validation, starter-rift trade validation, starter battle-state record/read/clear helpers, and placeholder pyxis eligibility cleanup.
+
 ## Completed implementation slices
 
 ### Phase 1: Toggle, data model, and shared module foundation (complete for current needs)
@@ -166,6 +188,27 @@ Completed:
 3. The cleanup remains intentionally narrow and does not add full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
 4. Tests cover mapped-rift pyxis cleanup and now validate San d'Oria, Bastok, and Windurst starter rift abyssite requirements independently by route.
 
+### Phase 4E: Starter rift trade validation groundwork (complete for current needs)
+
+Completed:
+
+1. East Ronfaure, North Gustaberg, and West Sarutabaruta `Planar_Rift` scripts now route trades through the shared starter-rift trade handler.
+2. The shared module classifies empty trigger-like interactions, unsupported phase-displacer trades, unsupported ascent-cell trades, and invalid item trades without consuming traded items.
+3. Trade validation reuses the existing starter-rift runtime checks for `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, mapped rift IDs, route-specific abyssites, voidstone availability, and already-spawned NM state before item classification.
+4. The groundwork remains intentionally narrow and does not add phase-displacer effects, ascent-cell effects, full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
+5. Tests cover invalid rift IDs, disabled/missing-requirement behavior, route-specific abyssite checks before trade classification, invalid trade items, non-consumption of unsupported phase-displacer/ascent-cell trades, and unchanged normal trigger-style validation.
+
+### Phase 4F: Starter rift participant-state groundwork (complete for current needs)
+
+Completed:
+
+1. The shared module now has compact helpers to record, read, and clear starter Voidwatch battle state on the spawned NM.
+2. Successful starter-rift initiation records the mapped rift NPC ID, spawned mob ID, mapped pyxis NPC ID, initiator ID, and an initial participant list containing the initiator only.
+3. Existing starter NM despawn cleanup now clears the shared battle-state shape, including participant slots, through the common cleanup helper.
+4. The implementation keeps the existing runtime validation pattern and voidstone-spending behavior unchanged for the starter slices.
+5. Tests cover battle-state creation during successful initiation, direct record/read/clear helper behavior, invalid NM state rejection, route-specific abyssite setup for non-San d'Oria rift validation tests, and unchanged placeholder pyxis eligibility cleanup.
+6. This slice remains intentionally narrow and does not add party/alliance scanning, full participant reward eligibility, phase-displacer effects, ascent-cell effects, full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
+
 ## Accuracy and completeness gaps
 
 ### Toggle and content gating
@@ -176,7 +219,7 @@ Completed:
 
 ### NPCs and object interaction
 
-- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, the three starter-city `Atmacite_Refiner` scripts, the three starter-city `Voidwatch_Purveyor` scripts, East Ronfaure `Planar_Rift`/`Riftworn_Pyxis` scripts for the San d'Oria tier-1 Sarimanok slice, North Gustaberg `Planar_Rift`/`Riftworn_Pyxis` scripts for the Bastok tier-1 Sallow Seymour slice, and West Sarutabaruta `Planar_Rift`/`Riftworn_Pyxis` scripts for the Windurst tier-1 Virvatuli slice.
+- Present: shared module, the three starter-city `Voidwatch_Officer` scripts, the three starter-city `Atmacite_Refiner` scripts, the three starter-city `Voidwatch_Purveyor` scripts, East Ronfaure `Planar_Rift`/`Riftworn_Pyxis` scripts for the San d'Oria tier-1 Sarimanok slice, North Gustaberg `Planar_Rift`/`Riftworn_Pyxis` scripts for the Bastok tier-1 Sallow Seymour slice, and West Sarutabaruta `Planar_Rift`/`Riftworn_Pyxis` scripts for the Windurst tier-1 Virvatuli slice. The starter `Planar_Rift` scripts also share trade validation for currently unsupported phase-displacer/ascent-cell inputs.
 - Missing: scripts for non-starter officers, non-starter Atmacite Refiners, non-starter Voidwatch Purveyors, most Planar Rifts, Riftworn Pyxides, Provenance `Regal_Pawprints`, and Provenance/Walk of Echoes access objects.
 - Missing: refiner behavior for non-starter abyssite upgrade checks, atmacite equip/upgrade, and full retail teleport menus.
 - Missing: retail event/cutscene integration for officers and storyline NPCs. The current starter officer implementation is functional/system-message based, not a retail-accurate event flow.
@@ -192,10 +235,12 @@ Completed:
 
 ### Battles
 
-- Present: narrow East Ronfaure Sarimanok and North Gustaberg Sallow Seymour Planar Rift initiation flows with initiator requirement checks, carried-voidstone spending, spawned-NM state, completion credit, and placeholder pyxis eligibility.
+- Present: narrow East Ronfaure Sarimanok, North Gustaberg Sallow Seymour, and West Sarutabaruta Virvatuli Planar Rift initiation flows with initiator requirement checks, carried-voidstone spending, compact spawned-NM battle state, completion credit, and placeholder pyxis eligibility.
 - Missing: full Planar Rift initiation flow, including party/alliance validation, rank/key-item checks beyond the starter slice, participation eligibility for non-initiators, and broad route/rift coverage.
-- Missing: support for ascent item trades, phase displacer clusters, corundum spending, and battlefield reservation where applicable.
-- Missing: full battle status state that associates a spawned NM with all eligible players and pyxis state.
+- Present: starter rift trade validation recognizes unsupported ascent-cell and phase-displacer inputs without consuming items.
+- Missing: actual ascent item effects, phase displacer cluster effects, corundum spending, and battlefield reservation where applicable.
+- Present: starter rift battle state records the mapped rift, spawned NM, mapped pyxis, initiator, and an initial initiator-only participant list.
+- Missing: full battle status state that associates party/alliance participants, individual voidstone spending decisions, alignment, and per-player pyxis reward state.
 - Missing: retail-style Voidwatch weaknesses, proc messages, stagger duration, temporary item restoration, and synchronic blitz.
 - Missing: spectral alignment calculations and caps.
 - Missing: per-player Riftworn Pyxis reward generation, including individual loot pools, alignment-influenced quality/quantity, key-item/atmacite/periapt acquisition, cruor/EXP awards, campaign overrides, and pyxis cleanup.
@@ -209,6 +254,18 @@ Completed:
 - Missing: Provenance Watcher entry requiring the three petrifacts.
 - Missing: Regal Pawprints atmacite/refiner behavior inside Provenance.
 - Missing: Provenance-specific battlefield timers, member limits, titles, and final quest completion.
+
+## Recommended next PR
+
+The next PR should move to **Phase 4G: starter rift participant discovery scaffolding**. The current starter lifecycle records an initiator-only battle-state shape for the mapped rift, spawned NM, pyxis, and participant list. The next missing foundation is a narrow way to discover eligible party/alliance members near the initiator without yet granting full individual rewards.
+
+Recommended scope:
+
+1. Add shared helper seams that can collect eligible starter-rift participants from the initiator's current party/alliance when the server APIs are available, while falling back to the current initiator-only behavior in tests.
+2. Validate each discovered participant with enabled-content, level 75+, Adventurer's Certificate, and route-specific abyssite requirements; do not treat crimson abyssite as a global Voidwatch unlock.
+3. Record participant IDs in the existing compact battle-state helper without changing voidstone spending, claim, completion credit, or placeholder pyxis behavior.
+4. Add focused tests for San d'Oria, Bastok, and Windurst participant validation, including route-specific crimson/indigo/jade abyssite cases and ineligible party-member exclusion.
+5. Keep the PR intentionally narrow: do not add individual participant voidstone prompts, full pyxis rewards, phase-displacer effects, ascent-cell effects, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
 
 ## Completion plan
 
@@ -229,20 +286,6 @@ Completed:
 3. Implement voidstone accrual using a persistent timestamp and capacity derived from frontiers periapts.
 4. Implement Voiddust trades for voidstone stock.
 5. Add clear disabled-content messaging when the toggle is off.
-
-## Recommended next PR
-
-The next PR should move to **Phase 4E: starter rift trade validation groundwork**. The current starter lifecycle covers all three present-day starter-nation tier-1 rift paths and now cleans stale placeholder pyxis eligibility when a mapped rift is reinitiated, but rift trades still do not distinguish ordinary triggers from future phase-displacer or ascent-cell inputs.
-
-Recommended scope:
-
-1. Add a narrow shared trade-validation helper for starter Planar Rifts that recognizes unsupported phase-displacer and ascent-cell trades without consuming items yet.
-2. Keep the same runtime validation pattern: `ENABLE_VOIDWATCH`, level 75+, Adventurer's Certificate, mapped starter rift validation, route-specific abyssite validation, voidstone availability, and already-spawned NM checks.
-3. Reuse shared starter-rift helpers and avoid route-specific duplicate logic in the San d'Oria, Bastok, and Windurst rift scripts.
-4. Add focused tests for invalid rift IDs, disabled/missing-requirement behavior, route-specific abyssite checks, invalid trade items, non-consumption of unsupported phase-displacer/ascent-cell trades, and normal trigger behavior remaining unchanged.
-5. Keep the PR intentionally narrow: do not add full phase-displacer effects, ascent-cell effects, full pyxis rewards, spectral alignment, weakness/stagger systems, campaign modifiers, broad route coverage, or quest cutscenes.
-
-## Remaining completion plan
 
 ### Phase 3: Atmacite Refiners, purveyors, and teleportation
 

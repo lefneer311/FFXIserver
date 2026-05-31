@@ -21,11 +21,14 @@ xi.voidwatch.currency =
 
 xi.voidwatch.var =
 {
-    nextVoidstone = xi.voidwatch.varPrefix .. 'NextVoidstone',
-    pyxisPrefix   = xi.voidwatch.varPrefix .. 'Pyxis:',
-    riftInitiator = xi.voidwatch.varPrefix .. 'RiftInitiator',
-    riftNpc       = xi.voidwatch.varPrefix .. 'RiftNpc',
-    riftPyxis     = xi.voidwatch.varPrefix .. 'RiftPyxis',
+    nextVoidstone     = xi.voidwatch.varPrefix .. 'NextVoidstone',
+    participantCount  = xi.voidwatch.varPrefix .. 'PCount',
+    participantPrefix = xi.voidwatch.varPrefix .. 'P:',
+    pyxisPrefix       = xi.voidwatch.varPrefix .. 'Pyxis:',
+    riftInitiator     = xi.voidwatch.varPrefix .. 'RiftInitiator',
+    riftMob           = xi.voidwatch.varPrefix .. 'RiftMob',
+    riftNpc           = xi.voidwatch.varPrefix .. 'RiftNpc',
+    riftPyxis         = xi.voidwatch.varPrefix .. 'RiftPyxis',
 }
 
 xi.voidwatch.voidstone =
@@ -738,13 +741,15 @@ end
 
 xi.voidwatch.riftMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
-    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to initiate this Voidwatch operation.',
-    ABYSSITE     = 'Your stratum abyssite is not yet strong enough to initiate this operation.',
-    VOIDSTONE    = 'A voidstone is required to initiate this Voidwatch operation.',
-    BUSY         = 'A Voidwatch notorious monster is already present at this rift.',
-    INITIATED    = 'A Voidwatch notorious monster materializes from the rift.',
-    INVALID      = 'This planar rift is not ready for Voidwatch operations.',
+    DISABLED          = 'Voidwatch is currently disabled.',
+    REQUIREMENTS      = 'You must be level 75 and possess an adventurer\'s certificate to initiate this Voidwatch operation.',
+    ABYSSITE          = 'Your stratum abyssite is not yet strong enough to initiate this operation.',
+    VOIDSTONE         = 'A voidstone is required to initiate this Voidwatch operation.',
+    BUSY              = 'A Voidwatch notorious monster is already present at this rift.',
+    UNSUPPORTED_TRADE = 'This Voidwatch trade option is not yet implemented.',
+    TRADE             = 'That item cannot be used to initiate this Voidwatch operation.',
+    INITIATED         = 'A Voidwatch notorious monster materializes from the rift.',
+    INVALID           = 'This planar rift is not ready for Voidwatch operations.',
 }
 
 local function printRiftMessage(player, message)
@@ -764,6 +769,10 @@ local function getRiftMessageForStatus(status)
         return xi.voidwatch.riftMessage.VOIDSTONE
     elseif status == 'busy' then
         return xi.voidwatch.riftMessage.BUSY
+    elseif status == 'unsupported_trade' then
+        return xi.voidwatch.riftMessage.UNSUPPORTED_TRADE
+    elseif status == 'invalid_trade' then
+        return xi.voidwatch.riftMessage.TRADE
     end
 
     return xi.voidwatch.riftMessage.INVALID
@@ -803,6 +812,47 @@ function xi.voidwatch.clearPyxisRewardEligible(player, pyxisNpcId)
     end
 end
 
+local function isAscentCellItem(itemId)
+    for _, cellItem in pairs(xi.voidwatch.items.cells) do
+        if itemId == cellItem then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function classifyStarterRiftTrade(trade)
+    if not trade or trade:getSlotCount() == 0 then
+        return 'trigger'
+    end
+
+    local hasPhaseDisplacer = false
+    local hasAscentCell = false
+
+    for slot = 0, trade:getSlotCount() - 1 do
+        local itemId = trade:getItemId(slot)
+
+        if itemId == xi.voidwatch.items.phaseDisplacer then
+            hasPhaseDisplacer = true
+        elseif isAscentCellItem(itemId) then
+            hasAscentCell = true
+        else
+            return 'invalid'
+        end
+    end
+
+    if hasPhaseDisplacer and hasAscentCell then
+        return 'invalid'
+    elseif hasPhaseDisplacer then
+        return 'phase_displacer'
+    elseif hasAscentCell then
+        return 'ascent_cell'
+    end
+
+    return 'invalid'
+end
+
 function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
     if not xi.voidwatch.isEnabled() then
         return false, 'disabled', nil
@@ -835,6 +885,103 @@ function xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
     return true, 'available', rift
 end
 
+function xi.voidwatch.validateStarterRiftTrade(player, riftNpcId, trade)
+    local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
+
+    if not canInitiate then
+        return false, status, rift
+    end
+
+    local tradeType = classifyStarterRiftTrade(trade)
+
+    if tradeType == 'trigger' then
+        return true, 'trigger', rift
+    elseif tradeType == 'phase_displacer' or tradeType == 'ascent_cell' then
+        return false, 'unsupported_trade', rift
+    end
+
+    return false, 'invalid_trade', rift
+end
+
+function xi.voidwatch.getParticipantVar(participantIndex)
+    return string.format('%s%d', xi.voidwatch.var.participantPrefix, participantIndex)
+end
+
+function xi.voidwatch.recordStarterBattleState(mob, riftNpcId, rift, initiator)
+    if not mob or not rift or not initiator then
+        return false
+    end
+
+    local initiatorId = initiator:getID()
+
+    mob:setLocalVar(xi.voidwatch.var.riftInitiator, initiatorId)
+    mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
+    mob:setLocalVar(xi.voidwatch.var.riftMob, rift.mob or 0)
+    mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
+    mob:setLocalVar(xi.voidwatch.var.participantCount, 1)
+    mob:setLocalVar(xi.voidwatch.getParticipantVar(1), initiatorId)
+
+    return true
+end
+
+function xi.voidwatch.getStarterBattleState(mob)
+    if not mob then
+        return nil
+    end
+
+    local riftNpcId = mob:getLocalVar(xi.voidwatch.var.riftNpc)
+    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+
+    if not rift then
+        return nil
+    end
+
+    local mobId = mob:getLocalVar(xi.voidwatch.var.riftMob)
+
+    if mobId ~= 0 and mobId ~= rift.mob then
+        return nil
+    end
+
+    local participantCount = mob:getLocalVar(xi.voidwatch.var.participantCount)
+    local participants = {}
+
+    for participantIndex = 1, participantCount do
+        local participantId = mob:getLocalVar(xi.voidwatch.getParticipantVar(participantIndex))
+
+        if participantId ~= 0 then
+            participants[#participants + 1] = participantId
+        end
+    end
+
+    return
+    {
+        riftNpcId    = riftNpcId,
+        mobId        = mobId,
+        pyxisNpcId   = mob:getLocalVar(xi.voidwatch.var.riftPyxis),
+        initiatorId  = mob:getLocalVar(xi.voidwatch.var.riftInitiator),
+        participants = participants,
+        rift         = rift,
+    }
+end
+
+function xi.voidwatch.clearStarterBattleState(mob)
+    if not mob then
+        return
+    end
+
+    local participantCount = mob:getLocalVar(xi.voidwatch.var.participantCount)
+
+    mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftMob, 0)
+    mob:setLocalVar(xi.voidwatch.var.riftPyxis, 0)
+    mob:setLocalVar(xi.voidwatch.var.participantCount, 0)
+
+    for participantIndex = 1, participantCount do
+        mob:setLocalVar(xi.voidwatch.getParticipantVar(participantIndex), 0)
+    end
+end
+
 function xi.voidwatch.initiateStarterRift(player, riftNpcId)
     local canInitiate, status, rift = xi.voidwatch.canInitiateStarterRift(player, riftNpcId)
 
@@ -854,9 +1001,7 @@ function xi.voidwatch.initiateStarterRift(player, riftNpcId)
         return false, 'invalid', rift, keyItem
     end
 
-    mob:setLocalVar(xi.voidwatch.var.riftInitiator, player:getID())
-    mob:setLocalVar(xi.voidwatch.var.riftNpc, riftNpcId)
-    mob:setLocalVar(xi.voidwatch.var.riftPyxis, rift.pyxis or 0)
+    xi.voidwatch.recordStarterBattleState(mob, riftNpcId, rift, player)
     mob:updateClaim(player)
     xi.voidwatch.clearPyxisRewardEligible(player, rift.pyxis)
 
@@ -873,19 +1018,35 @@ function xi.voidwatch.onStarterRiftTrigger(player, npc)
     end
 end
 
+function xi.voidwatch.onStarterRiftTrade(player, npc, trade)
+    local accepted, status = xi.voidwatch.validateStarterRiftTrade(player, npc:getID(), trade)
+
+    if accepted then
+        local initiated, initiateStatus = xi.voidwatch.initiateStarterRift(player, npc:getID())
+
+        if initiated then
+            printRiftMessage(player, xi.voidwatch.riftMessage.INITIATED)
+        else
+            printRiftMessage(player, getRiftMessageForStatus(initiateStatus))
+        end
+    else
+        printRiftMessage(player, getRiftMessageForStatus(status))
+    end
+end
+
 function xi.voidwatch.onNMDeath(mob, player)
     if not mob then
         return false, 'invalid', nil
     end
 
-    local riftNpcId = mob:getLocalVar(xi.voidwatch.var.riftNpc)
-    local rift = xi.voidwatch.getStarterRift(riftNpcId)
+    local battleState = xi.voidwatch.getStarterBattleState(mob)
 
     if not rift then
         return false, 'invalid', nil
     end
 
-    local initiatorId = mob:getLocalVar(xi.voidwatch.var.riftInitiator)
+    local rift = battleState.rift
+    local initiatorId = battleState.initiatorId
     local creditPlayer = nil
 
     if player and player:getID() == initiatorId then
@@ -905,11 +1066,7 @@ function xi.voidwatch.onNMDeath(mob, player)
 end
 
 function xi.voidwatch.clearNMState(mob)
-    if mob then
-        mob:setLocalVar(xi.voidwatch.var.riftInitiator, 0)
-        mob:setLocalVar(xi.voidwatch.var.riftNpc, 0)
-        mob:setLocalVar(xi.voidwatch.var.riftPyxis, 0)
-    end
+    xi.voidwatch.clearStarterBattleState(mob)
 end
 
 xi.voidwatch.pyxisMessage =
