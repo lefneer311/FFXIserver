@@ -328,7 +328,202 @@ local campaigns =
         redeemEnd    = { year = 2026, month = 6, day = 9, hour = 23 },
         rewards      = require('scripts/events/login_campaigns/2026_05'),
     },
+
+    {
+        id           = 202606,
+        name         = 'June 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 6,
+        earnStart    = { year = 2026, month = 6, day = 11, hour = 17 },
+        earnEnd      = { year = 2026, month = 7, day = 2, hour = 23 },
+        redeemEnd    = { year = 2026, month = 7, day = 10, hour = 0 },
+        rewards      = require('scripts/events/login_campaigns/2026_06'),
+    },
+
+    {
+        id           = 202607,
+        name         = 'July 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 7,
+        earnStart    = { year = 2026, month = 7, day = 11, hour = 17 },
+        earnEnd      = { year = 2026, month = 8, day = 4, hour = 23 },
+        redeemEnd    = { year = 2026, month = 8, day = 12, hour = 0 },
+        rewards      = require('scripts/events/login_campaigns/2026_07'),
+    },
+
+    {
+        id           = 202608,
+        name         = 'August 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 8,
+        earnStart    = { year = 2026, month = 8, day = 13, hour = 17 },
+        earnEnd      = { year = 2026, month = 9, day = 2, hour = 23 },
+        redeemEnd    = { year = 2026, month = 9, day = 10, hour = 0 },
+        rewards      = require('scripts/events/login_campaigns/2026_08'),
+    },
+
+    {
+        id           = 202609,
+        name         = 'September 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 9,
+        earnStart    = { year = 2026, month = 9, day = 11, hour = 17 },
+        earnEnd      = { year = 2026, month = 10, day = 1, hour = 23 },
+        redeemEnd    = { year = 2026, month = 10, day = 9, hour = 0 },
+        rewards      = require('scripts/events/login_campaigns/2026_09'),
+    },
+
+    {
+        id           = 202610,
+        name         = 'October 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 10,
+        earnStart    = { year = 2026, month = 10, day = 10, hour = 17 },
+        earnEnd      = { year = 2026, month = 11, day = 2, hour = 23 },
+        redeemEnd    = { year = 2026, month = 11, day = 10, hour = 0 },
+        rewards      = require('scripts/events/login_campaigns/2026_10'),
+    },
 }
+
+local campaignModes =
+{
+    legacy = 'legacy',
+    modern = 'modern',
+}
+
+local modernCycleStartId = 202611
+local legacyRotationStartId = 202601
+local monthNames =
+{
+    [1]  = 'January',
+    [2]  = 'February',
+    [3]  = 'March',
+    [4]  = 'April',
+    [5]  = 'May',
+    [6]  = 'June',
+    [7]  = 'July',
+    [8]  = 'August',
+    [9]  = 'September',
+    [10] = 'October',
+    [11] = 'November',
+    [12] = 'December',
+}
+
+local function getCampaignId(year, month)
+    return year * 100 + month
+end
+
+local function getConfiguredMode()
+    local configuredMode =
+        xi.settings and xi.settings.main and xi.settings.main.LOGIN_CAMPAIGN_MODE or campaignModes.modern
+
+    if configuredMode == campaignModes.legacy or configuredMode == 0 then
+        return campaignModes.legacy
+    end
+
+    return campaignModes.modern
+end
+
+local function getRegisteredCampaignById(id)
+    for _, campaign in ipairs(campaigns) do
+        if campaign.id == id then
+            return campaign
+        end
+    end
+end
+
+local function getPreviousCampaignMonth(year, month)
+    if month == 1 then
+        return year - 1, 12
+    end
+
+    return year, month - 1
+end
+
+local function shiftedDate(date, yearOffset)
+    return
+    {
+        year  = date.year + yearOffset,
+        month = date.month,
+        day   = date.day,
+        hour  = date.hour,
+    }
+end
+
+local function getLegacyTemplateId(year, month)
+    local templateYear = year % 2 == 0 and 2024 or 2025
+
+    return getCampaignId(templateYear, month)
+end
+
+local function getModernTemplateId(year, month)
+    local templateYear = month >= 11 and 2025 or 2026
+
+    return getCampaignId(templateYear, month)
+end
+
+local function buildRotatedCampaign(year, month, mode)
+    local campaignId = getCampaignId(year, month)
+    local templateId
+    local yearOffset
+
+    if mode == campaignModes.legacy then
+        if campaignId < legacyRotationStartId then
+            return getRegisteredCampaignById(campaignId)
+        end
+
+        templateId = getLegacyTemplateId(year, month)
+        yearOffset = year - math.floor(templateId / 100)
+    else
+        if campaignId < modernCycleStartId then
+            return getRegisteredCampaignById(campaignId)
+        end
+
+        templateId = getModernTemplateId(year, month)
+        if month >= 11 then
+            yearOffset = year - 2025
+        else
+            yearOffset = year - 2026
+        end
+    end
+
+    local template = getRegisteredCampaignById(templateId)
+    if template == nil then
+        return nil
+    end
+
+    return
+    {
+        id           = campaignId,
+        name         = string.format('%s %u Login Campaign', monthNames[month], year),
+        displayYear  = year,
+        displayMonth = month,
+        earnStart    = shiftedDate(template.earnStart, yearOffset),
+        earnEnd      = shiftedDate(template.earnEnd, yearOffset),
+        redeemEnd    = shiftedDate(template.redeemEnd, yearOffset),
+        rewards      = template.rewards,
+        templateId   = template.id,
+        cycleMode    = mode,
+    }
+end
+
+local function getCandidateCampaigns(jstNow)
+    local mode = getConfiguredMode()
+    local previousYear, previousMonth = getPreviousCampaignMonth(jstNow.year, jstNow.month)
+    local candidateCampaigns = {}
+    local previousCampaign = buildRotatedCampaign(previousYear, previousMonth, mode)
+    local currentCampaign = buildRotatedCampaign(jstNow.year, jstNow.month, mode)
+
+    if previousCampaign ~= nil then
+        table.insert(candidateCampaigns, previousCampaign)
+    end
+
+    if currentCampaign ~= nil then
+        table.insert(candidateCampaigns, currentCampaign)
+    end
+
+    return candidateCampaigns
+end
 
 local function validateCampaign(campaign)
     if type(campaign) ~= 'table' then
@@ -357,6 +552,10 @@ xi.events.loginCampaign.registry.getCampaigns = function()
     return campaigns
 end
 
+xi.events.loginCampaign.registry.getCampaignMode = function()
+    return getConfiguredMode()
+end
+
 xi.events.loginCampaign.registry.validateCampaigns = function()
     local seenIds = {}
 
@@ -373,12 +572,29 @@ xi.events.loginCampaign.registry.validateCampaigns = function()
         end
     end
 
+    local generatedCampaigns =
+    {
+        buildRotatedCampaign(2027,  1, campaignModes.legacy),
+        buildRotatedCampaign(2028, 12, campaignModes.legacy),
+        buildRotatedCampaign(2026, 11, campaignModes.modern),
+        buildRotatedCampaign(2027,  1, campaignModes.modern),
+        buildRotatedCampaign(2028, 10, campaignModes.modern),
+    }
+
+    for _, generatedCampaign in ipairs(generatedCampaigns) do
+        local isValid, errorMessage = validateCampaign(generatedCampaign)
+        if not isValid then
+            return false, errorMessage
+        end
+    end
+
     return true
 end
 
 xi.events.loginCampaign.registry.getEarnCampaign = function(jstNow)
-    for _, campaign in ipairs(campaigns) do
+    for _, campaign in ipairs(getCandidateCampaigns(jstNow)) do
         if
+            campaign ~= nil and
             utils.timeIsAfterOrEqual(jstNow, campaign.earnStart) and
             utils.timeIsBefore(jstNow, campaign.earnEnd)
         then
@@ -388,8 +604,9 @@ xi.events.loginCampaign.registry.getEarnCampaign = function(jstNow)
 end
 
 xi.events.loginCampaign.registry.getRedeemCampaign = function(jstNow)
-    for _, campaign in ipairs(campaigns) do
+    for _, campaign in ipairs(getCandidateCampaigns(jstNow)) do
         if
+            campaign ~= nil and
             utils.timeIsAfterOrEqual(jstNow, campaign.earnStart) and
             utils.timeIsBefore(jstNow, campaign.redeemEnd)
         then
@@ -399,11 +616,18 @@ xi.events.loginCampaign.registry.getRedeemCampaign = function(jstNow)
 end
 
 xi.events.loginCampaign.registry.getCampaignById = function(id)
-    for _, campaign in ipairs(campaigns) do
-        if campaign.id == id then
-            return campaign
-        end
+    local registeredCampaign = getRegisteredCampaignById(id)
+    if registeredCampaign ~= nil then
+        return registeredCampaign
     end
+
+    local year = math.floor(id / 100)
+    local month = id % 100
+    if month < 1 or month > 12 then
+        return nil
+    end
+
+    return buildRotatedCampaign(year, month, getConfiguredMode())
 end
 
 xi.events.loginCampaign.registry.getLatestCampaign = function()

@@ -361,3 +361,14 @@ The login campaign runtime now follows the registry-first path described above:
 5. Keep each visible tier to 1-20 items so the Greeter Moogle client packing remains valid.
 6. Add the campaign entry to `scripts/events/login_campaign_registry.lua` with a unique `YYYYMM` campaign ID and JST `earnStart`, `earnEnd`, and `redeemEnd` fields.
 7. Run `python3 tools/validate_login_campaigns.py` before testing in game.
+
+### Automatic Future Rotation Modes
+
+Login campaigns can now be left disabled with `ENABLE_LOGIN_CAMPAIGN = 0` or enabled with `ENABLE_LOGIN_CAMPAIGN = 1`. When enabled, `LOGIN_CAMPAIGN_MODE` selects the future rotation style:
+
+- `'legacy'`: campaigns from 2026 onward repeat the pre-November two-year pattern. Even target years use the same-month 2024 campaign as their template, and odd target years use the same-month 2025 campaign as their template.
+- `'modern'`: campaigns from November 2026 onward repeat the November 2025 through October 2026 reference cycle. Months November and December use the 2025 reference files, and months January through October use the 2026 reference files.
+
+Both modes generate the future campaign identity from the target year and month while reusing an explicit reviewed reward table. The generated campaign keeps a unique `YYYYMM` ID, future display year/month, shifted JST earn and redemption windows, and the template reward table. This keeps point rollover and Greeter Moogle messages tied to the future campaign while avoiding duplicate reward files for every future year.
+
+The November 2025 through October 2026 files are the modern-cycle reference set. June through October 2026 are currently marked as custom/provisional same-month analogues and should be replaced with source-backed retail data when those campaign rewards are confirmed.

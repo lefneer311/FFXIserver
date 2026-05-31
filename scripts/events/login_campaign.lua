@@ -36,7 +36,7 @@ xi.events.loginCampaign.canEarnPoints = function()
 end
 
 xi.events.loginCampaign.canExchangePoints = function()
-    return getEarnCampaign() ~= nil
+    return getRedeemCampaign() ~= nil
 end
 
 -- Gives Login Points once a day.
