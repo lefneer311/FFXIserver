@@ -262,6 +262,72 @@ local campaigns =
         redeemEnd    = { year = 2025, month = 12, day = 10, hour = 0 },
         rewards      = require('scripts/events/login_campaigns/2025_11'),
     },
+
+    {
+        id           = 202512,
+        name         = 'December 2025 Login Campaign',
+        displayYear  = 2025,
+        displayMonth = 12,
+        earnStart    = { year = 2025, month = 12, day = 11, hour = 17 },
+        earnEnd      = { year = 2026, month = 1, day = 4, hour = 23 },
+        redeemEnd    = { year = 2026, month = 1, day = 12, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2025_12'),
+    },
+
+    {
+        id           = 202601,
+        name         = 'January 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 1,
+        earnStart    = { year = 2026, month = 1, day = 14, hour = 17 },
+        earnEnd      = { year = 2026, month = 2, day = 1, hour = 23 },
+        redeemEnd    = { year = 2026, month = 2, day = 8, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2026_01'),
+    },
+
+    {
+        id           = 202602,
+        name         = 'February 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 2,
+        earnStart    = { year = 2026, month = 2, day = 10, hour = 17 },
+        earnEnd      = { year = 2026, month = 3, day = 2, hour = 23 },
+        redeemEnd    = { year = 2026, month = 3, day = 9, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2026_02'),
+    },
+
+    {
+        id           = 202603,
+        name         = 'March 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 3,
+        earnStart    = { year = 2026, month = 3, day = 11, hour = 17 },
+        earnEnd      = { year = 2026, month = 3, day = 29, hour = 23 },
+        redeemEnd    = { year = 2026, month = 4, day = 5, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2026_03'),
+    },
+
+    {
+        id           = 202604,
+        name         = 'April 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 4,
+        earnStart    = { year = 2026, month = 4, day = 7, hour = 17 },
+        earnEnd      = { year = 2026, month = 5, day = 1, hour = 23 },
+        redeemEnd    = { year = 2026, month = 5, day = 10, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2026_04'),
+    },
+
+    {
+        id           = 202605,
+        name         = 'May 2026 Login Campaign',
+        displayYear  = 2026,
+        displayMonth = 5,
+        earnStart    = { year = 2026, month = 5, day = 12, hour = 17 },
+        earnEnd      = { year = 2026, month = 6, day = 2, hour = 23 },
+        redeemEnd    = { year = 2026, month = 6, day = 9, hour = 23 },
+        rewards      = require('scripts/events/login_campaigns/2026_05'),
+    },
 }
 
 local function validateCampaign(campaign)
