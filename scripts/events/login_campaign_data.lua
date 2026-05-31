@@ -1,4 +1,4 @@
--- Compatibility shim for scripts that still require the legacy monolithic table.
+-- Compatibility shim for code or modules still requiring the legacy login campaign data path.
 -- New campaign months should be added under scripts/events/login_campaigns/ and registered in
 -- scripts/events/login_campaign_registry.lua.
 

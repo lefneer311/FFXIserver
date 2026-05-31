@@ -1,4 +1,4 @@
--- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, June 2025 - Campaign No.144.
+-- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, October 2025 - Campaign No.148.
 -- Verification: drafted from the published reward list using repository xi.item constants; source rewards without constants were omitted.
 -- Notes: preserves the Greeter Moogle tier shape and caps each visible tier at 20 items.
 ---@class prizes : { [integer] : { ['price']: integer, ['items']: { [integer]: xi.item } } }
@@ -17,12 +17,6 @@ local prizes =
             xi.item.SEASONING_STONE,
             xi.item.FOSSILIZED_FANG,
             xi.item.FOSSILIZED_BONE,
-            xi.item.CIPHER_OF_D_SHANTOTTOS_ALTER_EGO,
-            xi.item.CIPHER_OF_STAR_SIBYLS_ALTER_EGO,
-            xi.item.CIPHER_OF_KARAHAS_ALTER_EGO,
-            xi.item.CIPHER_OF_AREUHATS_ALTER_EGO,
-            xi.item.CIPHER_OF_UKAS_ALTER_EGO,
-            xi.item.CIPHER_OF_KUYINS_ALTER_EGO,
         },
     },
 
@@ -39,6 +33,12 @@ local prizes =
             xi.item.EUDAEMON_SHIELD,
             xi.item.DRILL_CALAMARY,
             xi.item.DWARF_PUGIL,
+            xi.item.CIPHER_OF_ABENZIOS_ALTER_EGO,
+            xi.item.CIPHER_OF_RUGHADJEENS_ALTER_EGO,
+            xi.item.CIPHER_OF_LHES_ALTER_EGO,
+            xi.item.CIPHER_OF_MAYAKOVS_ALTER_EGO,
+            xi.item.CIPHER_OF_BRYGIDS_ALTER_EGO,
+            xi.item.CIPHER_OF_MILDAURIONS_ALTER_EGO,
             xi.item.CIPHER_OF_QULTADAS_ALTER_EGO,
             xi.item.CIPHER_OF_AMCHUCHUS_ALTER_EGO,
             xi.item.CIPHER_OF_NOILLURIES_ALTER_EGO,
@@ -52,24 +52,21 @@ local prizes =
         ['price'] = 300,
         ['items'] =
         {
-            xi.item.WORM_FEELERS,
-            xi.item.WORM_MASQUE,
-            xi.item.CRAB_CAP,
-            xi.item.LION_STATUE,
-            xi.item.ARCIELA_STATUE,
-            xi.item.MOUNT_CRAB,
-            xi.item.MOUNT_GOOBBUE,
-            xi.item.MOUNT_BOMB,
-            xi.item.MOUNT_CRAWLER,
-            xi.item.MOUNT_TIGER,
-            xi.item.MOUNT_BEETLE,
-            xi.item.MOUNT_DHALMEL,
+            xi.item.IROHA_STATUE,
+            xi.item.RARAB_CAP,
+            xi.item.APHMAU_STATUE,
+            xi.item.HARVEST_PASTRY,
+            xi.item.TRACK_SHIRT,
+            xi.item.TRACK_PANTS,
+            xi.item.KAKAI_CAP,
+            xi.item.AUTUMN_TREE,
+            xi.item.CHOCOBO_COMMODE,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_1,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_2,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_3,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_4,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_5,
-            xi.item.SILVER_GUN,
+            xi.item.ARK_TABAR,
         },
     },
 
@@ -103,10 +100,7 @@ local prizes =
             xi.item.COPY_OF_REMS_TALE_CHAPTER_8,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_9,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_10,
-            xi.item.PHOENIX_FEATHER,
-            xi.item.SQUARE_OF_DAMASCENE_CLOTH,
-            xi.item.SPOOL_OF_MALBORO_FIBER,
-            xi.item.PELICAN_RING,
+            xi.item.ROLANBERRY_DELIGHTARU,
         },
     },
 

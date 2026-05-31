@@ -1,4 +1,4 @@
--- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, June 2025 - Campaign No.144.
+-- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, August 2025 - Campaign No.146.
 -- Verification: drafted from the published reward list using repository xi.item constants; source rewards without constants were omitted.
 -- Notes: preserves the Greeter Moogle tier shape and caps each visible tier at 20 items.
 ---@class prizes : { [integer] : { ['price']: integer, ['items']: { [integer]: xi.item } } }
@@ -17,12 +17,11 @@ local prizes =
             xi.item.SEASONING_STONE,
             xi.item.FOSSILIZED_FANG,
             xi.item.FOSSILIZED_BONE,
-            xi.item.CIPHER_OF_D_SHANTOTTOS_ALTER_EGO,
-            xi.item.CIPHER_OF_STAR_SIBYLS_ALTER_EGO,
-            xi.item.CIPHER_OF_KARAHAS_ALTER_EGO,
-            xi.item.CIPHER_OF_AREUHATS_ALTER_EGO,
-            xi.item.CIPHER_OF_UKAS_ALTER_EGO,
-            xi.item.CIPHER_OF_KUYINS_ALTER_EGO,
+            xi.item.CIPHER_OF_QULTADAS_ALTER_EGO,
+            xi.item.CIPHER_OF_AMCHUCHUS_ALTER_EGO,
+            xi.item.CIPHER_OF_NOILLURIES_ALTER_EGO,
+            xi.item.CIPHER_OF_OVJANGS_ALTER_EGO,
+            xi.item.CIPHER_OF_SAKURAS_ALTER_EGO,
         },
     },
 
@@ -39,11 +38,12 @@ local prizes =
             xi.item.EUDAEMON_SHIELD,
             xi.item.DRILL_CALAMARY,
             xi.item.DWARF_PUGIL,
-            xi.item.CIPHER_OF_QULTADAS_ALTER_EGO,
-            xi.item.CIPHER_OF_AMCHUCHUS_ALTER_EGO,
-            xi.item.CIPHER_OF_NOILLURIES_ALTER_EGO,
-            xi.item.CIPHER_OF_OVJANGS_ALTER_EGO,
-            xi.item.CIPHER_OF_SAKURAS_ALTER_EGO,
+            xi.item.CIPHER_OF_ZEIDS_ALTER_EGO,
+            xi.item.CIPHER_OF_LIONS_ALTER_EGO,
+            xi.item.CIPHER_OF_NAJAS_ALTER_EGO,
+            xi.item.CIPHER_OF_LEHKOS_ALTER_EGO,
+            xi.item.CIPHER_OF_LUZAFS_ALTER_EGO,
+            xi.item.CIPHER_OF_NAJELITHS_ALTER_EGO,
         },
     },
 
@@ -61,15 +61,14 @@ local prizes =
             xi.item.MOUNT_GOOBBUE,
             xi.item.MOUNT_BOMB,
             xi.item.MOUNT_CRAWLER,
-            xi.item.MOUNT_TIGER,
-            xi.item.MOUNT_BEETLE,
-            xi.item.MOUNT_DHALMEL,
+            xi.item.MELON_SLICER,
+            xi.item.SEIKA_UCHIWA,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_1,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_2,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_3,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_4,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_5,
-            xi.item.SILVER_GUN,
+            xi.item.CIPHER_OF_SHANTOTTOS_ALTER_EGO_II,
         },
     },
 
@@ -103,10 +102,7 @@ local prizes =
             xi.item.COPY_OF_REMS_TALE_CHAPTER_8,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_9,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_10,
-            xi.item.PHOENIX_FEATHER,
-            xi.item.SQUARE_OF_DAMASCENE_CLOTH,
-            xi.item.SPOOL_OF_MALBORO_FIBER,
-            xi.item.PELICAN_RING,
+            xi.item.FRAYED_SACK_OF_FECUNDITY,
         },
     },
 

@@ -1,10 +1,26 @@
--- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, June 2025 - Campaign No.144.
+-- Source: BG Wiki Repeat Login Campaign/Past Login Campaign Rewards, November 2025 - Campaign No.149.
 -- Verification: drafted from the published reward list using repository xi.item constants; source rewards without constants were omitted.
 -- Notes: preserves the Greeter Moogle tier shape and caps each visible tier at 20 items.
 ---@class prizes : { [integer] : { ['price']: integer, ['items']: { [integer]: xi.item } } }
 local prizes =
 {
     [1] =
+    {
+        ['price'] = 5,
+        ['items'] =
+        {
+            xi.item.MOUNT_TIGER,
+            xi.item.MOUNT_CRAB,
+            xi.item.MOUNT_BEETLE,
+            xi.item.MOUNT_DHALMEL,
+            xi.item.MOUNT_GOOBBUE,
+            xi.item.ASTRAL_CUBE,
+            xi.item.CUMULUS_MASQUE,
+            xi.item.EXCALIPOOR,
+        },
+    },
+
+    [5] =
     {
         ['price'] = 10,
         ['items'] =
@@ -17,79 +33,37 @@ local prizes =
             xi.item.SEASONING_STONE,
             xi.item.FOSSILIZED_FANG,
             xi.item.FOSSILIZED_BONE,
-            xi.item.CIPHER_OF_D_SHANTOTTOS_ALTER_EGO,
-            xi.item.CIPHER_OF_STAR_SIBYLS_ALTER_EGO,
-            xi.item.CIPHER_OF_KARAHAS_ALTER_EGO,
-            xi.item.CIPHER_OF_AREUHATS_ALTER_EGO,
-            xi.item.CIPHER_OF_UKAS_ALTER_EGO,
-            xi.item.CIPHER_OF_KUYINS_ALTER_EGO,
-        },
-    },
-
-    [5] =
-    {
-        ['price'] = 100,
-        ['items'] =
-        {
-            xi.item.MOG_KUPON_I_S1,
-            xi.item.EUDAEMON_BLADE,
-            xi.item.EUDAEMON_CAPE,
-            xi.item.EUDAEMON_RING,
-            xi.item.EUDAEMON_SASH,
-            xi.item.EUDAEMON_SHIELD,
-            xi.item.DRILL_CALAMARY,
-            xi.item.DWARF_PUGIL,
-            xi.item.CIPHER_OF_QULTADAS_ALTER_EGO,
-            xi.item.CIPHER_OF_AMCHUCHUS_ALTER_EGO,
-            xi.item.CIPHER_OF_NOILLURIES_ALTER_EGO,
-            xi.item.CIPHER_OF_OVJANGS_ALTER_EGO,
-            xi.item.CIPHER_OF_SAKURAS_ALTER_EGO,
         },
     },
 
     [9] =
     {
-        ['price'] = 300,
+        ['price'] = 150,
         ['items'] =
         {
-            xi.item.WORM_FEELERS,
-            xi.item.WORM_MASQUE,
-            xi.item.CRAB_CAP,
-            xi.item.LION_STATUE,
-            xi.item.ARCIELA_STATUE,
-            xi.item.MOUNT_CRAB,
-            xi.item.MOUNT_GOOBBUE,
-            xi.item.MOUNT_BOMB,
-            xi.item.MOUNT_CRAWLER,
+            xi.item.CUMULUS_MASQUE,
+            xi.item.BLIZZARD_BRAND,
+            xi.item.ARK_TACHI,
+            xi.item.ARK_TABAR,
+            xi.item.ARK_SCYTHE,
+            xi.item.ARK_SABER,
+            xi.item.ARK_SWORD,
             xi.item.MOUNT_TIGER,
+            xi.item.MOUNT_CRAB,
             xi.item.MOUNT_BEETLE,
             xi.item.MOUNT_DHALMEL,
+            xi.item.MOUNT_GOOBBUE,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_1,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_2,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_3,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_4,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_5,
-            xi.item.SILVER_GUN,
         },
     },
 
-    [21] =
+    [13] =
     {
-        ['price'] = 750,
-        ['items'] =
-        {
-            xi.item.COPY_OF_MELODIOUS_PLANS,
-            xi.item.TIMBRE_CASE_KIT,
-            xi.item.MUSICHINERY_KIT,
-            xi.item.JUG_OF_HONEY_WINE,
-            xi.item.BEASTLY_SHANK,
-            xi.item.CLUMP_OF_BLUE_PONDWEED,
-        },
-    },
-
-    [25] =
-    {
-        ['price'] = 1000,
+        ['price'] = 500,
         ['items'] =
         {
             xi.item.COPY_OF_MELODIOUS_PLANS,
@@ -103,16 +77,17 @@ local prizes =
             xi.item.COPY_OF_REMS_TALE_CHAPTER_8,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_9,
             xi.item.COPY_OF_REMS_TALE_CHAPTER_10,
+            xi.item.BRIGANDS_CHART,
+            xi.item.PIRATES_CHART,
             xi.item.PHOENIX_FEATHER,
             xi.item.SQUARE_OF_DAMASCENE_CLOTH,
             xi.item.SPOOL_OF_MALBORO_FIBER,
-            xi.item.PELICAN_RING,
         },
     },
 
-    [29] =
+    [17] =
     {
-        ['price'] = 1500,
+        ['price'] = 1000,
         ['items'] =
         {
             xi.item.CUP_OF_SWEET_TEA,
