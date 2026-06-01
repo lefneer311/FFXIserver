@@ -3,6 +3,7 @@
 -----------------------------------
 require('scripts/enum/item')
 require('scripts/enum/key_item')
+require('scripts/enum/msg')
 require('scripts/enum/zone')
 -----------------------------------
 xi = xi or {}
@@ -504,10 +505,27 @@ xi.voidwatch.starterRifts =
     [17167322] = { route = routeName.WINDURST, tier = 1, nm = 'Virvatuli'     , mob = 17248627, pyxis = 17167325 },
 }
 
-local function printStarterOfficerMessage(player, message)
-    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
+local function printNpcDialogue(player, npc, message, fallbackName)
+    if not player then
+        return
+    end
 
-    player:printToPlayer(message, channel)
+    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SAY or nil
+    local speakerName = fallbackName
+
+    if npc then
+        if npc.getPacketName then
+            speakerName = npc:getPacketName()
+        elseif npc.getName then
+            speakerName = npc:getName()
+        end
+    end
+
+    player:printToPlayer(message, channel, speakerName)
+end
+
+local function printStarterOfficerMessage(player, npc, message)
+    printNpcDialogue(player, npc, message, 'Voidwatch Officer')
 end
 
 function xi.voidwatch.getHeldVoidstoneCount(player)
@@ -712,22 +730,22 @@ end
 
 function xi.voidwatch.onOfficerTrade(player, npc, trade)
     if not xi.voidwatch.isEnabled() then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.DISABLED)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.DISABLED)
         return
     end
 
     if not xi.voidwatch.hasBaseRequirements(player) then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.REQUIREMENTS)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.REQUIREMENTS)
         return
     end
 
     if not isSingleVoiddustTrade(trade) then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.TRADE)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.TRADE)
         return
     end
 
     if not xi.voidwatch.canReceiveVoidstoneKeyItem(player) then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.FULL)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.FULL)
         return
     end
 
@@ -1041,7 +1059,7 @@ function xi.voidwatch.onNMDeath(mob, player)
 
     local battleState = xi.voidwatch.getStarterBattleState(mob)
 
-    if not rift then
+    if not battleState then
         return false, 'invalid', nil
     end
 
@@ -1071,7 +1089,7 @@ end
 
 xi.voidwatch.pyxisMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
+    DISABLED     = 'Voidwatch operations are not available at this time.',
     REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to inspect this Riftworn Pyxis.',
     ELIGIBLE     = 'The Riftworn Pyxis hums softly. Full Voidwatch rewards are not yet implemented.',
     NO_REWARD    = 'The Riftworn Pyxis is silent. No Voidwatch reward is available for you.',
@@ -1132,19 +1150,17 @@ end
 
 xi.voidwatch.purveyorMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
-    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to purchase Voidwatch supplies.',
-    SHOP         = 'Voidwatch cells, Voiddust, and phase displacers are available for purchase.',
-    INVALID      = 'That Voidwatch supply item is not available from this purveyor.',
+    DISABLED     = 'Voidwatch operations are not available at this time.',
+    REQUIREMENTS = 'I can only outfit adventurers who are level 75 or higher and possess an adventurer\'s certificate.',
+    SHOP         = 'I can furnish you with Voidwatch cells, Voiddust, and phase displacers.',
+    INVALID      = 'I do not carry that Voidwatch supply item.',
     NO_PAYMENT   = 'You do not possess enough currency for that Voidwatch supply item.',
     NO_SPACE     = 'You cannot carry any more Voidwatch supply items.',
-    PURCHASE     = 'Voidwatch supply item purchased.',
+    PURCHASE     = 'A wise purchase. May it serve you well in the field.',
 }
 
-local function printPurveyorMessage(player, message)
-    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
-
-    player:printToPlayer(message, channel)
+local function printPurveyorMessage(player, npc, message)
+    printNpcDialogue(player, npc, message, 'Voidwatch Purveyor')
 end
 
 function xi.voidwatch.getPurveyorItem(itemId)
@@ -1235,11 +1251,11 @@ end
 function xi.voidwatch.onStarterPurveyorTrigger(player, npc, itemId, quantity)
     if not itemId then
         if not xi.voidwatch.isEnabled() then
-            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.DISABLED)
+            printPurveyorMessage(player, npc, xi.voidwatch.purveyorMessage.DISABLED)
         elseif not xi.voidwatch.hasBaseRequirements(player) then
-            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.REQUIREMENTS)
+            printPurveyorMessage(player, npc, xi.voidwatch.purveyorMessage.REQUIREMENTS)
         else
-            printPurveyorMessage(player, xi.voidwatch.purveyorMessage.SHOP)
+            printPurveyorMessage(player, npc, xi.voidwatch.purveyorMessage.SHOP)
         end
 
         return
@@ -1251,7 +1267,7 @@ function xi.voidwatch.onStarterPurveyorTrigger(player, npc, itemId, quantity)
         local ID = zones[player:getZoneID()]
         player:messageSpecial(ID.text.ITEM_OBTAINED, stockItem.id)
     else
-        printPurveyorMessage(player, getPurveyorMessageForStatus(status))
+        printPurveyorMessage(player, npc, getPurveyorMessageForStatus(status))
     end
 end
 
@@ -1402,15 +1418,15 @@ end
 
 xi.voidwatch.starterOfficerMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
-    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to begin Voidwatch operations.',
-    ALREADY      = 'You have already received the stratum abyssite issued by this officer.',
-    INVALID      = 'This officer is not ready to issue Voidwatch operations.',
-    NO_STONES    = 'No voidstones are currently available.',
-    STONES       = 'Voidstones have been issued from your stock.',
-    VOIDSTONE    = 'A voidstone has been issued.',
+    DISABLED     = 'Voidwatch operations are not available at this time.',
+    REQUIREMENTS = 'I can only issue Voidwatch orders to adventurers who are level 75 or higher and possess an adventurer\'s certificate.',
+    ALREADY      = 'I have already issued you this operation\'s stratum abyssite.',
+    INVALID      = 'I do not have any Voidwatch orders ready for you here.',
+    NO_STONES    = 'There are no voidstones ready for issuance at this time.',
+    STONES       = 'I have issued the voidstones being held in your name.',
+    VOIDSTONE    = 'I have issued you a voidstone.',
     FULL         = 'You cannot carry any more voidstones.',
-    TRADE        = 'Trade one pouch of Voiddust to receive a voidstone.',
+    TRADE        = 'Bring me one pouch of Voiddust, and I will prepare a voidstone for you.',
 }
 
 xi.voidwatch.starterRoutes =
@@ -1505,7 +1521,7 @@ function xi.voidwatch.onStarterOfficerTrigger(player, npc, routeId)
             message = xi.voidwatch.starterOfficerMessage.REQUIREMENTS
         end
 
-        printStarterOfficerMessage(player, message)
+        printStarterOfficerMessage(player, npc, message)
         return
     end
 
@@ -1513,29 +1529,27 @@ function xi.voidwatch.onStarterOfficerTrigger(player, npc, routeId)
     local issued = xi.voidwatch.withdrawVoidstones(player)
 
     if issued > 0 then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.STONES)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.STONES)
     elseif status == 'already' then
-        printStarterOfficerMessage(player, xi.voidwatch.starterOfficerMessage.NO_STONES)
+        printStarterOfficerMessage(player, npc, xi.voidwatch.starterOfficerMessage.NO_STONES)
     end
 end
 
 xi.voidwatch.refinerMessage =
 {
-    DISABLED     = 'Voidwatch is currently disabled.',
-    REQUIREMENTS = 'You must be level 75 and possess an adventurer\'s certificate to have your stratum abyssites examined.',
-    NO_ABYSSITE  = 'No starter-city stratum abyssite is available for examination.',
-    INCOMPLETE   = 'Defeat all required Voidwatch notorious monsters for your current starter-city stratum before requesting examination.',
+    DISABLED     = 'Voidwatch operations are not available at this time.',
+    REQUIREMENTS = 'I can only examine stratum abyssites for adventurers who are level 75 or higher and possess an adventurer\'s certificate.',
+    NO_ABYSSITE  = 'You do not possess a starter-city stratum abyssite I can examine.',
+    INCOMPLETE   = 'Defeat all required Voidwatch notorious monsters for your current starter-city stratum, then return to me.',
     MAXIMUM      = 'Your starter-city stratum abyssites are already at their current maximum tiers.',
-    INVALID      = 'This Atmacite Refiner is not ready to examine that stratum abyssite.',
-    TELEPORT     = 'The Atmacite Refiner sends you to a Voidwatch operation site.',
+    INVALID      = 'I am not prepared to examine that stratum abyssite here.',
+    TELEPORT     = 'I shall send you to the Voidwatch operation site.',
     NO_CRUOR     = 'You do not possess enough cruor for that teleportation service.',
-    NO_TELEPORT  = 'No starter-city Voidwatch teleport destination is available.',
+    NO_TELEPORT  = 'I have no starter-city Voidwatch teleport destination available for you.',
 }
 
-local function printRefinerMessage(player, message)
-    local channel = xi.msg and xi.msg.channel and xi.msg.channel.SYSTEM_3 or nil
-
-    player:printToPlayer(message, channel)
+local function printRefinerMessage(player, npc, message)
+    printNpcDialogue(player, npc, message, 'Atmacite Refiner')
 end
 
 local function getRefinerMessageForStatus(status)
@@ -1673,9 +1687,9 @@ function xi.voidwatch.onStarterRefinerTrigger(player, npc, destinationId)
         local teleported, status = xi.voidwatch.teleportToStarterDestination(player, destinationId)
 
         if teleported then
-            printRefinerMessage(player, xi.voidwatch.refinerMessage.TELEPORT)
+            printRefinerMessage(player, npc, xi.voidwatch.refinerMessage.TELEPORT)
         else
-            printRefinerMessage(player, getRefinerMessageForStatus(status))
+            printRefinerMessage(player, npc, getRefinerMessageForStatus(status))
         end
 
         return
@@ -1688,6 +1702,6 @@ function xi.voidwatch.onStarterRefinerTrigger(player, npc, destinationId)
         player:messageSpecial(ID.text.KEYITEM_LOST, oldKeyItem)
         player:messageSpecial(ID.text.KEYITEM_OBTAINED, newKeyItem)
     else
-        printRefinerMessage(player, getRefinerMessageForStatus(status))
+        printRefinerMessage(player, npc, getRefinerMessageForStatus(status))
     end
 end
