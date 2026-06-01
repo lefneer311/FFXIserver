@@ -133,6 +133,14 @@ describe('Voidwatch', function()
     it('reports disabled content from starter officer triggers', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local printedMessage = nil
+        local printedChannel = nil
+        local printedName = nil
+        local npc =
+        {
+            getPacketName = function()
+                return 'Voidwatch Officer'
+            end,
+        }
         local player =
         {
             getMainLvl = function()
@@ -143,15 +151,19 @@ describe('Voidwatch', function()
                 return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
             end,
 
-            printToPlayer = function(_, message)
+            printToPlayer = function(_, message, channel, name)
                 printedMessage = message
+                printedChannel = channel
+                printedName = name
             end,
         }
 
         xi.settings.main.ENABLE_VOIDWATCH = 0
-        xi.voidwatch.onStarterOfficerTrigger(player, nil, xi.voidwatch.routeName.WINDURST)
+        xi.voidwatch.onStarterOfficerTrigger(player, npc, xi.voidwatch.routeName.WINDURST)
 
         assert(printedMessage == xi.voidwatch.starterOfficerMessage.DISABLED)
+        assert(printedChannel == xi.msg.channel.SAY)
+        assert(printedName == 'Voidwatch Officer')
 
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
@@ -409,6 +421,14 @@ describe('Voidwatch', function()
     it('reports disabled content from starter refiner triggers', function()
         local originalValue = xi.settings.main.ENABLE_VOIDWATCH
         local printedMessage = nil
+        local printedChannel = nil
+        local printedName = nil
+        local npc =
+        {
+            getPacketName = function()
+                return 'Atmacite Refiner'
+            end,
+        }
         local player =
         {
             getMainLvl = function()
@@ -419,15 +439,19 @@ describe('Voidwatch', function()
                 return keyItem == xi.keyItem.ADVENTURERS_CERTIFICATE
             end,
 
-            printToPlayer = function(_, message)
+            printToPlayer = function(_, message, channel, name)
                 printedMessage = message
+                printedChannel = channel
+                printedName = name
             end,
         }
 
         xi.settings.main.ENABLE_VOIDWATCH = 0
-        xi.voidwatch.onStarterRefinerTrigger(player, nil)
+        xi.voidwatch.onStarterRefinerTrigger(player, npc)
 
         assert(printedMessage == xi.voidwatch.refinerMessage.DISABLED)
+        assert(printedChannel == xi.msg.channel.SAY)
+        assert(printedName == 'Atmacite Refiner')
 
         xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
@@ -868,6 +892,48 @@ describe('Voidwatch', function()
         for itemId, _ in pairs(expectedItems) do
             error(string.format('Missing purveyor stock item %u.', itemId))
         end
+    end)
+
+    it('speaks starter purveyor trigger messages through the NPC', function()
+        local originalValue = xi.settings.main.ENABLE_VOIDWATCH
+        local printedMessage = nil
+        local printedChannel = nil
+        local printedName = nil
+        local keyItems =
+        {
+            [xi.keyItem.ADVENTURERS_CERTIFICATE] = true,
+        }
+        local npc =
+        {
+            getPacketName = function()
+                return 'Voidwatch Purveyor'
+            end,
+        }
+        local player =
+        {
+            getMainLvl = function()
+                return xi.voidwatch.minimumLevel
+            end,
+
+            hasKeyItem = function(_, keyItem)
+                return keyItems[keyItem] == true
+            end,
+
+            printToPlayer = function(_, message, channel, name)
+                printedMessage = message
+                printedChannel = channel
+                printedName = name
+            end,
+        }
+
+        xi.settings.main.ENABLE_VOIDWATCH = 1
+        xi.voidwatch.onStarterPurveyorTrigger(player, npc)
+
+        assert(printedMessage == xi.voidwatch.purveyorMessage.SHOP)
+        assert(printedChannel == xi.msg.channel.SAY)
+        assert(printedName == 'Voidwatch Purveyor')
+
+        xi.settings.main.ENABLE_VOIDWATCH = originalValue
     end)
 
     it('blocks starter purveyor purchases when disabled or requirements are missing', function()
