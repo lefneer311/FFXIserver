@@ -122,6 +122,12 @@ local function playCrystalSynthesisAnimation(player, npc, craftChoice, useHQ2Eff
     end)
 end
 
+local MAX_AUGMENTS_PER_ITEM = 4
+
+local function getAugmentKey(augmentInfo)
+    return string.format('%d', augmentInfo.augmentID or 0)
+end
+
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
     npc:timer(100, function(npcArg)
 		player:printToPlayer('Combine these, then?  Let\'s see what effect might they have...', 0, npcArg:getPacketName())
@@ -129,7 +135,7 @@ local function showAugmentPreview(player, npc, augmentableItem, augmentableName,
 	npc:timer(1800, function(npcArg)
 		player:printToPlayer(string.format('Your %s is Tier %d and will receive these augments:', augmentableName or tostring(augmentableItem), itemTier), 0, npcArg:getPacketName())
 
-		for i = 1, math.min(#augments, 4) do
+		for i = 1, math.min(#augments, MAX_AUGMENTS_PER_ITEM) do
 			local a = augments[i]
 			local text = a.desc or (string.format('%s (AugmentID %d Power %d)', a.materialName or 'Material', a.augmentID or 0, a.power or 0))
 			player:printToPlayer(string.format('%d) %s', i, text), xi.msg.channel.SYSTEM_3, npcArg:getPacketName())
@@ -206,7 +212,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
     end
 
     local selectedAugments = {}
-    local totalAugmentCount = 0
+    local selectedAugmentKeys = {}
     for i = 0, 7 do
         local materialID = trade:getItemId(i)
         local qty = trade:getSlotQty(i)
@@ -216,15 +222,27 @@ function augmentNPCLogic.onTrade(player, npc, trade)
                 if augmentInfo then
                     local augmentCount = math.floor(qty / augmentInfo.requiredQty)
                     if augmentCount > 0 then
-                        if totalAugmentCount + augmentCount > 4 then
+                        if augmentCount > 1 then
+                            player:printToPlayer('I cannot duplicate the same augment on one item. Bring up to four distinct augments.', 0, npc:getPacketName())
+                            npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
+                            return
+                        end
+
+                        local augmentKey = getAugmentKey(augmentInfo)
+                        if selectedAugmentKeys[augmentKey] then
+                            player:printToPlayer('I cannot duplicate the same augment on one item. Bring up to four distinct augments.', 0, npc:getPacketName())
+                            npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
+                            return
+                        end
+
+                        if #selectedAugments >= MAX_AUGMENTS_PER_ITEM then
                             player:printToPlayer('This is more than we can reasonably achieve. Why not try another combination?', 0, npc:getPacketName())
                             npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
                             return
                         end
-                        for _ = 1, augmentCount do
-                            table.insert(selectedAugments, {augmentID = augmentInfo.augmentID, power = augmentInfo.power, materialName = augmentInfo.materialName, desc = augmentInfo.desc, tier = tier})
-                        end
-                        totalAugmentCount = totalAugmentCount + augmentCount
+
+                        selectedAugmentKeys[augmentKey] = true
+                        table.insert(selectedAugments, {augmentID = augmentInfo.augmentID, power = augmentInfo.power, materialName = augmentInfo.materialName, desc = augmentInfo.desc, tier = tier})
                     end
                     break
                 end
@@ -237,6 +255,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
         npc:timer(1200, function(npcArg) npcArg:setRotation(27) end)
         return
     end
+
 
     local sig = buildTradeSignature(trade)
     local pendingSig = player:getLocalVar('CA_PENDING_SIG')

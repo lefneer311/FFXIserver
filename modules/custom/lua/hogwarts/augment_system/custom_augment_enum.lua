@@ -9,6 +9,8 @@
 
 local augmentData = {}
 
+local MAX_AUGMENTS_PER_ITEM = 4
+
 -- Define equipment tiers (assigning equipment to specific tiers)
 augmentData.equipmentTier = {
     [1] = {1234, 1235, 1236, 1237}, -- Example Tier 1 Weapons
@@ -212,6 +214,7 @@ end
 -- Function to retrieve augments for a given item tier and the materials traded
 function augmentData.getAugmentsForTrade(itemTier, trade)
     local selectedAugments = {}
+    local selectedAugmentIDs = {}
 
     -- Loop through trade items and check if they correspond to valid augments
     for i = 1, trade:getItemCount() do
@@ -220,19 +223,20 @@ function augmentData.getAugmentsForTrade(itemTier, trade)
 
         -- For each material, check if it can apply an augment for the item's tier or lower
         for tier = itemTier, 0, -1 do
-            local augmentInfo = augmentData.augmentTable[tier][materialID]
-            if augmentInfo and qty >= augmentInfo.requiredQty then
+            local augmentInfo = augmentData.augmentTable[tier] and augmentData.augmentTable[tier][materialID]
+            if augmentInfo and qty >= augmentInfo.requiredQty and not selectedAugmentIDs[augmentInfo.augmentID] then
                 table.insert(selectedAugments, {
                     augmentID = augmentInfo.augmentID,
                     power = augmentInfo.power,
                     materialName = augmentInfo.materialName,
-					desc = augmentInfo.desc,
+                    desc = augmentInfo.desc,
                     tier = tier -- maybe augmentInfo.tier so it matches
                 })
-                if #selectedAugments >= 4 then break end -- Max of 4 augments
+                selectedAugmentIDs[augmentInfo.augmentID] = true
+                break
             end
         end
-        if #selectedAugments >= 4 then break end -- Stop if 4 augments are found
+        if #selectedAugments >= MAX_AUGMENTS_PER_ITEM then break end -- Stop if 4 unique augments are found
     end
 
     return selectedAugments
