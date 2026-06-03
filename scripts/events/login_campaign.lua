@@ -157,9 +157,10 @@ xi.events.loginCampaign.onEventUpdate = function(player, csid, option, npc)
             return
         end
 
-        local price          = tier.price
-        local totalItemsMask = (2 ^ 20 - 1) - (2 ^ #tier.items - 1) -- Uses 20 bits and sets to 1 for items not used.
-        local items          = rewardHelpers.getPaddedItems(tier)
+        local price            = tier.price
+        local visibleItemCount = math.min(#tier.items, 20)
+        local totalItemsMask   = (2 ^ 20 - 1) - (2 ^ visibleItemCount - 1) -- Uses 20 bits and sets to 1 for visible slots not used.
+        local items            = rewardHelpers.getPaddedItems(tier)
 
         player:updateEvent(
             bit.bor(items[17], bit.lshift(items[18], 16)),

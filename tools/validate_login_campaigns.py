@@ -83,9 +83,9 @@ def parse_reward_file(path: Path, item_names: set[str]) -> None:
         if tier_price is None or tier_price <= 0:
             raise ValidationError(f"{path.relative_to(ROOT)} tier {current_tier} has invalid price")
 
-        if not 1 <= len(tier_items) <= 20:
+        if len(tier_items) < 1:
             raise ValidationError(
-                f"{path.relative_to(ROOT)} tier {current_tier} has {len(tier_items)} items; expected 1-20"
+                f"{path.relative_to(ROOT)} tier {current_tier} has {len(tier_items)} items; expected at least 1"
             )
 
         seen: set[str] = set()

@@ -48,8 +48,8 @@ xi.events.loginCampaign.rewards.validateTier = function(tierKey, tier)
     end
 
     local itemCount = #tier.items
-    if itemCount < 1 or itemCount > 20 then
-        return false, string.format('tier %u has %u items; expected 1-20', tierKey, itemCount)
+    if itemCount < 1 then
+        return false, string.format('tier %u has %u items; expected at least 1', tierKey, itemCount)
     end
 
     local seenItems = {}
