@@ -59384,12 +59384,12 @@ INSERT INTO `mob_spawn_points` VALUES (17403986,0,'Mourioche','Mourioche',8,62,6
 INSERT INTO `mob_spawn_points` VALUES (17403987,0,'Moss_Eater','Moss Eater',9,62,66,153.700,8.690,2.113,83);
 INSERT INTO `mob_spawn_points` VALUES (17403988,0,'Moss_Eater','Moss Eater',9,62,66,150.850,8.427,9.696,20);
 INSERT INTO `mob_spawn_points` VALUES (17403989,0,'Moss_Eater','Moss Eater',9,62,66,175.310,9.277,-6.983,69);
-INSERT INTO `mob_spawn_points` VALUES (17403990,1,'Old_Goobbue','Old Goobbue',11,65,68,152.720,8.839,-10.498,2);
+INSERT INTO `mob_spawn_points` VALUES (17403990,0,'Old_Goobbue','Old Goobbue',11,65,68,152.720,8.839,-10.498,2);
 INSERT INTO `mob_spawn_points` VALUES (17403991,0,'Mourioche','Mourioche',8,62,68,145.050,5.987,-25.795,50);
 INSERT INTO `mob_spawn_points` VALUES (17403992,0,'Mourioche','Mourioche',8,62,68,145.480,6.067,-27.628,192);
 INSERT INTO `mob_spawn_points` VALUES (17403993,0,'Robber_Crab','Robber Crab',12,62,66,170.970,9.414,-12.579,100);
 INSERT INTO `mob_spawn_points` VALUES (17403994,0,'Robber_Crab','Robber Crab',12,62,66,174.990,9.589,-16.718,13);
-INSERT INTO `mob_spawn_points` VALUES (17403995,1,'Robber_Crab','Robber Crab',12,62,66,182.400,8.707,-33.993,73);
+INSERT INTO `mob_spawn_points` VALUES (17403995,2,'Robber_Crab','Robber Crab',12,62,66,182.400,8.707,-33.993,73);
 INSERT INTO `mob_spawn_points` VALUES (17403996,0,'Water_Elemental','Water Elemental',13,69,72,172.170,9.358,-11.154,67);
 INSERT INTO `mob_spawn_points` VALUES (17403997,0,'Robber_Crab','Robber Crab',12,62,66,163.310,9.590,-58.550,86);
 INSERT INTO `mob_spawn_points` VALUES (17403998,0,'Robber_Crab','Robber Crab',12,62,66,162.880,9.591,-58.082,66);
