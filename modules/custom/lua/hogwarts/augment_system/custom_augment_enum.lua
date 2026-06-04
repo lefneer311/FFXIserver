@@ -13,11 +13,16 @@ local MAX_AUGMENTS_PER_ITEM = 4
 
 -- Define equipment tiers (assigning equipment to specific tiers)
 augmentData.equipmentTier = {
-    [1] = {1234, 1235, 1236, 1237}, -- Example Tier 1 Weapons
-    [2] = {2234, 2235, 2236, 2237}, -- Example Tier 2 Weapons
-    [3] = {3234, 3235, 3236, 3237}, -- Example Tier 3 Weapons
-    [4] = {4234, 4235, 4236, 4237}, -- Example Tier 4 Weapons
-    [5] = {5234, 5235, 5236, 5237}, -- Example Tier 5 Weapons
+    [0] = {0234, 0235, 0236, 0237}, -- PLACEHOLDER Tier 0 Weapons
+    [1] = {1234, 1235, 1236, 1237}, -- PLACEHOLDER Tier 1 Weapons
+    [2] = {2234, 2235, 2236, 2237}, -- PLACEHOLDER Tier 2 Weapons
+    [3] = {3234, 3235, 3236, 3237}, -- PLACEHOLDER Tier 3 Weapons
+    [4] = {4234, 4235, 4236, 4237}, -- PLACEHOLDER Tier 4 Weapons
+    [5] = {5234, 5235, 5236, 5237}, -- PLACEHOLDER Tier 5 Weapons
+    [6] = {6234, 6235, 6236, 6237}, -- PLACEHOLDER Tier 6 Weapons
+    [7] = {7234, 7235, 7236, 7237}, -- PLACEHOLDER Tier 7 Weapons
+    [8] = {8234, 8235, 8236, 8237}, -- PLACEHOLDER Tier 8 Weapons
+    [9] = {9234, 9235, 9236, 9237}, -- PLACEHOLDER Tier 9 Weapons
 }
 
 -- Define materials and their corresponding augment for each tier.
@@ -27,14 +32,17 @@ augmentData.equipmentTier = {
 augmentData.augmentTable = {
     -- Tier 0 Augments
     [0] = {
-        [  839] = { augmentID = 33,     requiredQty = 1,    power = 1,   materialName = "Crawler Cocoon",           tier = 0, desc = "Defense +2" },                                    -- Defense +2
-        [  856] = { augmentID = 68,     requiredQty = 1,    power = 1,   materialName = "Rabbit Hide",              tier = 0, desc = "Accuracy/Attack +2" },                            -- Accuracy/Attack +2
-        [ 4358] = { augmentID = 69,     requiredQty = 1,    power = 1,   materialName = "Hare Meat",                tier = 0, desc = "Ranged Accuracy/Ranged Attack +2" },              -- Ranged Accuracy/Ranged Attack +2
-        [  768] = { augmentID = 362,    requiredQty = 1,    power = 0,   materialName = "Flint Stone",              tier = 0, desc = "Magic Damage +1" },                               -- Magic Damage +1
-        [  912] = { augmentID = 134,    requiredQty = 1,    power = 0,   materialName = "Beehive Chip",             tier = 0, desc = "Magic Defense Bonus +1" },                        -- Magic Defense Bonus +1
-        [  846] = { augmentID = 142,    requiredQty = 1,    power = 0,   materialName = "Insect Wing",              tier = 0, desc = "Store TP +1" },                                   -- Store TP +1
-        [  922] = { augmentID = 195,    requiredQty = 1,    power = 1,   materialName = "Bat Wing",                 tier = 0, desc = "Subtle Blow +2" },                                -- Subtle Blow +2
-        [ 2004] = { augmentID = 17,     requiredQty = 3,    power = 5,   materialName = "Carapace Powder",          tier = 0, desc = "HP/MP +6" },                                      -- HP/MP +6
+        [ 4096] = { augmentID = 68,      requiredQty = 3,    power = 1,   materialName = "Fire Crystal",            tier = 0, desc = "Accuracy/Attack +2" },
+        [ 4098] = { augmentID = 69,      requiredQty = 3,    power = 1,   materialName = "Wind Crystal",            tier = 0, desc = "Ranged Accuracy/Ranged Attack +2" },
+        [ 4100] = { augmentID = 41,      requiredQty = 3,    power = 1,   materialName = "Lightning Crystal",       tier = 0, desc = "Critical Hit Rate +2%" },
+        [ 4101] = { augmentID = 81,      requiredQty = 3,    power = 3,   materialName = "Water Crystal",           tier = 0, desc = "Evasion/Magic Evasion +4" },
+        [ 4097] = { augmentID = 131,     requiredQty = 3,    power = 1,   materialName = "Ice Crystal",             tier = 0, desc = "Magic Accuracy/Magic Attack Bonus +2" },
+        [ 4099] = { augmentID = 33,      requiredQty = 3,    power = 5,   materialName = "Earth Crystal",           tier = 0, desc = "Defense +6" },
+        [ 4102] = { augmentID = 134,     requiredQty = 3,    power = 1,   materialName = "Light Crystal",           tier = 0, desc = "Magic Defense Bonus +2" },
+        [ 4103] = { augmentID = 142,     requiredQty = 3,    power = 2,   materialName = "Dark Crystal",            tier = 0, desc = "Store TP +3" },
+        [  627] = { augmentID = 362,     requiredQty = 3,    power = 1,   materialName = "Maple Sugar",             tier = 0, desc = "Magic Damage +2" },
+        [  859] = { augmentID = 137,     requiredQty = 1,    power = 2,   materialName = "Ram Skin",                tier = 0, desc = "Regen +1" },
+        [  895] = { augmentID = 53,      requiredQty = 1,    power = 2,   materialName = "Ram Horn",                tier = 0, desc = "Spell Interrupt Rate Down +4%" },
     },
     -- Tier 1 Augments
     [1] = {
@@ -53,7 +61,7 @@ augmentData.augmentTable = {
         [  848] = { augmentID = 180,    requiredQty = 3,    power = 2,   materialName = "Dhalmel Leather",          tier = 1, desc = "Resist Silence +3" },                             -- Resist Silence +3
         [ 2109] = { augmentID = 182,    requiredQty = 3,    power = 2,   materialName = "Bittern",                  tier = 1, desc = "Resist Petrify +3" },                             -- Resist Petrify +3
         [ 1635] = { augmentID = 188,    requiredQty = 3,    power = 2,   materialName = "Paktong Ingot",            tier = 1, desc = "Resist Charm +3" },                               -- Resist Charm +3
-        [  627] = { augmentID = 362,    requiredQty = 12,   power = 2,   materialName = "Maple Sugar",              tier = 1, desc = "Magic Damage +3" },                               -- Magic Damage +3
+        [  627] = { augmentID = 362,    requiredQty = 3,    power = 2,   materialName = "Maple Sugar",              tier = 1, desc = "Magic Damage +3" },                               -- Magic Damage +3
     },
     -- Tier 2 Augments
     [2] = {

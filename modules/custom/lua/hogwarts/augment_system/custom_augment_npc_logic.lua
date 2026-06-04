@@ -125,7 +125,7 @@ end
 local MAX_AUGMENTS_PER_ITEM = 4
 
 local function getAugmentKey(augmentInfo)
-    return string.format('%d', augmentInfo.augmentID or 0)
+    return string.format('%d', augmentInfo.augmentID or augmentInfo[1] or 0)
 end
 
 local function showAugmentPreview(player, npc, augmentableItem, augmentableName, itemTier, augments)
@@ -203,11 +203,14 @@ function augmentNPCLogic.onTrade(player, npc, trade)
     end
 
     local maxTierUnlocked = 0
-    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 6
-    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 5
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 4
+    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 9
+    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 8
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 7
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_CRIMSON)            then maxTierUnlocked = 6
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_AZURE)              then maxTierUnlocked = 5
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
     elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 2
+    elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
     elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_WHITE)              then maxTierUnlocked = 1
     end
 
@@ -220,7 +223,9 @@ function augmentNPCLogic.onTrade(player, npc, trade)
             for tier = math.min(itemTier, maxTierUnlocked), 0, -1 do
                 local augmentInfo = augmentData.augmentTable[tier] and augmentData.augmentTable[tier][materialID]
                 if augmentInfo then
-                    local augmentCount = math.floor(qty / augmentInfo.requiredQty)
+                    local requiredQty = augmentInfo.requiredQty or augmentInfo[2]
+                    local augmentID = augmentInfo.augmentID or augmentInfo[1]
+                    local augmentCount = math.floor(qty / requiredQty)
                     if augmentCount > 0 then
                         if augmentCount > 1 then
                             player:printToPlayer('I cannot duplicate the same augment on one item. Bring up to four distinct augments.', 0, npc:getPacketName())
@@ -242,7 +247,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
                         end
 
                         selectedAugmentKeys[augmentKey] = true
-                        table.insert(selectedAugments, {augmentID = augmentInfo.augmentID, power = augmentInfo.power, materialName = augmentInfo.materialName, desc = augmentInfo.desc, tier = tier})
+                        table.insert(selectedAugments, {augmentID = augmentID, power = augmentInfo.power or augmentInfo[3], materialName = augmentInfo.materialName or augmentInfo[4], desc = augmentInfo.desc, tier = augmentInfo.tier or augmentInfo[5] or tier})
                     end
                     break
                 end
@@ -326,20 +331,26 @@ function augmentNPCLogic.onTrigger(player, npc)
     player:setLocalVar('CA_PENDING_ITEM', 0)
 
     local maxTierUnlocked = 0
-    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 6
-    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 5
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 4
+    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 9
+    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 8
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 7
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_CRIMSON)            then maxTierUnlocked = 6
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_AZURE)              then maxTierUnlocked = 5
+    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
     elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 2
+    elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
     elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_WHITE)              then maxTierUnlocked = 1
     end
 
     local lines = {
-        [6] = 'This is wondrous! We may be able to provide even greater enhancements than before.  Let\'s try.',
-        [5] = 'You have access to all that is within my power to provide.',
-        [4] = 'All but the very pinnacle of power is available to you.',
+        [9] = 'The wyrmking\'s whisper opens the pinnacle of my craft to you.',
+        [8] = 'That cerulean crystal resonates with nearly every technique I know.',
+        [7] = 'The emerald\'s harmony grants access to earth, sea, and sky.',
+        [6] = 'Crimson resolve suits the testimony-grade augments now available.',
+        [5] = 'Azure light unlocks a broad spectrum of high-level materials.',
+        [4] = 'Umber resonance brings geode-based recipes within reach.',
         [3] = 'Reaching this level is no small feat, and surely required a good pair of boots.',
-        [2] = 'That stone in your possession will help you wield more powerfully augmented items.',
+        [2] = 'That feather in your possession will help you wield more powerfully augmented items.',
         [1] = 'Everyone starts at the beginning, and you\'re beyond that already! Let\'s get started.',
         [0] = 'Have you not heard the song of the mothercrystal? Seek out its scintillating rhapsody. Each step yields rewards.',
     }
