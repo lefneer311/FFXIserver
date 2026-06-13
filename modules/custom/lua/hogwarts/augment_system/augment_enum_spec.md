@@ -135,21 +135,22 @@ Examples:
 
 | Job | Preferred Augments |
 |------|------|
-| WAR | Fencer |
-| MNK | Kick Attacks |
-| THF | Treasure Hunter / Gilfinder |
-| WHM | Regen Potency |
-| BLM | Magic Burst Damage |
-| RDM | Fast Cast |
-| BRD | Song Casting Time / All Songs |
-| RNG | Snapshot / True Shot |
-| SAM | Weapon Skill Damage |
-| NIN | Daken / Ninja Tool Expertise |
+| WAR | Double Attack + Critical Hit Rate % (132) |
+| MNK | Kick Attacks (194) |
+| THF | Treasure Hunter (147)/ Gilfinder (148) |
+| WHM | Cure Spellcasting Time (323) |
+| BLM | Magic Burst Damage (334) |
+| RDM | Enhancing Magic Duration (1248) |
+| BRD | Song Casting Time (322) / All Songs (67) |
+| RNG | Snapshot (211)/ True Shot (232) |
+| SAM | Weapon Skill Damage (327) |
+| NIN | Daken (251)/ Ninja Tool Expertise (215) |
 | DRG | Pet-focused Wyvern options |
 | BST | Pet offense/defense |
 | SMN | Avatar-focused bonuses |
 | PUP | Automaton bonuses |
-| BLU | Skillchain Damage |
+| BLU | Skillchain Damage (332) |
+| SCH | Regen Potency (371) |
 
 ---
 

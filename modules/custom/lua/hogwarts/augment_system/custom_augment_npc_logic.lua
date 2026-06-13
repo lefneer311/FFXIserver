@@ -211,7 +211,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
     elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
     elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
     elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_WHITE)              then maxTierUnlocked = 1
+    elseif  player:hasKeyItem(xi.ki.LIMIT_BREAKER)                  then maxTierUnlocked = 1
     end
 
     local selectedAugments = {}
@@ -339,7 +339,7 @@ function augmentNPCLogic.onTrigger(player, npc)
     elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
     elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
     elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_WHITE)              then maxTierUnlocked = 1
+    elseif  player:hasKeyItem(xi.ki.LIMIT_BREAKER)                  then maxTierUnlocked = 1
     end
 
     local lines = {
