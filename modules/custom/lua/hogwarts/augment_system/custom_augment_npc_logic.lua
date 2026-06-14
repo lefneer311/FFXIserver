@@ -124,6 +124,32 @@ end
 
 local MAX_AUGMENTS_PER_ITEM = 4
 
+local tierKeyItemRequirements = {
+    [1] = xi.ki.LIMIT_BREAKER,
+    [2] = xi.ki.PURE_WHITE_FEATHER,
+    [3] = xi.ki.AIRSHIP_PASS,
+    [4] = xi.ki.RHAPSODY_IN_UMBER,
+    [5] = xi.ki.RHAPSODY_IN_AZURE,
+    [6] = xi.ki.RHAPSODY_IN_CRIMSON,
+    [7] = xi.ki.RHAPSODY_IN_EMERALD,
+    [8] = xi.ki.CERULEAN_CRYSTAL,
+    [9] = xi.ki.WHISPER_OF_THE_WYRMKING,
+}
+
+local function getMaxSequentialTierUnlocked(player)
+    local maxTierUnlocked = 0
+
+    for tier = 1, #tierKeyItemRequirements do
+        if not player:hasKeyItem(tierKeyItemRequirements[tier]) then
+            break
+        end
+
+        maxTierUnlocked = tier
+    end
+
+    return maxTierUnlocked
+end
+
 local function getAugmentKey(augmentInfo)
     return string.format('%d', augmentInfo.augmentID or augmentInfo[1] or 0)
 end
@@ -202,17 +228,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
         return
     end
 
-    local maxTierUnlocked = 0
-    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 9
-    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 8
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 7
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_CRIMSON)            then maxTierUnlocked = 6
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_AZURE)              then maxTierUnlocked = 5
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
-    elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
-    elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
-    elseif  player:hasKeyItem(xi.ki.LIMIT_BREAKER)                  then maxTierUnlocked = 1
-    end
+    local maxTierUnlocked = getMaxSequentialTierUnlocked(player)
 
     local selectedAugments = {}
     local selectedAugmentKeys = {}
@@ -330,17 +346,7 @@ function augmentNPCLogic.onTrigger(player, npc)
     player:setLocalVar('CA_PENDING_SIG', 0)
     player:setLocalVar('CA_PENDING_ITEM', 0)
 
-    local maxTierUnlocked = 0
-    if      player:hasKeyItem(xi.ki.WHISPER_OF_THE_WYRMKING)        then maxTierUnlocked = 9
-    elseif  player:hasKeyItem(xi.ki.CERULEAN_CRYSTAL)               then maxTierUnlocked = 8
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_EMERALD)            then maxTierUnlocked = 7
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_CRIMSON)            then maxTierUnlocked = 6
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_AZURE)              then maxTierUnlocked = 5
-    elseif  player:hasKeyItem(xi.ki.RHAPSODY_IN_UMBER)              then maxTierUnlocked = 4
-    elseif  player:hasKeyItem(xi.ki.AIRSHIP_PASS)                   then maxTierUnlocked = 3
-    elseif  player:hasKeyItem(xi.ki.PURE_WHITE_FEATHER)             then maxTierUnlocked = 2
-    elseif  player:hasKeyItem(xi.ki.LIMIT_BREAKER)                  then maxTierUnlocked = 1
-    end
+    local maxTierUnlocked = getMaxSequentialTierUnlocked(player)
 
     local lines = {
         [9] = 'The wyrmking\'s whisper opens the pinnacle of my craft to you.',
