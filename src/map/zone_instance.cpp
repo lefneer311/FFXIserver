@@ -22,7 +22,7 @@
 #include "zone_instance.h"
 #include "ai/ai_container.h"
 #include "common/timer.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "lua/luautils.h"
 #include "status_effect_container.h"
 #include "utils/charutils.h"
@@ -160,7 +160,7 @@ void CZoneInstance::DecreaseZoneCounter(CCharEntity* PChar)
         PInstance->DecreaseZoneCounter(PChar);
         PInstance->DespawnPC(PChar);
         CharZoneOut(PChar);
-        PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_LEVEL_RESTRICTION);
+        PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::LevelRestriction);
         PChar->PInstance = nullptr;
 
         if (PInstance->CharListEmpty())
@@ -228,7 +228,7 @@ void CZoneInstance::IncreaseZoneCounter(CCharEntity* PChar)
 
         if (PChar->PInstance->GetLevelCap() > 0)
         {
-            PChar->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_LEVEL_RESTRICTION, EFFECT_LEVEL_RESTRICTION, PChar->PInstance->GetLevelCap(), 0s, 0s));
+            PChar->StatusEffectContainer->AddStatusEffect(xi::StatusEffect::LevelRestriction, static_cast<uint16>(xi::StatusEffect::LevelRestriction), PChar->PInstance->GetLevelCap(), 0s, 0s);
         }
 
         if (PChar->PInstance->CheckFirstEntry(PChar->id))

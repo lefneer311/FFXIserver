@@ -24,7 +24,7 @@
 #include <unordered_map>
 
 #include "common/cbasetypes.h"
-#include "entities/mobentity.h"
+#include "entities/mob_entity.h"
 #include "modifier.h"
 
 struct ModsList_t
@@ -63,7 +63,7 @@ void SetupPetSkills(CMobEntity* PMob);
 
 uint8 JobSkillRankToBaseEvaRank(JOBTYPE mjob, JOBTYPE sjob);
 
-uint16 GetWeaponDamage(CMobEntity* PMob, uint16 slot);
+uint16 GetBaseWeaponDamage(CMobEntity* PMob, uint16 slot);
 uint16 GetMagicEvasion(CMobEntity* PMob);
 uint16 GetBaseDefEva(CMobEntity* PMob, uint8 rank);
 uint16 GetBaseSkill(CMobEntity* PMob, uint8 rank);

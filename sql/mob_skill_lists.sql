@@ -283,10 +283,10 @@ INSERT INTO `mob_skill_lists` VALUES ('Colibri',72,1700);
 INSERT INTO `mob_skill_lists` VALUES ('Colibri',72,1701);
 INSERT INTO `mob_skill_lists` VALUES ('Myradrosh',73,1699);
 INSERT INTO `mob_skill_lists` VALUES ('Myradrosh',73,1701);
-INSERT INTO `mob_skill_lists` VALUES ('Corse',74,530);
-INSERT INTO `mob_skill_lists` VALUES ('Corse',74,531);
-INSERT INTO `mob_skill_lists` VALUES ('Corse',74,532);
-INSERT INTO `mob_skill_lists` VALUES ('Corse',74,533);
+INSERT INTO `mob_skill_lists` VALUES ('Corse',74,530); -- memento_mori
+INSERT INTO `mob_skill_lists` VALUES ('Corse',74,531); -- silence_seal
+INSERT INTO `mob_skill_lists` VALUES ('Corse',74,532); -- envoutement
+INSERT INTO `mob_skill_lists` VALUES ('Corse',74,533); -- danse_macabre
 INSERT INTO `mob_skill_lists` VALUES ('Crab',75,442);
 INSERT INTO `mob_skill_lists` VALUES ('Crab',75,443);
 INSERT INTO `mob_skill_lists` VALUES ('Crab',75,444);
@@ -364,8 +364,14 @@ INSERT INTO `mob_skill_lists` VALUES ('Dragon',87,648); -- Petro Eyes
 INSERT INTO `mob_skill_lists` VALUES ('Dragon',87,649); -- Voidsong
 INSERT INTO `mob_skill_lists` VALUES ('Dragon',87,650); -- Thornsong
 INSERT INTO `mob_skill_lists` VALUES ('Dragon',87,651); -- Lodesong
--- 88: Bloody Bones
--- 89: Draugar
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',88,479); -- Horror Cloud
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',88,484); -- Black Cloud
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',88,485); -- Blood Saber
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',88,1795); -- Malediction
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',89,479); -- Horror Cloud
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',89,484); -- Black Cloud
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',89,485); -- Blood Saber
+INSERT INTO `mob_skill_lists` VALUES ('Bloody_Bones',89,1795); -- Malediction
 INSERT INTO `mob_skill_lists` VALUES ('Dvergr',90,2113);
 INSERT INTO `mob_skill_lists` VALUES ('Dvergr',90,2114);
 INSERT INTO `mob_skill_lists` VALUES ('Dvergr',90,2115);
@@ -965,10 +971,10 @@ INSERT INTO `mob_skill_lists` VALUES ('Sheep',226,260);
 INSERT INTO `mob_skill_lists` VALUES ('Sheep',226,261);
 INSERT INTO `mob_skill_lists` VALUES ('Sheep',226,262);
 INSERT INTO `mob_skill_lists` VALUES ('Sheep',226,264);
-INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,478);
-INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,479);
-INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,484);
-INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,485);
+INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,478); -- hell_slash
+INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,479); -- horror_cloud
+INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,484); -- black_cloud
+INSERT INTO `mob_skill_lists` VALUES ('Skeleton',227,485); -- blood_saber
 INSERT INTO `mob_skill_lists` VALUES ('Slime',228,431);
 INSERT INTO `mob_skill_lists` VALUES ('Slime',228,432);
 INSERT INTO `mob_skill_lists` VALUES ('Slime',228,433);
@@ -2543,12 +2549,12 @@ INSERT INTO `mob_skill_lists` VALUES ('Jug_Citrullus',766,678);
 INSERT INTO `mob_skill_lists` VALUES ('Jug_Citrullus',766,679);
 
 INSERT INTO `mob_skill_lists` VALUES ('Lamina-Hyakinthos',767,2210);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,530);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,531);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,532);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,533);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,1326);
-INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,1329);
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,530); -- memento_mori
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,531); -- silence_seal
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,532); -- envoutement
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,533); -- danse_macabre
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,1326); -- final_retribution
+INSERT INTO `mob_skill_lists` VALUES ('Corse_NM_staff',768,1329); -- gala_macabre
 INSERT INTO `mob_skill_lists` VALUES ('Platoon_Scorpion',769,354); -- wild_rage
 INSERT INTO `mob_skill_lists` VALUES ('Platoon_Scorpion',769,355); -- earth_pounder
 INSERT INTO `mob_skill_lists` VALUES ('Hippomaritimus',770,449);

@@ -21,7 +21,7 @@
 
 #include "0x083_guild_buylist.h"
 
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "item_container.h"
 #include "items/item_shop.h"
 
@@ -72,6 +72,42 @@ GP_SERV_COMMAND_GUILD_BUYLIST::GP_SERV_COMMAND_GUILD_BUYLIST(CCharEntity* PChar,
 
             ItemCount++;
         }
+    }
+
+    packet.Count = ItemCount;
+    packet.Stat  = PacketCount + 0x80;
+}
+
+GP_SERV_COMMAND_GUILD_BUYLIST::GP_SERV_COMMAND_GUILD_BUYLIST(CCharEntity* PChar, const std::vector<GP_GUILD_ITEM>& items)
+{
+    if (PChar == nullptr)
+    {
+        ShowError("GP_SERV_COMMAND_GUILD_BUYLIST - PChar was null.");
+        return;
+    }
+
+    auto& packet = this->data();
+
+    uint8 ItemCount   = 0;
+    uint8 PacketCount = 0;
+
+    for (const auto& item : items)
+    {
+        if (ItemCount == 30)
+        {
+            packet.Count = ItemCount;
+            packet.Stat  = (PacketCount == 0 ? 0x40 : PacketCount);
+
+            PChar->pushPacket(this->copy());
+
+            ItemCount = 0;
+            PacketCount++;
+
+            std::memset(&packet, 0, sizeof(PacketData));
+        }
+
+        packet.List[ItemCount] = item;
+        ItemCount++;
     }
 
     packet.Count = ItemCount;

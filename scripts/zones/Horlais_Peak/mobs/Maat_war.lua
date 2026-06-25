@@ -16,14 +16,18 @@ end
 entity.onMobInitialize = function(mob)
     mob:addListener('TAKE_DAMAGE', 'MAAT_TAKE_DAMAGE', function(mobArg, damage, attacker, attackType, damageType)
         if damage >= 292 then
-            mob:messageText(mob, ID.text.THAT_LL_HURT_IN_THE_MORNING)
+            mobArg:messageText(mobArg, ID.text.THAT_LL_HURT_IN_THE_MORNING)
+        end
+
+        if damage >= 584 then
+            mobArg:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 200)
         end
     end)
 end
 
 entity.onMobSpawn = function(mob)
     mob:setUnkillable(true)
-    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 200)
+    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 125)
     mob:setBaseSpeed(60)
 
     -- Reset mob.
@@ -33,6 +37,7 @@ entity.onMobSpawn = function(mob)
     mob:setLocalVar('initialTaunt', 0)
     mob:setLocalVar('enrageTime', 0)
     mob:setLocalVar('alreadyEnraged', 0)
+    mob:setLocalVar('finalWord', 0)
 end
 
 entity.onMobRoam = function(mob)
@@ -119,7 +124,6 @@ entity.onMobFight = function(mob, target)
         GetSystemTime() >= mob:getLocalVar('enrageTime')
     then
         mob:setLocalVar('alreadyEnraged', 1)
-        mob:showText(mob, ID.text.LOOKS_LIKE_YOU_WERENT_READY)
         mob:setMod(xi.mod.REGAIN, 3000)
     end
 end
@@ -144,9 +148,19 @@ entity.onMobMobskillChoose = function(mob, target, skillId)
 end
 
 entity.onMobWeaponSkill = function(mob, target, skill, action)
-    if skill:getID() == xi.mobSkill.MIGHTY_STRIKES_MAAT then
+    local skillID = skill:getID()
+
+    if skillID == xi.mobSkill.MIGHTY_STRIKES_MAAT then
         mob:showText(mob, ID.text.NOW_THAT_IM_WARMED_UP)
         return
+    end
+
+    if
+        skillID == xi.mobSkill.ASURAN_FISTS_MAAT and
+        mob:getLocalVar('finalWord') == 0
+    then
+        mob:showText(mob, ID.text.LOOKS_LIKE_YOU_WERENT_READY)
+        mob:setLocalVar('finalWord', 1)
     end
 
     if mob:getLocalVar('alreadyEnraged') == 1 then
@@ -163,7 +177,7 @@ entity.onMobWeaponSkill = function(mob, target, skill, action)
 end
 
 entity.onMobDisengage = function(mob)
-    if mob:getLocalVar('alreadyEnraged') == 0 then
+    if mob:getLocalVar('finalWord') == 0 then
         mob:showText(mob, ID.text.LOOKS_LIKE_YOU_WERENT_READY)
     end
 end

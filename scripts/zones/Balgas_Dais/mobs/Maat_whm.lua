@@ -31,6 +31,7 @@ end
 entity.onMobSpawn = function(mob)
     mob:setUnkillable(true)
     mob:setBaseSpeed(60)
+    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 125)
     mob:setMod(xi.mod.SILENCE_RES_RANK, 6)
 
     -- Reset mob.
@@ -125,7 +126,6 @@ entity.onMobFight = function(mob, target)
         xi.combat.behavior.disableAllActions(mob)
         mob:showText(mob, ID.text.YOUVE_COME_A_LONG_WAY)
         players[1]:disengage()
-        players[1]:addTitle(xi.title.MAAT_MASHER)
         battlefield:win()
         return
     end
@@ -165,7 +165,6 @@ entity.onMobFight = function(mob, target)
         xi.combat.behavior.disableAllActions(mob)
         mob:showText(mob, ID.text.YOUVE_COME_A_LONG_WAY)
         players[1]:disengage()
-        players[1]:addTitle(xi.title.MAAT_MASHER)
         battlefield:win()
         return
     end

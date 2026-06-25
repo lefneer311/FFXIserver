@@ -25,12 +25,12 @@
 
 #include "common/timer.h"
 
-#include "entities/baseentity.h"
-#include "entities/charentity.h"
-#include "entities/mobentity.h"
-#include "entities/npcentity.h"
-#include "entities/petentity.h"
-#include "entities/trustentity.h"
+#include "entities/base_entity.h"
+#include "entities/char_entity.h"
+#include "entities/mob_entity.h"
+#include "entities/npc_entity.h"
+#include "entities/pet_entity.h"
+#include "entities/trust_entity.h"
 #include "enums/music_slot.h"
 
 #include <set>
@@ -86,10 +86,10 @@ public:
 
     CZone* GetZone();
 
-    auto         GetEffectCheckTime() const -> timer::time_point;
-    EntityList_t GetCharList() const;
-    EntityList_t GetMobList() const;
-    bool         CharListEmpty() const;
+    auto GetEffectCheckTime() const -> timer::time_point;
+    auto GetCharList() const -> const EntityList_t&;
+    auto GetMobList() const -> const EntityList_t&;
+    bool CharListEmpty() const;
 
     void ForEachChar(const std::function<void(CCharEntity*)>& func);
     void ForEachMob(const std::function<void(CMobEntity*)>& func);

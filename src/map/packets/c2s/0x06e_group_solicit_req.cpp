@@ -22,7 +22,7 @@
 #include "0x06e_group_solicit_req.h"
 
 #include "common/ipc_structs.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "ipc_client.h"
 #include "packets/s2c/0x009_message.h"
 #include "packets/s2c/0x029_battle_message.h"
@@ -110,7 +110,7 @@ void GP_CLI_COMMAND_GROUP_SOLICIT_REQ::process(MapSession* PSession, CCharEntity
                         break;
                     }
 
-                    if (PInvitee->StatusEffectContainer->HasStatusEffect(EFFECT_LEVEL_SYNC))
+                    if (PInvitee->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::LevelSync))
                     {
                         ShowDebug("%s has level sync, unable to send invite", PInvitee->getName());
                         PInviter->pushPacket<GP_SERV_COMMAND_MESSAGE>(PInviter, 0, 0, MsgStd::CannotInviteLevelSync);
@@ -196,7 +196,7 @@ void GP_CLI_COMMAND_GROUP_SOLICIT_REQ::process(MapSession* PSession, CCharEntity
                         break;
                     }
 
-                    if (PInvitee->StatusEffectContainer->HasStatusEffect(EFFECT_LEVEL_SYNC))
+                    if (PInvitee->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::LevelSync))
                     {
                         ShowDebug("%s has level sync, unable to send invite", PInvitee->getName());
                         PInviter->pushPacket<GP_SERV_COMMAND_MESSAGE>(PInviter, 0, 0, MsgStd::CannotInviteLevelSync);

@@ -24,6 +24,7 @@
 #include "arguments.h"
 #include "common/engine.h"
 #include "common/scheduler.h"
+#include "common/zmq/zmq_service.h"
 
 #include <asio.hpp> // for signal_set
 
@@ -65,6 +66,7 @@ public:
 
     void trySetConsoleTitle();
     void registerSignalHandlers();
+    void handleSignal(const std::error_code& error, int signal);
     void usercheck() const;
     void tryIncreaseRLimits();
     void tryDisableQuickEditMode() const;
@@ -98,13 +100,17 @@ public:
     //
 
     auto scheduler() -> Scheduler&;
+    auto zmqService() -> ZMQService&;
     auto args() const -> Arguments&;
     auto console() const -> ConsoleService&;
 
 protected:
     std::chrono::steady_clock::time_point startTime_{ std::chrono::steady_clock::now() };
 
-    Scheduler        scheduler_;
+    Scheduler scheduler_;
+
+    ZMQService zmqService_;
+
     asio::signal_set signals_;
 
     std::string serverName_;

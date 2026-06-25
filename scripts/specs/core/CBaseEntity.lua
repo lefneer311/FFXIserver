@@ -638,6 +638,24 @@ end
 function CBaseEntity:sendGuild(guildID, open, close, holiday)
 end
 
+---@nodiscard
+---@param npc CBaseEntity
+---@param open integer
+---@param close integer
+---@return boolean
+function CBaseEntity:openGuildShop(npc, open, close)
+end
+
+---@return nil
+function CBaseEntity:clearGuildShop()
+end
+
+---@param open integer
+---@param close integer
+---@return nil
+function CBaseEntity:sendGuildClose(open, close)
+end
+
 ---@return nil
 function CBaseEntity:openSendBox()
 end
@@ -3004,6 +3022,11 @@ end
 function CBaseEntity:delStatusEffectsByFlag(flag, silent)
 end
 
+---@param type xi.effectType
+---@return nil
+function CBaseEntity:delStatusEffectsByType(type)
+end
+
 ---@param StatusID integer
 ---@return boolean
 function CBaseEntity:delStatusEffectSilent(StatusID)
@@ -3097,10 +3120,6 @@ end
 function CBaseEntity:hasAllLatentsActive(slot)
 end
 
----@return nil
-function CBaseEntity:fold()
-end
-
 ---@param PEntity CBaseEntity
 ---@param total integer
 ---@return nil
@@ -3111,28 +3130,6 @@ end
 ---@param PTarget CBaseEntity
 ---@return boolean
 function CBaseEntity:doRandomDeal(PTarget)
-end
-
----@nodiscard
----@param casterJob integer
----@param bustDuration integer
----@param effectID integer
----@param power integer
----@param tick integer
----@param duration integer
----@param subType integer
----@param subPower integer
----@param tier integer
----@param sourceType integer
----@param sourceTypeParam integer
----@param originID integer
----@return boolean
-function CBaseEntity:addCorsairRoll(casterJob, bustDuration, effectID, power, tick, duration, subType, subPower, tier, sourceType, sourceTypeParam, originID)
-end
-
----@nodiscard
----@return boolean
-function CBaseEntity:hasCorsairEffect()
 end
 
 ---@nodiscard
@@ -3878,8 +3875,9 @@ function CBaseEntity:setDelay(delay)
 end
 
 ---@param damage integer
+---@param slot xi.slot
 ---@return nil
-function CBaseEntity:setDamage(damage)
+function CBaseEntity:setDamage(damage, slot)
 end
 
 ---@nodiscard

@@ -21,7 +21,7 @@
 
 #include "0x00a_login.h"
 
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "instance.h"
 #include "status_effect_container.h"
 #include "utils/zoneutils.h"
@@ -127,9 +127,9 @@ GP_SERV_COMMAND_LOGIN::GP_SERV_COMMAND_LOGIN(CCharEntity* PChar, const EventInfo
     uint32_t   flags2        = 0;
 
     // Mount sub power in byte 0 (bits 0-7)
-    if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_MOUNTED))
+    if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Mounted))
     {
-        flags2 |= static_cast<uint8>(PChar->StatusEffectContainer->GetStatusEffect(EFFECT_MOUNTED)->GetSubPower());
+        flags2 |= static_cast<uint8>(PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Mounted)->GetSubPower());
     }
 
     // Gender and size in byte 1 (bits 8-15)
@@ -151,8 +151,8 @@ GP_SERV_COMMAND_LOGIN::GP_SERV_COMMAND_LOGIN(CCharEntity* PChar, const EventInfo
     };
 
     // TODO: Previous weather
-    packet.WeatherNumber = static_cast<uint16>(PChar->loc.zone->GetWeather());
-    packet.WeatherTime   = PChar->loc.zone->GetWeatherChangeTime();
+    packet.WeatherNumber = static_cast<uint16>(PChar->loc.zone->weather().current());
+    packet.WeatherTime   = PChar->loc.zone->weather().changeTime();
     packet.ZoneNo        = PChar->getZone();
     packet.ZoneSubNo     = PChar->PInstance ? PChar->PInstance->overlayId() : 0;
     packet.MapNumber     = PChar->getZone();

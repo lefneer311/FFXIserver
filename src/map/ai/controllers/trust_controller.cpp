@@ -27,8 +27,8 @@
 #include "ai/states/magic_state.h"
 #include "ai/states/range_state.h"
 #include "enmity_container.h"
-#include "entities/charentity.h"
-#include "entities/trustentity.h"
+#include "entities/char_entity.h"
+#include "entities/trust_entity.h"
 #include "items/item_weapon.h"
 #include "mob_modifier.h"
 #include "mob_spell_container.h"
@@ -120,6 +120,8 @@ auto CTrustController::Tick(timer::time_point tick) -> Task<void>
     {
         co_await DoRoamTick(tick);
     }
+
+    co_return;
 }
 
 auto CTrustController::DoCombatTick(timer::time_point tick) -> Task<void>
@@ -251,6 +253,8 @@ auto CTrustController::DoCombatTick(timer::time_point tick) -> Task<void>
 
         PTrust->PAI->EventHandler.triggerListener("COMBAT_TICK", PTrust, PMaster, PTarget);
     }
+
+    co_return;
 }
 
 auto CTrustController::DoNonCombatTick(timer::time_point tick) -> Task<void>

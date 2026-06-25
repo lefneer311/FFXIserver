@@ -23,7 +23,7 @@
 
 #include <common/types/maybe.h>
 
-#include "entities/automatonentity.h"
+#include "entities/automaton_entity.h"
 
 #include "pet_controller.h"
 #include "spell.h"
@@ -49,11 +49,11 @@ struct AutomatonAbility
 
 struct AutomatonSpell
 {
-    uint16              skilllevel{ 0 };
-    uint8               heads{ 0 };
-    EFFECT              enfeeble{ EFFECT_KO };
-    IMMUNITY            immunity{ IMMUNITY_NONE };
-    std::vector<EFFECT> removes;
+    uint16                        skilllevel{ 0 };
+    uint8                         heads{ 0 };
+    xi::StatusEffect              enfeeble{ xi::StatusEffect::Ko };
+    IMMUNITY                      immunity{ IMMUNITY_NONE };
+    std::vector<xi::StatusEffect> removes;
 };
 
 class CAutomatonEntity;

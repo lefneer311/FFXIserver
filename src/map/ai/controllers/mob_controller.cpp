@@ -31,7 +31,7 @@
 #include "battlefield.h"
 #include "common/utils.h"
 #include "enmity_container.h"
-#include "entities/mobentity.h"
+#include "entities/mob_entity.h"
 #include "mob_modifier.h"
 #include "mob_spell_container.h"
 #include "mobskill.h"
@@ -79,11 +79,33 @@ auto CMobController::Tick(const timer::time_point tick) -> Task<void>
         }
         else if (!PMob->isDead())
         {
+            if (PMob->SpellContainer->HasSpells() && DoBuffTick())
+            {
+                co_return;
+            }
+
             co_await DoRoamTick(tick);
         }
     }
 
     co_return;
+}
+
+auto CMobController::DoBuffTick() -> bool
+{
+    TracyZoneScoped;
+
+    if (PMob->PAI->IsCurrentState<CMagicState>())
+    {
+        return true;
+    }
+
+    if (!IsSpellReady(0, 0) || !PMob->SpellContainer->HasBuffSpells())
+    {
+        return false;
+    }
+
+    return TryCastSpell();
 }
 
 auto CMobController::TryDeaggro() -> bool
@@ -130,7 +152,7 @@ auto CMobController::CanPursueTarget(const CBattleEntity* PTarget) const -> bool
     if (PMob->getMobMod(MOBMOD_DETECTION) & DETECT_SCENT)
     {
         // if mob is in water it will instant deaggro if target cannot be detected
-        if (!PMob->PAI->PathFind->InWater() && PTarget && !PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_DEODORIZE))
+        if (!PMob->PAI->PathFind->InWater() && PTarget && !PTarget->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Deodorize))
         {
             // certain weather / deodorize will turn on time deaggro
             return !PMob->m_disableScent;
@@ -143,7 +165,7 @@ auto CMobController::CheckHide(const CBattleEntity* PTarget) const -> bool
 {
     TracyZoneScoped;
 
-    if (PTarget && PTarget->GetMJob() == JOB_THF && PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_HIDE))
+    if (PTarget && PTarget->GetMJob() == JOB_THF && PTarget->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Hide))
     {
         return !CanPursueTarget(PTarget) && !PMob->m_TrueDetection && !(PMob->getMobMod(MOBMOD_DETECTION) & DETECT_HEARING);
     }
@@ -192,7 +214,7 @@ auto CMobController::CheckDetection(CBattleEntity* PTarget) -> bool
     TracyZoneScoped;
 
     if (CanPursueTarget(PTarget) || CanDetectTarget(PTarget) ||
-        PMob->StatusEffectContainer->HasStatusEffect({ EFFECT_BIND, EFFECT_SLEEP, EFFECT_SLEEP_II, EFFECT_LULLABY, EFFECT_PETRIFICATION }))
+        PMob->StatusEffectContainer->HasStatusEffect({ xi::StatusEffect::Bind, xi::StatusEffect::SleepI, xi::StatusEffect::SleepIi, xi::StatusEffect::Lullaby, xi::StatusEffect::Petrification }))
     {
         TapDeaggroTime();
     }
@@ -219,9 +241,9 @@ void CMobController::TryLink()
         {
             const auto PPetEntity = static_cast<CPetEntity*>(PTarget->PPet);
             if (PPetEntity->getPetType() == PET_TYPE::AVATAR &&
-                PPetEntity->m_PetID != PETID_ALEXANDER &&
-                PPetEntity->m_PetID != PETID_ODIN &&
-                PPetEntity->m_PetID != PETID_ATOMOS)
+                PPetEntity->petID() != PETID_ALEXANDER &&
+                PPetEntity->petID() != PETID_ODIN &&
+                PPetEntity->petID() != PETID_ATOMOS)
             {
                 if (PTarget->objtype == TYPE_PC)
                 {
@@ -245,15 +267,28 @@ void CMobController::TryLink()
         PMob->PPet->PAI->Engage(PTarget->targid);
     }
 
-    // Handle monster linking if they are close enough
-    if (PMob->PParty != nullptr && !PMob->getMobMod(MOBMOD_ONE_WAY_LINKING))
+    // Handle linking if they are close enough. This party scan is the hot part of
+    // TryLink, so throttle it to every other combat tick and skip it when there is nothing
+    // to link with (no party, or a party of just this mob).
+    linkScanThisTick_ = !linkScanThisTick_;
+    if (linkScanThisTick_ &&
+        PMob->PParty != nullptr &&
+        PMob->PParty->members.size() > 1 &&
+        !PMob->getMobMod(MOBMOD_ONE_WAY_LINKING))
     {
-        for (auto& member : PMob->PParty->members)
+        for (auto* member : PMob->PParty->members)
         {
-            auto* PPartyMember = dynamic_cast<CMobEntity*>(member);
+            // Mob link parties only contain mobs; objtype-gate then static_cast to avoid a
+            // per-member dynamic_cast in this hot loop.
+            if (member->objtype != TYPE_MOB)
+            {
+                continue;
+            }
+            auto* PPartyMember = static_cast<CMobEntity*>(member);
+
             // Note if the mob to link with this one is a pet then do not link
             // Pets only link with their masters
-            if (!PPartyMember || PPartyMember->PMaster || PPartyMember->isDead())
+            if (PPartyMember->PMaster || PPartyMember->isDead())
             {
                 continue;
             }
@@ -307,14 +342,14 @@ auto CMobController::CanDetectTarget(CBattleEntity* PTarget, const bool forceSig
 
     if (!PMob->m_TrueDetection)
     {
-        hasInvisible = PTarget->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_INVISIBLE);
-        hasSneak     = PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_SNEAK);
+        hasInvisible = PTarget->StatusEffectContainer->HasStatusEffectByFlag(xi::StatusEffectFlag::Invisible);
+        hasSneak     = PTarget->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Sneak);
     }
 
     // Illusion effect seems to ignore true detection (true sound Porrogos don't aggro with Illusion up)
     // Additionally, mobs that would normally aggro you via sound that also ignore illusion must also ignore you with illusion if you have sneak up,
     // Fish in Mamook will see you through Illusion but not if you have sneak up
-    if (PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_ILLUSION))
+    if (PTarget->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Illusion))
     {
         if (!PMob->getMobMod(MOBMOD_SEES_THROUGH_ILLUSION))
         {
@@ -608,7 +643,7 @@ auto CMobController::CanCastSpells(IgnoreRecastsAndCosts ignoreRecastsAndCosts) 
     }
 
     // check for spell blockers e.g. silence
-    if (PMob->StatusEffectContainer->HasStatusEffect({ EFFECT_SILENCE, EFFECT_MUTE }))
+    if (PMob->StatusEffectContainer->HasStatusEffect({ xi::StatusEffect::Silence, xi::StatusEffect::Mute }))
     {
         return false;
     }
@@ -1006,7 +1041,7 @@ void CMobController::HandleEnmity()
     // TODO: do mobs with bind attack players *without* enmity if they are in the same party?
     // TODO: do jug pets do this?
     // TODO: This code is assuming charmed mobs can do this -- they DO keep an enmity table, after all..
-    if (PMob->objtype == TYPE_MOB && PMob->StatusEffectContainer && PMob->StatusEffectContainer->HasStatusEffect(EFFECT::EFFECT_BIND) && PMob->PAI->IsCurrentState<CAttackState>())
+    if (PMob->objtype == TYPE_MOB && PMob->StatusEffectContainer && PMob->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Bind) && PMob->PAI->IsCurrentState<CAttackState>())
     {
         CBattleEntity*                PNewTarget = nullptr;
         std::unique_ptr<CBasicPacket> m_errorMsg; // Ignored
@@ -1178,7 +1213,7 @@ auto CMobController::DoRoamTick(timer::time_point tick) -> Task<void>
                 {
                     PMob->PAI->Despawn();
                     // Override respawn timer set by CDespawnState for deaggro (60s instead of default)
-                    PMob->loc.zone->spawnHandler()->registerForRespawn(PMob, 60s);
+                    PMob->loc.zone->spawnHandler().registerForRespawn(PMob, 60s);
                     co_return;
                 }
             }
@@ -1195,21 +1230,6 @@ auto CMobController::DoRoamTick(timer::time_point tick) -> Task<void>
                 if (IsSpecialSkillReady(0) && TrySpecialSkill())
                 {
                     // I spawned a pet
-                }
-                else if (
-                    (!PMob->PBattlefield || PMob->PBattlefield->GetStatus() != BATTLEFIELD_STATUS_OPEN) &&
-                    PMob->GetMJob() == JOB_SMN && CanCastSpells(IgnoreRecastsAndCosts::No) &&
-                    PMob->SpellContainer->HasBuffSpells() && m_Tick >= m_nextMagicTime)
-                {
-                    // summon pet
-                    // - initial summoner-mob pets in battlefields will happen via battlefield.lua, so the first player sees the action
-                    // - Once battlefield is locked, behavior is back to normal with no rng added to pet summoning
-                    TryCastSpell();
-                }
-                else if (CanCastSpells(IgnoreRecastsAndCosts::No) && xirand::GetRandomNumber(10) < 3 && PMob->SpellContainer->HasBuffSpells())
-                {
-                    // cast buff
-                    TryCastSpell();
                 }
                 else if (PMob->m_roamFlags & ROAMFLAG_SCRIPTED)
                 {
@@ -1368,7 +1388,7 @@ void CMobController::Reset()
 {
     TracyZoneScoped;
 
-    // Wait a little before roaming / casting spell / spawning pet
+    // Wait a little while before roaming again.
     m_LastActionTime = m_Tick - std::chrono::seconds(xirand::GetRandomNumber(PMob->getMobMod(MOBMOD_ROAM_COOL)));
 
     // Don't attack player right off of spawn
@@ -1636,7 +1656,7 @@ auto CMobController::IsSpecialSkillReady(const float currentDistance) const -> b
         return false;
     }
 
-    if (PMob->StatusEffectContainer->HasStatusEffect(EFFECT_CHAINSPELL))
+    if (PMob->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Chainspell))
     {
         return false;
     }
@@ -1655,7 +1675,7 @@ auto CMobController::IsSpellReady(const float& currentDistance, const float& mel
 {
     TracyZoneScoped;
 
-    if (PMob->StatusEffectContainer->HasStatusEffect({ EFFECT_CHAINSPELL, EFFECT_MANAFONT }))
+    if (PMob->StatusEffectContainer->HasStatusEffect({ xi::StatusEffect::Chainspell, xi::StatusEffect::Manafont }))
     {
         return true;
     }

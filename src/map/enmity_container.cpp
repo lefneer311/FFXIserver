@@ -26,9 +26,9 @@
 #include "ai/ai_container.h"
 #include "alliance.h"
 #include "enmity_container.h"
-#include "entities/battleentity.h"
-#include "entities/charentity.h"
-#include "entities/mobentity.h"
+#include "entities/battle_entity.h"
+#include "entities/char_entity.h"
+#include "entities/mob_entity.h"
 #include "notoriety_container.h"
 #include "packets/entity_update.h"
 #include "status_effect_container.h"
@@ -144,7 +144,7 @@ float CEnmityContainer::CalculateEnmityBonus(CBattleEntity* PEntity)
     {
         enmityBonus += PChar->PMeritPoints->GetMeritValue(MERIT_ENMITY_INCREASE, PChar) - PChar->PMeritPoints->GetMeritValue(MERIT_ENMITY_DECREASE, PChar);
 
-        if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_SOULEATER))
+        if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Souleater))
         {
             enmityBonus -= PChar->PMeritPoints->GetMeritValue(MERIT_MUTED_SOUL, PChar);
         }

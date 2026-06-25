@@ -21,7 +21,7 @@
 
 #include "0x113_sitchair.h"
 
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "status_effect_container.h"
 #include "utils/charutils.h"
 #include "validation.h"
@@ -37,7 +37,7 @@ auto GP_CLI_COMMAND_SITCHAIR::validate(MapSession* PSession, const CCharEntity* 
 void GP_CLI_COMMAND_SITCHAIR::process(MapSession* PSession, CCharEntity* PChar) const
 {
     // Retail accurate: Can inject /sitchair while healing/logging out, but it cancels the effect.
-    PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_HEALING);
+    PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Healing);
 
     if (this->Mode == static_cast<uint8>(GP_CLI_COMMAND_SITCHAIR_MODE::Off))
     {

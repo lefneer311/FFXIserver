@@ -58,8 +58,8 @@ INSERT INTO `mob_groups` VALUES (9,2987,1,'Ooze',0,128,1866,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (10,3912,1,'Thunder_Elemental',0,128,2410,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (11,4309,1,'Water_Elemental',0,128,2629,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (12,4242,1,'Vodyanoi',0,1,2584,3870,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (13,3796,1,'Stubborn_Dredvodd',0,128,2350,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (14,3048,1,'Orcs_Wyvern',0,128,0,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (13,3796,1,'Stubborn_Dredvodd',0,128,2350,2300,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (14,3048,1,'Orcs_Wyvern',0,128,0,450,0,0,NULL);
 
 -- ------------------------------------------------------------
 -- Carpenters_Landing (Zone 2)
@@ -320,17 +320,17 @@ INSERT INTO `mob_groups` VALUES (37,3944,7,'Tomb_Warrior',300,1,678,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (38,2770,7,'Mummy',300,1,678,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (39,2407,7,'Lich',300,1,958,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (40,801,7,'Corse',300,1,517,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (41,733,7,'Citipati',0,33,475,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (41,733,7,'Citipati',0,32,475,8000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (42,4396,7,'Xolotl',1,1,2683,20000,20000,0,NULL);
-INSERT INTO `mob_groups` VALUES (43,4397,7,'Xolotls_Hound_Warrior',0,128,0,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (44,4398,7,'Xolotls_Sacrifice',0,128,0,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (43,4397,7,'Xolotls_Hound_Warrior',0,128,0,4200,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (44,4398,7,'Xolotls_Sacrifice',0,128,0,4500,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (45,225,7,'Arch_Corse',300,1,162,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (46,3916,7,'Tiamat',0,128,2416,100000,100000,0,NULL);
 INSERT INTO `mob_groups` VALUES (47,7339,7,'Bifrons',300,8,268,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (48,662,7,'Cave_Antlion',300,0,434,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (49,1318,7,'Feeler_Antlion',0,128,0,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (50,1269,7,'Executioner_Antlion',0,128,0,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (51,80,7,'Alastor_Antlion',0,128,45,50000,10000,0,NULL);
+INSERT INTO `mob_groups` VALUES (49,1318,7,'Feeler_Antlion',0,128,0,6000,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (50,1269,7,'Executioner_Antlion',0,128,0,7700,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (51,80,7,'Alastor_Antlion',0,128,45,20000,10000,0,NULL);
 INSERT INTO `mob_groups` VALUES (52,104,7,'Ambusher_Antlion',0,32,61,0,0,0,NULL);
 -- 53 free
 -- 54 free
@@ -438,7 +438,7 @@ INSERT INTO `mob_groups` VALUES (61,975,9,'Demonic_Millstone',960,0,606,0,0,0,NU
 INSERT INTO `mob_groups` VALUES (62,1432,9,'Frost_Lizard',960,0,913,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (63,1042,9,'Diremite_Dominator',900,0,659,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (64,217,9,'Archaic_Chest',0,128,153,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (65,1750,9,'Golden-Tongued_Culberry',0,128,0,20000,30000,0,NULL);
+INSERT INTO `mob_groups` VALUES (65,1750,9,'Golden-Tongued_Culberry',0,128,0,30000,30000,0,NULL);
 
 -- ------------------------------------------------------------
 -- The_Shrouded_Maw (Zone 10)
@@ -2951,7 +2951,7 @@ INSERT INTO `mob_groups` VALUES (44,5195,54,'Draugar_Servant_blm',960,0,702,0,0,
 INSERT INTO `mob_groups` VALUES (45,5196,54,'Draugar_Servant_drg',960,0,702,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (46,2330,54,'Lamia_Deathdancer',960,0,1485,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (47,5197,54,'Draugar_Servant_thf',960,0,702,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (48,465,54,'Bloody_Bones',0,32,306,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (48,465,54,'Bloody_Bones',0,32,306,13000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (49,2629,54,'Merrow_Songstress',960,0,1657,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (50,2617,54,'Merrow_Bladedancer',960,0,1657,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (51,2043,54,'Ice_Elemental',960,4,1347,0,0,0,NULL);
@@ -2989,8 +2989,8 @@ INSERT INTO `mob_groups` VALUES (82,2354,54,'Lamia_Palace_Guard_rng',0,128,0,0,0
 INSERT INTO `mob_groups` VALUES (83,2606,54,'Medusa',259200,0,1651,55000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (84,2331,54,'Lamia_Exon',0,128,0,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (85,3057,54,'Ornery_Orobon',0,128,0,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (86,2345,54,'Lamia_No19',0,128,2996,18000,9000,0,NULL);
-INSERT INTO `mob_groups` VALUES (87,2360,54,'Lamias_Skeleton',0,128,0,5000,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (86,2345,54,'Lamia_No19',0,0,2996,9500,9000,0,NULL);
+INSERT INTO `mob_groups` VALUES (87,2360,54,'Lamias_Skeleton',0,128,0,4200,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (88,2417,54,'Lil_Apkallu',0,128,1523,15000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (89,4217,54,'Velionis',0,128,2576,15000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (90,4490,54,'Zareehkl_the_Jubilant',0,128,2794,75000,0,0,NULL);
@@ -10940,10 +10940,10 @@ INSERT INTO `mob_groups` VALUES (8,3325,144,'Rasetsu',0,128,0,7000,3500,0,NULL);
 INSERT INTO `mob_groups` VALUES (9,2983,144,'Onki',0,128,0,3000,6000,0,NULL);
 INSERT INTO `mob_groups` VALUES (10,2981,144,'Onibi',0,128,0,800,2000,0,NULL);
 INSERT INTO `mob_groups` VALUES (11,304,144,'Ayakashi',0,128,0,0,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (12,4838,144,'Maat_rdm',0,128,0,2300,1000,0,NULL);
-INSERT INTO `mob_groups` VALUES (13,4839,144,'Maat_thf',0,128,2917,2300,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (12,4838,144,'Maat_rdm',0,128,0,2850,2000,0,NULL);
+INSERT INTO `mob_groups` VALUES (13,4839,144,'Maat_thf',0,128,2917,2100,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (14,4932,144,'Maat_bst',0,128,0,2300,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (15,2462,144,'Maats_Pet',0,128,0,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (15,2462,144,'Maats_Pet',0,128,0,300,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (16,1910,144,'Heavy_Metal_Crab',0,128,0,30,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (17,2635,144,'Metal_Crab',0,128,0,15,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (18,2468,144,'Macha',0,128,0,1400,1400,0,NULL);
@@ -12162,10 +12162,10 @@ INSERT INTO `mob_groups` VALUES (28,7161,167,'Gespenst',300,0,950,0,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (1,673,168,'Centurio_V-III',0,128,0,12000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (2,4000,168,'Triarius_V-VIII',0,128,0,10000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (3,3194,168,'Princeps_V-XI',0,128,0,10000,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (4,5345,168,'Maat_sam',0,128,0,2300,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (5,5403,168,'Maat_nin',0,128,0,2300,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (4,5345,168,'Maat_sam',0,128,0,3100,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (5,5403,168,'Maat_nin',0,128,0,2000,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (6,5404,168,'Maat_drg',0,128,0,2300,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (7,2463,168,'Maats_Wyvern',0,128,0,0,0,0,NULL);
+INSERT INTO `mob_groups` VALUES (7,2463,168,'Maats_Wyvern',0,128,0,350,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (8,3527,168,'Secutor_XI-XXXII',0,128,0,3800,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (9,3357,168,'Retiarius_XI-XIX',0,128,0,4100,4100,0,NULL);
 INSERT INTO `mob_groups` VALUES (10,1989,168,'Hoplomachus_XI-XXVI',0,128,0,3800,3800,0,NULL);
@@ -14092,7 +14092,7 @@ INSERT INTO `mob_groups` VALUES (8,4132,206,'Vangknok_of_Clan_Death',0,128,0,150
 INSERT INTO `mob_groups` VALUES (9,3315,206,'Rallbrog_of_Clan_Death',0,128,0,1500,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (10,4374,206,'Worgbut_of_Clan_Death',0,128,0,1500,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (11,938,206,'Death_Clan_Destroyer',0,128,0,7400,0,0,NULL);
-INSERT INTO `mob_groups` VALUES (12,5408,206,'Maat_pld',0,128,0,3300,1000,0,NULL);
+INSERT INTO `mob_groups` VALUES (12,5408,206,'Maat_pld',0,128,0,2400,1000,0,NULL);
 INSERT INTO `mob_groups` VALUES (13,5409,206,'Maat_drk',0,128,0,3300,1000,0,NULL);
 INSERT INTO `mob_groups` VALUES (14,5413,206,'Maat_brd',0,128,0,2300,0,0,NULL);
 INSERT INTO `mob_groups` VALUES (15,1620,206,'Gladiatorial_Weapon',0,128,0,0,0,0,NULL);

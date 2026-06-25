@@ -23,7 +23,7 @@
 
 #include "common/lua.h"
 #include "lua_test_entity.h"
-#include "map/entities/charentity.h"
+#include "map/entities/char_entity.h"
 #include "map/modifier.h"
 #include "map/status_effect.h"
 #include "map/zone.h"
@@ -209,11 +209,11 @@ auto CLuaTestEntityAssertions::hasLocalVar(const std::string& varName, uint32 ex
  *  Notes   :
  ************************************************************************/
 
-auto CLuaTestEntityAssertions::hasEffect(const EFFECT effectId) -> CLuaTestEntityAssertions&
+auto CLuaTestEntityAssertions::hasEffect(const xi::StatusEffect effectId) -> CLuaTestEntityAssertions&
 {
     assertCondition(entity_->hasStatusEffect(effectId, sol::lua_nil),
-                    std::format("Expected entity to have status effect {}", getEnumKey("xi.effect", effectId)),
-                    std::format("Expected entity to NOT have status effect {}", getEnumKey("xi.effect", effectId)));
+                    std::format("Expected entity to have status effect {}", getEnumKey("xi.effect", static_cast<uint32>(effectId))),
+                    std::format("Expected entity to NOT have status effect {}", getEnumKey("xi.effect", static_cast<uint32>(effectId))));
     return *this;
 }
 

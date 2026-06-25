@@ -23,7 +23,7 @@
 
 #include "alliance.h"
 #include "common/ipc_structs.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "ipc_client.h"
 #include "packets/s2c/0x009_message.h"
 #include "party.h"
@@ -96,7 +96,7 @@ void GP_CLI_COMMAND_GROUP_SOLICIT_RES::process(MapSession* PSession, CCharEntity
                 // the rest is for a standard party invitation
                 if (PChar->PParty == nullptr)
                 {
-                    if (!(PChar->StatusEffectContainer->HasStatusEffect(EFFECT_LEVEL_SYNC) && PChar->StatusEffectContainer->HasStatusEffect(EFFECT_LEVEL_RESTRICTION)))
+                    if (!(PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::LevelSync) && PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::LevelRestriction)))
                     {
                         ShowDebug("%s is not under lvl sync or restriction", PChar->getName());
                         if (PInviter->PParty == nullptr)

@@ -22,8 +22,8 @@
 #include "item_state.h"
 
 #include "ai/ai_container.h"
-#include "entities/battleentity.h"
-#include "entities/charentity.h"
+#include "entities/battle_entity.h"
+#include "entities/char_entity.h"
 
 #include "action/action.h"
 #include "action/interrupts.h"
@@ -130,11 +130,11 @@ CItemState::CItemState(CCharEntity* PEntity, const uint16 targid, const uint8 lo
         .actionid   = static_cast<uint32_t>(FourCC::ItemUse),
         .targets    = {
             {
-                   .actorId = PTarget->id,
-                   .results = {
+                .actorId = PTarget->id,
+                .results = {
                     {
-                           .param     = m_PItem->getID(),
-                           .messageID = MsgBasic::ItemUse,
+                        .param     = m_PItem->getID(),
+                        .messageID = MsgBasic::ItemUse,
                     },
                 },
             },

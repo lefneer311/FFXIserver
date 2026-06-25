@@ -167,9 +167,13 @@ xi.mobSkill =
     HEALING_BREEZE                =  287,
 
     ENTANGLE_DRAIN                =  299,
-
+    HEAD_BUTT_1                   =  300,
+    DREAM_FLOWER_1                =  301,
+    WILD_OATS_1                   =  302,
     -- HUNDRED_FISTS                 =  303,
-
+    PHOTOSYNTHESIS_1              =  304,
+    LEAF_DAGGER_1                 =  305,
+    SCREAM_1                      =  306,
     SUBSTITUTE                    =  307,
     FROGKICK_1                    =  308,
     SPORE_1                       =  309,
@@ -193,7 +197,12 @@ xi.mobSkill =
     LEAFSTORM                     =  331,
     ENTANGLE                      =  332,
 
+    POWER_ATTACK_1                =  338,
+    HI_FREQ_FIELD_1               =  339,
+    RHINO_ATTACK_1                =  340,
+    RHINO_GUARD_1                 =  341,
     VULCANIAN_IMPACT_1            =  342, -- COP Bombs
+    SPOIL_1                       =  343,
 
     VELOCIOUS_BLADE               =  347, -- Mammet-800
 
@@ -277,9 +286,14 @@ xi.mobSkill =
 
     GRAVE_REEL                    =  472,
 
+    HORROR_CLOUD                  =  479,
+
     PETRIFACTIVE_BREATH           =  480,
 
     CHARGED_WHISKER               =  483,
+
+    BLACK_CLOUD                   =  484,
+    BLOOD_SABER                   =  485,
 
     WHIP_TONGUE                   =  486,
     TRANSMOGRIFICATION            =  487, -- Mammet-800
@@ -1006,6 +1020,8 @@ xi.mobSkill =
 
     VAMPIRIC_ROOT                 = 1793,
 
+    MALEDICTION                   = 1795,
+
     BOILING_POINT                 = 1822,
     XENOGLOSSIA                   = 1823,
     AMORPHIC_SPIKES               = 1824,
@@ -1038,16 +1054,16 @@ xi.mobSkill =
     WARP_OUT_GESSHO               = 1938,
     WARP_IN_GESSHO                = 1939,
 
-    CHIMERA_RIPPER                = 1940,
-    STRING_CLIPPER                = 1941,
-    ARCUBALLISTA                  = 1942,
-    SLAPSTICK                     = 1943,
-    SHIELD_BASH_AUTOMATON         = 1944, -- Used by the trust Mnejing but may also be used by mobs.
-    PROVOKE_AUTOMATON             = 1945, -- Used by the trust Mnejing but may also be used by mobs.
-    FLASHBULB_AUTOMATON           = 1947, -- Used by the trust Mnejing but may also be used by mobs.
-    DISRUPTOR_AUTOMATON           = 2747, -- Used by the trust Mnejing but may also be used by mobs.
-
-    RANGED_ATTACK_15              = 1949,
+    CHIMERA_RIPPER_AUTOMATON      = 1940,
+    STRING_CLIPPER_AUTOMATON      = 1941,
+    ARCUBALLISTA_AUTOMATON        = 1942,
+    SLAPSTICK_AUTOMATON           = 1943,
+    SHIELD_BASH_AUTOMATON         = 1944,
+    PROVOKE_AUTOMATON             = 1945,
+    SHOCK_ABSORBER_AUTOMATON      = 1946,
+    FLASHBULB_AUTOMATON           = 1947,
+    MANA_CONVERTER_AUTOMATON      = 1948,
+    RANGED_ATTACK_AUTOMATON       = 1949,
 
     WATER_BOMB                    = 1959,
 
@@ -1085,6 +1101,7 @@ xi.mobSkill =
     DARK_SHOT                     = 2016,
 
     -- HUNDRED_FISTS                 = 2020,
+    ERASER_AUTOMATON              = 2021,
 
     TENEBROUS_MIST                = 2022,
     THUNDERSTRIKE                 = 2023,
@@ -1095,9 +1112,12 @@ xi.mobSkill =
     FULMINATION                   = 2028,
 
     ROAR_KHIMAIRA                 = 2030,
+    REACTIVE_SHIELD_AUTOMATON     = 2031,
 
-    DAZE                          = 2066,
-    KNOCKOUT                      = 2067,
+    CANNIBAL_BLADE_AUTOMATON      = 2065,
+    DAZE_AUTOMATON                = 2066,
+    KNOCKOUT_AUTOMATON            = 2067,
+    ECONOMIZER_AUTOMATON          = 2068,
 
     -- MIJIN_GAKURE                  = 2105,
 
@@ -1109,6 +1129,8 @@ xi.mobSkill =
     NECROPURGE                    = 2117,
     BILGESTORM                    = 2118,
     THUNDRIS_SHRIEK               = 2119,
+
+    REPLICATOR_AUTOMATON          = 2132,
 
     RADIANT_SACRAMENT             = 2141,
     MEGA_HOLY                     = 2142,
@@ -1149,6 +1171,10 @@ xi.mobSkill =
     -- OVERDRIVE                     = 2259,
     TRANCE                        = 2260,
     TABULA_RASA                   = 2261,
+
+    BONE_CRUSHER_AUTOMATON        = 2299,
+    ARMOR_PIERCER_AUTOMATON       = 2300,
+    MAGIC_MORTAR_AUTOMATON        = 2301,
 
     DI_HORN_ATTACK                = 2329,
     DI_BITE_ATTACK                = 2330,
@@ -1191,16 +1217,22 @@ xi.mobSkill =
 
     -- TRANCE                        = 2710,
 
+    STRING_SHREDDER_AUTOMATON     = 2743,
+    ARMOR_SHATTERER_AUTOMATON     = 2744,
+    HEAT_CAPACITOR_AUTOMATON      = 2745,
+    BARRAGE_TURBINE_AUTOMATON     = 2746,
+    DISRUPTOR_AUTOMATON           = 2747,
+
     BOOMING_BOMBINATION           = 2770,
 
     -- BENEDICTION                   = 2777,
 
-    -- MIGHTY_STRIKES                = 2939,
-    -- INVINCIBLE                    = 2940,
-    -- EES_?                         = 2941,
-    -- CHAINSPELL                    = 2942,
-    -- BENEDICTION                   = 2943,
-    -- MANAFONT                      = 2944,
+    MIGHTY_STRIKES_AUTOMATON      = 2939,
+    INVINCIBLE_AUTOMATON          = 2940,
+    EES_AUTOMATON                 = 2941,
+    CHAINSPELL_AUTOMATON          = 2942,
+    BENEDICTION_AUTOMATON         = 2943,
+    MANAFONT_AUTOMATON            = 2944,
 
     -- MEIKYO_SHISUI                 = 3175,
 
@@ -1247,6 +1279,9 @@ xi.mobSkill =
 
     -- AZURE_LORE                    = 3481,
     BOLSTER                       = 3482,
+    REGULATOR_AUTOMATON           = 3485,
+
+    NOTT                          = 3502,
 
     DAYBREAK_TRUST                = 3652, -- August Trust
     TARTARIC_SIGIL_TRUST          = 3653, -- August Trust

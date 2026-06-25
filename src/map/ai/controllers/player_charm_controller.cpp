@@ -23,7 +23,7 @@
 
 #include "ai/ai_container.h"
 #include "common/utils.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "status_effect_container.h"
 
 CPlayerCharmController::CPlayerCharmController(CCharEntity* PChar)
@@ -48,7 +48,7 @@ auto CPlayerCharmController::Tick(timer::time_point tick) -> Task<void>
 
     if (POwner->PMaster == nullptr || !POwner->PMaster->isAlive())
     {
-        POwner->StatusEffectContainer->DelStatusEffect(EFFECT_CHARM);
+        POwner->StatusEffectContainer->DelStatusEffect(xi::StatusEffect::CharmI);
         co_return;
     }
 

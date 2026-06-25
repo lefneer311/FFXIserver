@@ -24,8 +24,8 @@
 #include "ability.h"
 #include "ai/ai_container.h"
 #include "enmity_container.h"
-#include "entities/charentity.h"
-#include "entities/trustentity.h"
+#include "entities/char_entity.h"
+#include "entities/trust_entity.h"
 #include "enums/msg_std.h"
 #include "items.h"
 #include "latent_effect_container.h"
@@ -172,13 +172,13 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         {
             // Monstrosity: Can't really do anything while under Gestation until you click it off.
             //            : MONs can trigger doors, so we'll handle that later.
-            if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_GESTATION))
+            if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Gestation))
             {
                 return;
             }
 
             // Talking to an NPC cancels /heal
-            PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_HEALING);
+            PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Healing);
 
             // Talking to an NPC force disengages
             if (PChar->PAI->IsEngaged())
@@ -204,11 +204,11 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             }
 
             // Releasing a trust
-            if (auto* PTrust = dynamic_cast<CTrustEntity*>(PNpc); PTrust && !PTrust->isReleased)
+            if (auto* PTrust = dynamic_cast<CTrustEntity*>(PNpc); PTrust && !PTrust->released())
             {
                 uint32_t trustTargId = PTrust->targid;
 
-                PTrust->isReleased = true;
+                PTrust->setReleased(true);
 
                 // Emit despawn message
                 // TODO: probably change off OnMobDespawn to a listener or a trust specific OnPartyLeave callback
@@ -266,7 +266,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         {
             if (PChar->isMounted())
             {
-                PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_MOUNTED);
+                PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Mounted);
             }
 
             PChar->PAI->Engage(this->ActIndex);
@@ -456,7 +456,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         {
             PChar->animation = ANIMATION_NONE;
             PChar->updatemask |= UPDATE_HP;
-            PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_MOUNTED);
+            PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Mounted);
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::TractorMenu:
@@ -496,7 +496,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::Blockaid:
         {
-            if (!PChar->StatusEffectContainer->HasStatusEffect(EFFECT_ALLIED_TAGS))
+            if (!PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::AlliedTags))
             {
                 if (this->BlockAid.StatusId == GP_CLI_COMMAND_ACTION_BLOCKAID::Disable && PChar->getBlockingAid())
                 {
@@ -559,15 +559,14 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
                 }
 
                 PChar->m_mountId = this->Mount.MountId ? this->Mount.MountId + 1 : 0;
-                PChar->StatusEffectContainer->AddStatusEffect(new CStatusEffect(
-                                                                  EFFECT_MOUNTED,
-                                                                  EFFECT_MOUNTED,
-                                                                  this->Mount.MountId ? this->Mount.MountId + 1 : 0,
-                                                                  0s,
-                                                                  30min,
-                                                                  0,
-                                                                  0x40), // previously known as nameflag "FLAG_CHOCOBO"
-                                                              EffectNotice::Silent);
+                PChar->StatusEffectContainer->AddStatusEffectSilent(
+                    xi::StatusEffect::Mounted,
+                    static_cast<uint16>(xi::StatusEffect::Mounted),
+                    this->Mount.MountId ? this->Mount.MountId + 1 : 0,
+                    0s,
+                    30min,
+                    0,
+                    0x40); // previously known as nameflag "FLAG_CHOCOBO"
 
                 PChar->PRecastContainer->Add(RECAST_ABILITY, Recast::Mount, 60s);
                 PChar->pushPacket<GP_SERV_COMMAND_ABIL_RECAST>(PChar);

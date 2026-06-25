@@ -30,7 +30,7 @@
 
 #include "ai/ai_container.h"
 #include "ai/states/death_state.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "item_container.h"
 #include "items/item_linkshell.h"
 #include "status_effect_container.h"
@@ -214,8 +214,8 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     packet->id   = 0x037;
     packet->size = roundUpToNearestFour(sizeof(GP_SERV_SERVERSTATUS)) / 4;
 
-    std::memcpy(packet->BufStatus, PChar->StatusEffectContainer->m_StatusIcons, 32);
-    std::memcpy(&packet->BufStatusBits, &PChar->StatusEffectContainer->m_Flags, sizeof(status_bits_t));
+    std::memcpy(packet->BufStatus, PChar->StatusEffectContainer->statusIcons(), 32);
+    std::memcpy(&packet->BufStatusBits, &PChar->StatusEffectContainer->statusBits(), sizeof(status_bits_t));
 
     packet->UniqueNo      = PChar->id;
     packet->server_status = PChar->animation;
@@ -270,7 +270,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     flags0.unknown_3_28    = 0;     // Unknown
     flags0.GmLevel         = PChar->visibleGmLevel;
 
-    if (auto* effect = PChar->StatusEffectContainer->GetStatusEffect(EFFECT_MOUNTED))
+    if (auto* effect = PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Mounted))
     {
         const auto [ChocoboIndex, CustomProperties] = mountutils::packetDefinition(PChar);
         packet->mount_id                            = effect->GetPower();
@@ -284,7 +284,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     flags1.Hackmove     = PChar->wallhackEnabled; // GM wallhack, walk through walls
     flags1.FreezeFlag   = PChar->isFrozenFlagged; // Freezes player in place, making them unable to move. Used when opening treasure chests, for instance.
     flags1.unknown_1_14 = 0;                      // Unknown.
-    flags1.InvisFlag    = PChar->m_isGMHidden || PChar->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_INVISIBLE);
+    flags1.InvisFlag    = PChar->m_isGMHidden || PChar->StatusEffectContainer->HasStatusEffectByFlag(xi::StatusEffectFlag::Invisible);
     flags1.unknown_2_16 = 0; // Unknown.
     flags1.SpeedBase    = PChar->animationSpeed;
     flags1.unknown_3_25 = 0; // Unknown
@@ -297,7 +297,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     flags2.NamedFlag       = false; // disable "The"
     flags2.SingleFlag      = false; // singular entity
     flags2.AutoPartyFlag   = false; // Not implemented.
-    flags2.MotStopFlag     = PChar->StatusEffectContainer->HasStatusEffect(EFFECT_TERROR);
+    flags2.MotStopFlag     = PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Terror);
     flags2.CliPriorityFlag = PChar->priorityRender;
     flags2.BallistaFlg     = static_cast<uint8>(PChar->allegiance);
     flags2.unknown_3_29    = 0; // Unknown, one of three bits appears to be campaign battle Sword & Shield Icon?
@@ -312,7 +312,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
 
     flags3.LfgMasterFlag    = false; // /inv icon WITH mastery star. Not currently implemented, this is set with the "Request" button in the Party menu.
     flags3.TrialFlag        = false; // Trial account icon flag
-    flags3.SilenceFlag      = PChar->m_isGMHidden || PChar->StatusEffectContainer->HasStatusEffect(EFFECT_SNEAK);
+    flags3.SilenceFlag      = PChar->m_isGMHidden || PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Sneak);
     flags3.NewCharacterFlag = PChar->isNewPlayer();
     flags3.MentorFlag       = PChar->aman().isMentor();
     flags3.unknown_0_5      = 0; // unknown
@@ -330,15 +330,15 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     flags4.JobMasterFlag  = PChar->getMod(Mod::SUPERIOR_LEVEL) == 5 && PChar->m_jobMasterDisplay;
 
     // GEO bubble effects, changes bubble effect depending on what effect is activated.
-    if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_COLURE_ACTIVE))
+    if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::ColureActive))
     {
-        flags4.GeoIndiElement = PChar->StatusEffectContainer->GetStatusEffect(EFFECT_COLURE_ACTIVE)->GetPower();
+        flags4.GeoIndiElement = PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::ColureActive)->GetPower();
         flags4.GeoIndiFlag    = 1;
     }
 
     // Size shouldn't change until the bubble is re-casted, but currently WIDENED COMPASS will widen the size of the bubble on the effect instantly, so this aligns with the code.
     // TODO: fix the discrepancy with retail.
-    if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_WIDENED_COMPASS))
+    if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::WidenedCompass))
     {
         flags4.GeoIndiSize = 2;
     }

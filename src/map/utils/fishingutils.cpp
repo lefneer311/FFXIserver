@@ -41,9 +41,9 @@
 #include "packets/s2c/0x062_clistatus2.h"
 #include "packets/s2c/0x115_fish.h"
 
-#include "entities/battleentity.h"
-#include "entities/mobentity.h"
-#include "entities/npcentity.h"
+#include "entities/battle_entity.h"
+#include "entities/mob_entity.h"
+#include "entities/npc_entity.h"
 
 #include "ai/ai_container.h"
 
@@ -333,7 +333,7 @@ uint8 GetLuckyMoonModifier()
 
 auto GetWeatherModifier(const CCharEntity* PChar) -> float
 {
-    const auto weather    = zoneutils::GetZone(PChar->getZone())->GetWeather();
+    const auto weather    = zoneutils::GetZone(PChar->getZone())->weather().current();
     float      weatherMod = 1.0f;
 
     if (weather == Weather::Rain)
@@ -1615,7 +1615,7 @@ int32 CatchMonster(CCharEntity* PChar, uint32 MobID)
 
     // PMob->SetLocalVar("QuestBattleID", PChar->GetLocalVar("QuestBattleID"));
     // PChar->StatusEffectContainer->CopyConfrontationEffect(PMob);
-    if ((mob->log < 255 && mob->quest < 255) || mob->questOnly || (PMob->m_TrueDetection && PMob->getMobMod(MOBMOD_DETECTION) & DETECT_SCENT) || !PChar->StatusEffectContainer->HasStatusEffect(EFFECT_SNEAK))
+    if ((mob->log < 255 && mob->quest < 255) || mob->questOnly || (PMob->m_TrueDetection && PMob->getMobMod(MOBMOD_DETECTION) & DETECT_SCENT) || !PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Sneak))
     {
         PMob->PAI->Engage(PChar->targid);
         battleutils::ClaimMob(PMob, (CBattleEntity*)PChar);

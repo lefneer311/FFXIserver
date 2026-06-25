@@ -27,11 +27,11 @@
 
 #include "entity_update.h"
 
-#include "entities/baseentity.h"
-#include "entities/mobentity.h"
-#include "entities/npcentity.h"
-#include "entities/petentity.h"
-#include "entities/trustentity.h"
+#include "entities/base_entity.h"
+#include "entities/mob_entity.h"
+#include "entities/npc_entity.h"
+#include "entities/pet_entity.h"
+#include "entities/trust_entity.h"
 #include "status_effect_container.h"
 #include "zone.h"
 
@@ -348,7 +348,7 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
                 ref<uint32>(0x21) = PNpc->m_flags;
                 ref<uint8>(0x27)  = PNpc->name_prefix; // gender and something else
 
-                if (PNpc->IsTriggerable())
+                if (PNpc->triggerable())
                 {
                     ref<uint8>(0x28) |= 0x40;
                 }
@@ -391,7 +391,7 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
                 {
                     ref<uint8>(0x27) |= 0x08;
                 }
-                ref<uint8>(0x28) |= PMob->StatusEffectContainer->HasStatusEffect(EFFECT_TERROR) ? 0x10 : 0x00;
+                ref<uint8>(0x28) |= PMob->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Terror) ? 0x10 : 0x00;
 
                 // Giga hack -- mobs in Pso'Xja for some reason are less "visible"
                 // Set CliPriorityFlag to force them to render on the client if they receive 0x00Es
