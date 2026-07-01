@@ -433,14 +433,14 @@ INSERT INTO `mob_skill_lists` VALUES ('Fly',113,660);
 INSERT INTO `mob_skill_lists` VALUES ('Flytrap',114,434);
 INSERT INTO `mob_skill_lists` VALUES ('Flytrap',114,435);
 INSERT INTO `mob_skill_lists` VALUES ('Flytrap',114,436);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,246);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,247);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,248);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,249);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,250);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,251);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,252);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,253);
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,246); -- shackled_fists
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,247); -- foxfire
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,248); -- grim_halo
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,249); -- netherspikes
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,250); -- carnal_nightmare
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,251); -- aegis_schism
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,252); -- dancing_chains
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',115,253); -- barbed_crescent
 INSERT INTO `mob_skill_lists` VALUES ('Funguar',116,308);
 INSERT INTO `mob_skill_lists` VALUES ('Funguar',116,309);
 INSERT INTO `mob_skill_lists` VALUES ('Funguar',116,310);
@@ -1590,14 +1590,14 @@ INSERT INTO `mob_skill_lists` VALUES ('Kindred',358,560);
 INSERT INTO `mob_skill_lists` VALUES ('Kindred',358,563);
 INSERT INTO `mob_skill_lists` VALUES ('Kindred',358,1148);
 INSERT INTO `mob_skill_lists` VALUES ('Kindred',358,1149);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,246);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,247);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,248);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,249);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,250);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,251);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,252);
-INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,253);
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,246); -- shackled_fists
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,247); -- foxfire
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,248); -- grim_halo
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,249); -- netherspikes
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,250); -- carnal_nightmare
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,251); -- aegis_schism
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,252); -- dancing_chains
+INSERT INTO `mob_skill_lists` VALUES ('Fomor',359,253); -- barbed_crescent
 INSERT INTO `mob_skill_lists` VALUES ('YagudoNM',360,617);
 INSERT INTO `mob_skill_lists` VALUES ('YagudoNM',360,618);
 INSERT INTO `mob_skill_lists` VALUES ('YagudoNM',360,619);
@@ -2293,7 +2293,12 @@ INSERT INTO `mob_skill_lists` VALUES ('Bomb_COP',499,510); -- Berserk
 INSERT INTO `mob_skill_lists` VALUES ('Bomb_COP',499,342); -- Vulcanian Impact
 INSERT INTO `mob_skill_lists` VALUES ('Bomb_COP',499,512); -- Heat Wave
 INSERT INTO `mob_skill_lists` VALUES ('Bomb_COP',499,509); -- Self-destruct
--- 500 free
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,783); -- Words of Bane
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,784); -- Sigh
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,785); -- Light of Penance
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,786); -- Lateral Slash
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,787); -- Vertical Slash
+INSERT INTO `mob_skill_lists` VALUES ('Cryptonberry_COP',500,788); -- Throat Stab
 -- 501 free
 -- 502 free
 INSERT INTO `mob_skill_lists` VALUES ('Mammet',503,347);
@@ -4329,7 +4334,28 @@ INSERT INTO `mob_skill_lists` VALUES ('Jug_BeetleHi',2097,710); -- Rhino Guard
 INSERT INTO `mob_skill_lists` VALUES ('Jug_BeetleHi',2097,711); -- Spoil 
 INSERT INTO `mob_skill_lists` VALUES ('Jug_BeetleHi',2097,791); -- Rhinowrecker
 
--- Next ID : 2098
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,247);   -- foxfire
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,249);   -- netherspikes
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,250);   -- carnal_nightmare
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,251);   -- aegis_schism
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,252);   -- dancing_chains
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_ONE_HANDED',2098,253);   -- barbed_crescent
+
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,248);   -- grim_halo
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,249);   -- netherspikes
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,250);   -- carnal_nightmare
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,251);   -- aegis_schism
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,252);   -- dancing_chains
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_TWO_HANDED',2099,253);   -- barbed_crescent
+
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,246); -- shackled_fists
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,249); -- netherspikes
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,250); -- carnal_nightmare
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,251); -- aegis_schism
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,252); -- dancing_chains
+INSERT INTO `mob_skill_lists` VALUES ('FOMOR_HAND_TO_HAND',2100,253); -- barbed_crescent
+
+-- Next ID : 2101
 -- ------------------------------------------------------------
 -- Start of Ambuscade section
 -- NOTE: The mobs are changed every update in the DATs, so using out-of-date

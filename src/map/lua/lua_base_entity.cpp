@@ -3343,14 +3343,6 @@ void CLuaBaseEntity::forceRezone()
     }
 }
 
-void CLuaBaseEntity::forceLogout()
-{
-    if (auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity))
-    {
-        charutils::ForceLogout(PChar);
-    }
-}
-
 /************************************************************************
  *  Function: getPos()
  *  Purpose : Returns a table of signed coordinates (x,y,z,rot)
@@ -3529,6 +3521,11 @@ void CLuaBaseEntity::setPos(sol::variadic_args va)
     m_PBaseEntity->loc.p.y        = y;
     m_PBaseEntity->loc.p.z        = z;
     m_PBaseEntity->loc.p.rotation = rotation;
+
+    if (m_PBaseEntity->loc.zone != nullptr)
+    {
+        m_PBaseEntity->loc.zone->onEntityMoved(m_PBaseEntity);
+    }
 
     // Zoning
     if (m_PBaseEntity->objtype == TYPE_PC)
@@ -19053,18 +19050,19 @@ bool CLuaBaseEntity::hasTPMoves()
         return false;
     }
 
-    uint16 speciesID = 0;
-
-    if (m_PBaseEntity->objtype & TYPE_PET)
+    auto* PMob = dynamic_cast<CMobEntity*>(m_PBaseEntity);
+    if (!PMob)
     {
-        speciesID = static_cast<CPetEntity*>(m_PBaseEntity)->m_Species;
+        return false;
     }
-    else if (m_PBaseEntity->objtype & TYPE_MOB)
-    {
-        speciesID = static_cast<CMobEntity*>(m_PBaseEntity)->m_Species;
-    }
-    const std::vector<uint16>& MobSkills = battleutils::GetMobSkillList(speciesID);
 
+    uint16 skillListID = static_cast<uint16>(PMob->getMobMod(MOBMOD_SKILL_LIST));
+    if (skillListID == 0)
+    {
+        skillListID = PMob->m_MobSkillList;
+    }
+
+    const std::vector<uint16>& MobSkills = battleutils::GetMobSkillList(skillListID);
     return !MobSkills.empty();
 }
 
@@ -21005,7 +21003,6 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("sendEntityUpdateToPlayer", CLuaBaseEntity::sendEntityUpdateToPlayer);
     SOL_REGISTER("sendEmptyEntityUpdateToPlayer", CLuaBaseEntity::sendEmptyEntityUpdateToPlayer);
     SOL_REGISTER("forceRezone", CLuaBaseEntity::forceRezone);
-    SOL_REGISTER("forceLogout", CLuaBaseEntity::forceLogout);
 
     // Abyssea
     SOL_REGISTER("getAvailableTraverserStones", CLuaBaseEntity::getAvailableTraverserStones);
