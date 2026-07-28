@@ -237,14 +237,10 @@ xi.spells.enhancing.calculateEnhancingBasePower = function(caster, target, spell
         (spellEffect >= xi.effect.ENFIRE_II and spellEffect <= xi.effect.ENWATER_II) or
         spellEffect == xi.effect.AUSPICE
     then
-        if skillLevel > 500 then
-            basePower = math.floor(3 * (skillLevel + 50) / 25)
-        elseif skillLevel > 400 then
-            basePower = math.floor((skillLevel + 20) / 8)
-        elseif skillLevel > 150 then
-            basePower = math.floor(skillLevel / 20) + 5
+        if skillLevel > 180 then
+            basePower = math.floor((skillLevel - 180) / 8) + 25
         else
-            basePower = math.max(math.floor(math.sqrt(skillLevel)) - 1, 0)
+            basePower = math.floor(skillLevel / 9) + 5
         end
 
     -- Phalanx

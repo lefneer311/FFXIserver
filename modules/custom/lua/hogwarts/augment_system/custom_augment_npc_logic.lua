@@ -242,6 +242,7 @@ function augmentNPCLogic.onTrade(player, npc, trade)
                     local requiredQty = augmentInfo.requiredQty or augmentInfo[2]
                     local augmentID = augmentInfo.augmentID or augmentInfo[1]
                     local augmentCount = math.floor(qty / requiredQty)
+
                     if augmentCount > 0 then
                         if augmentCount > 1 then
                             player:printToPlayer('I cannot duplicate the same augment on one item. Bring up to four distinct augments.', 0, npc:getPacketName())
@@ -263,9 +264,16 @@ function augmentNPCLogic.onTrade(player, npc, trade)
                         end
 
                         selectedAugmentKeys[augmentKey] = true
-                        table.insert(selectedAugments, {augmentID = augmentID, power = augmentInfo.power or augmentInfo[3], materialName = augmentInfo.materialName or augmentInfo[4], desc = augmentInfo.desc, tier = augmentInfo.tier or augmentInfo[5] or tier})
+                        table.insert(selectedAugments, {
+                            augmentID = augmentID,
+                            power = augmentInfo.power or augmentInfo[3],
+                            materialName = augmentInfo.materialName or augmentInfo[4],
+                            desc = augmentInfo.desc or augmentInfo[6],
+                            tier = augmentInfo.tier or augmentInfo[5] or tier,
+                        })
+
+                        break
                     end
-                    break
                 end
             end
         end
@@ -352,13 +360,13 @@ function augmentNPCLogic.onTrigger(player, npc)
         [9] = 'The wyrmking\'s whisper opens the pinnacle of my craft to you.',
         [8] = 'That cerulean crystal resonates with nearly every technique I know.',
         [7] = 'The emerald\'s harmony grants access to earth, sea, and sky.',
-        [6] = 'Crimson resolve suits the testimony-grade augments now available.',
-        [5] = 'Azure light unlocks a broad spectrum of high-level materials.',
-        [4] = 'Umber resonance brings geode-based recipes within reach.',
-        [3] = 'Reaching this level is no small feat, and surely required a good pair of boots.',
-        [2] = 'That feather in your possession will help you wield more powerfully augmented items.',
+        [6] = 'Another wonderous verse, and more of your potential is unlocked.',
+        [5] = 'Do you feel the rhapsody\'s magic stirring within you? It is a song of power, and you are learning to sing along.',
+        [4] = 'Reaching this level is no small feat, and surely required a good pair of boots.',
+        [3] = 'Have you not heard the song of the mothercrystal? Seek out its scintillating rhapsody and climb higher still.',
+        [2] = 'Yes... you have discovered more of your latent potential. Maybe this motivates you.',
         [1] = 'Everyone starts at the beginning, and you\'re beyond that already! Let\'s get started.',
-        [0] = 'Have you not heard the song of the mothercrystal? Seek out its scintillating rhapsody. Each step yields rewards.',
+        [0] = 'Current limits aside, there is yet much we can do. How can I help?',
     }
 
     player:printToPlayer(lines[maxTierUnlocked], 0, npc:getPacketName())

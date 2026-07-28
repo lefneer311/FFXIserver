@@ -463,7 +463,7 @@ INSERT INTO `augments` VALUES (371,0,989,1,0,0); -- Regen Potency+1
 INSERT INTO `augments` VALUES (372,0,0,0,0,0); -- Embolden+1: Mod undefined as of yet so leaving blank.
 
 INSERT INTO `augments` VALUES (373,0,0,0,0,0);
-INSERT INTO `augments` VALUES (374,0,0,0,0,0); -- Enhancing Magic Duration +1
+INSERT INTO `augments` VALUES (374,0,890,1,0,0); -- Enhancing Magic Duration +1
 INSERT INTO `augments` VALUES (375,0,0,0,0,0);
 INSERT INTO `augments` VALUES (376,0,0,0,0,0);
 INSERT INTO `augments` VALUES (377,0,0,0,0,0);
