@@ -289,8 +289,11 @@ xi.settings.main =
     },
 
     -- Login Campaign (Set to 0 if you don't want to run a Login Campaign)
-    -- Please visit scripts/globals/events/login_campaign.lua for assigning the correct campaign dates.
-    ENABLE_LOGIN_CAMPAIGN = 0,
+    -- LOGIN_CAMPAIGN_MODE accepts 'legacy' or 'modern'. Legacy rotates future campaigns
+    -- between the 2024 and 2025 reward cycles; modern repeats the November 2025
+    -- through October 2026 cycle.
+    ENABLE_LOGIN_CAMPAIGN = 1,
+    LOGIN_CAMPAIGN_MODE   = 'modern',
 
     -- Strange Happenings in Vana'Diel
     ENABLE_STRANGE_HAPPENINGS = 0,

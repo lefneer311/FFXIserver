@@ -59,6 +59,7 @@ zones[xi.zone.EAST_RONFAURE] =
     {
         BIGMOUTH_BILLY = GetFirstID('Bigmouth_Billy'),
         SWAMFISK       = GetTableOfIDs('Swamfisk'), -- 2 NMs
+        SARIMANOK      = GetTableOfIDs('Sarimanok'),
 
         VOIDWALKER =
         {
@@ -94,7 +95,8 @@ zones[xi.zone.EAST_RONFAURE] =
 
     npc =
     {
-        LOGGING = GetTableOfIDs('Logging_Point'),
+        LOGGING     = GetTableOfIDs('Logging_Point'),
+        PLANAR_RIFT = GetTableOfIDs('Planar_Rift'),
     },
 }
 
