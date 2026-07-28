@@ -21,7 +21,9 @@
 
 #pragma once
 
-#include "data/enums/enum_traits.h"
+#include "common/enum_traits.h"
+
+#include "common/macros.h"
 
 #include <concepts>
 #include <string>
@@ -224,7 +226,7 @@ public:
         else
         {
             static_assert(alwaysFalse<T>, "Node<B>::as<T>: unsupported T");
-            return T{}; // unreachable
+            XI_UNREACHABLE();
         }
     }
 

@@ -27,26 +27,15 @@
 #include "ai/controllers/trust_controller.h"
 #include "ai/helpers/pathfind.h"
 #include "ai/helpers/targetfind.h"
-#include "ai/states/ability_state.h"
-#include "ai/states/attack_state.h"
 #include "ai/states/magic_state.h"
-#include "ai/states/mobskill_state.h"
-#include "ai/states/range_state.h"
 #include "ai/states/weaponskill_state.h"
-#include "attack.h"
+#include "data/enums/mob_mod.h"
 #include "enmity_container.h"
-#include "mob_modifier.h"
-#include "mob_spell_container.h"
-#include "mob_spell_list.h"
 #include "packets/entity_set_name.h"
-#include "packets/entity_update.h"
-#include "packets/s2c/0x029_battle_message.h"
 #include "packets/s2c/0x0df_group_attr.h"
 #include "recast_container.h"
 #include "status_effect_container.h"
 #include "utils/battleutils.h"
-#include "utils/messageutils.h"
-#include "utils/trustutils.h"
 
 namespace
 {
@@ -62,11 +51,11 @@ CTrustEntity::CTrustEntity(CCharEntity* PChar, uint32 trustId, IsPassiveTrust is
 {
     objtype                     = TYPE_TRUST;
     m_EcoSystem                 = xi::Ecosystem::Unclassified;
-    allegiance                  = ALLEGIANCE_TYPE::PLAYER;
+    allegiance                  = xi::Allegiance::Player;
     m_MobSkillList              = 0;
     PMaster                     = PChar;
     m_bReleaseTargIDOnDisappear = true;
-    spawnAnimation              = SPAWN_ANIMATION::SPECIAL; // Initial spawn has the special spawn-in animation
+    spawnAnimation              = xi::SpawnAnimation::Special; // Initial spawn has the special spawn-in animation
 
     PAI = std::make_unique<CAIContainer>(this,
                                          std::make_unique<CPathFind>(this),
@@ -86,7 +75,7 @@ auto CTrustEntity::trustID() -> uint32
 
 auto CTrustEntity::shieldSize() -> int8
 {
-    const auto shieldSizeMod = static_cast<int8>(getMobMod(MOBMOD_TRUST_SHIELD_SIZE));
+    const auto shieldSizeMod = static_cast<int8>(getMobMod(xi::MobMod::TrustShieldSize));
     return shieldSizeMod > 0 ? shieldSizeMod : kTrustDefaultShieldSize;
 }
 
@@ -111,7 +100,7 @@ void CTrustEntity::PostTick()
     // TODO: Calling a grand-parent's impl. of an overridden function is bad
     CBattleEntity::PostTick();
     timer::time_point now = timer::now();
-    if (loc.zone && updatemask && status != STATUS_TYPE::DISAPPEAR && now > m_nextUpdateTimer)
+    if (loc.zone && updatemask && status != xi::Status::Disappear && now > m_nextUpdateTimer)
     {
         m_nextUpdateTimer = now + 250ms;
         loc.zone->UpdateEntityPacket(this, ENTITY_UPDATE, updatemask);
@@ -240,7 +229,7 @@ void CTrustEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& act
     CBattleEntity::OnWeaponSkillFinished(state, action);
 
     auto* PWeaponSkill  = state.GetSkill();
-    auto* PBattleTarget = dynamic_cast<CBattleEntity*>(state.GetTarget());
+    auto* PBattleTarget = state.target().resolve<CBattleEntity>();
     if (!PBattleTarget)
     {
         return;

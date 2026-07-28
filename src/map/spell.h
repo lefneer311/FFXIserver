@@ -22,6 +22,8 @@
 #pragma once
 
 #include "common/cbasetypes.h"
+#include "data/enums/skill_type.h"
+#include "data/enums/zone_misc.h"
 #include "entities/battle_entity.h"
 
 #define CANNOT_USE_SPELL 0
@@ -29,6 +31,7 @@
 enum class ActionAnimation : uint16_t;
 enum class ActionModifier : uint32_t;
 enum class FourCC : uint32_t;
+
 enum SPELLGROUP
 {
     SPELLGROUP_NONE      = 0,
@@ -1177,7 +1180,7 @@ public:
 
     uint16             getTotalTargets() const;
     SpellID            getID();
-    uint8              getJob(JOBTYPE JobID);
+    auto               getJob(xi::Job JobID) -> uint8;
     uint16             getMPCost() const;
     timer::duration    getCastTime() const;
     timer::duration    getRecastTime() const;
@@ -1186,8 +1189,8 @@ public:
     timer::duration    getAnimationTime() const;
     auto               getSpellGroup() const -> SPELLGROUP;
     SPELLFAMILY        getSpellFamily();
-    uint8              getSkillType() const;
-    uint16             getZoneMisc() const;
+    auto               getSkillType() const -> xi::SkillType;
+    xi::ZoneMisc       getZoneMisc() const;
     uint8              getAOE() const;
     uint16             getBase() const;
     uint16             getElement() const;
@@ -1226,8 +1229,8 @@ public:
     void setAnimationTime(timer::duration AnimationTime);
     void setSpellGroup(SPELLGROUP SpellGroup);
     void setSpellFamily(SPELLFAMILY SpellFamily);
-    void setSkillType(uint8 SkillType);
-    void setZoneMisc(uint16 Misc);
+    void setSkillType(xi::SkillType SkillType);
+    void setZoneMisc(xi::ZoneMisc Misc);
     void setAOE(uint8 AOE);
     void setBase(uint16 base);
     void setElement(uint16 element);
@@ -1263,7 +1266,7 @@ private:
     timer::duration                m_recastTime{};      // recast time
     uint16                         m_animation{};       // animation for spell
     timer::duration                m_animationTime{};
-    uint8                          m_skillType{};
+    xi::SkillType                  m_skillType{};
     float                          m_range{};
     float                          m_radius{};
     uint16                         m_totalTargets{};
@@ -1272,7 +1275,7 @@ private:
     uint16                         m_ValidTarget{};                   // target pc/npc/both
     SPELLGROUP                     m_spellGroup{ SPELLGROUP_NONE };   // spellgroup
     SPELLFAMILY                    m_spellFamily{ SPELLFAMILY_NONE }; // spell family
-    uint16                         m_zoneMisc{};                      // spellcasting conditions
+    xi::ZoneMisc                   m_zoneMisc{};                      // spellcasting conditions
     uint8                          m_AOE{};                           // aoe or single target spell
     uint16                         m_base{};                          // spell base damage
     float                          m_multiplier{};                    // multiplier for upper tier spells
@@ -1301,6 +1304,6 @@ CSpell* GetSpellByMonsterSkillId(uint16 SkillID);
 CSpell* GetSpell(SpellID SpellID);
 bool    CanUseSpell(CBattleEntity* PCaster, SpellID SpellID);
 bool    CanUseSpell(CBattleEntity* PCaster, CSpell* PSpell);
-bool    CanUseSpellWith(SpellID spellId, JOBTYPE job, uint8 level);
+bool    CanUseSpellWith(SpellID spellId, xi::Job job, uint8 level);
 
 }; // namespace spell

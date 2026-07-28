@@ -22,7 +22,6 @@
 #include "merit.h"
 #include "entities/char_entity.h"
 
-#include "map_engine.h"
 #include "packets/s2c/0x0aa_magic_data.h"
 #include "packets/s2c/0x0ac_command_data.h"
 #include "utils/charutils.h"
@@ -423,7 +422,7 @@ int32 CMeritPoints::GetMeritValue(MERIT_TYPE merit, CCharEntity* PChar)
 
     if (PMerit)
     {
-        if (PMerit->catid < 5 || (PMerit->jobs & (1 << (PChar->GetMJob() - 1)) && PChar->GetMLevel() >= 75))
+        if (PMerit->catid < 5 || (PMerit->jobs & (1 << (static_cast<uint8>(PChar->GetMJob()) - 1)) && PChar->GetMLevel() >= 75))
         {
             meritValue = merit == MERIT_MAX_MERIT ? PMerit->count : std::min(PMerit->count, cap[PChar->GetMLevel()]);
         }

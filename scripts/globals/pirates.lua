@@ -94,6 +94,17 @@ local function clearPirates(zoneId)
     end
 end
 
+-- Swap the ferry's ambient BGM for everyone aboard, and for anyone zoning in mid-ride.
+local function setShipMusic(zone, musicId)
+    zone:setBackgroundMusicDay(musicId)
+    zone:setBackgroundMusicNight(musicId)
+
+    for _, player in pairs(zone:getPlayers()) do
+        player:changeMusic(0, musicId) -- Day
+        player:changeMusic(1, musicId) -- Night
+    end
+end
+
 -- Calls itself via timer until the npc is hidden.
 local function summonAnimations(npc, rotation, offset)
     if npc:getStatus() == xi.status.DISAPPEAR then
@@ -115,14 +126,14 @@ local function summonAnimations(npc, rotation, offset)
         local summonStartTime = npc:getLocalVar('summonStartTime')
         if summonStartTime ~= 0 and summonStartTime <= currentTime then
             npc:setLocalVar('summonStartTime', 0)
-            npc:setLocalVar('summonEndTime', currentTime + math.random(1, 2))
+            npc:setLocalVar('summonEndTime', currentTime + math.randomInt(1, 2))
 
             npc:entityAnimationPacket(xi.animationString.CAST_SUMMONER_START)
         end
 
         local summonEndTime = npc:getLocalVar('summonEndTime')
         if summonEndTime ~= 0 and summonEndTime <= currentTime then
-            npc:setLocalVar('summonStartTime', currentTime + math.random(4 + offset, 10))
+            npc:setLocalVar('summonStartTime', currentTime + math.randomInt(4 + offset, 10))
             npc:setLocalVar('summonEndTime', 0)
 
             npc:entityAnimationPacket(xi.animationString.CAST_SUMMONER_STOP)
@@ -179,7 +190,7 @@ xi.pirates.pirateNPCTimeTrigger = function(npc, triggerId, zoneKey)
     if triggerId == actions.PIRATES_ARRIVE then
         if pirateIdx == 2 then
             -- middle pirate has chance to wear a verm cloak, which then means the pirate encounter _might_ have the NM spawn
-            local hasVermCloak = math.random(1, 100) <= 10
+            local hasVermCloak = math.randomInt(1, 100) <= 10
             npc:setModelId(hasVermCloak and 47 or 8195, xi.slot.BODY) -- 47 = verm cloak body, 8195 = default body
             pirateZone:setLocalVar('nmCanSpawn', hasVermCloak and 1 or 0) -- 1 = NM still eligible; cleared to 0 once it spawns
         end
@@ -225,7 +236,9 @@ xi.pirates.zoneStateChange = function(zone, action)
     local zoneId = zone:getID()
     local ID     = zones[zoneId]
 
-    if action == actions.MOBS_SPAWN then
+    if action == actions.ARRIVING then
+        setShipMusic(zone, 170) -- Pirate attack theme
+    elseif action == actions.MOBS_SPAWN then
         -- clear any mobs lingering from a previous ride before summoning fresh ones
         clearPirates(zoneId)
 
@@ -237,7 +250,7 @@ xi.pirates.zoneStateChange = function(zone, action)
             end
         end
 
-        if zone:getLocalVar('nmCanSpawn') == 1 and math.random(1, 100) <= 75 then
+        if zone:getLocalVar('nmCanSpawn') == 1 and math.randomInt(1, 100) <= 75 then
             -- HQ ride, 75%: NM appears from the start
             local nm = GetMobByID(getNMId(zoneId))
             if nm then
@@ -253,5 +266,7 @@ xi.pirates.zoneStateChange = function(zone, action)
         end
     elseif action == actions.PIRATES_RETREAT then
         clearPirates(zoneId)
+    elseif action == actions.DEPART then
+        setShipMusic(zone, 106) -- Normal ferry BGM, per zone_settings for zones 227/228
     end
 end

@@ -21,6 +21,8 @@
 
 #include "0x01a_action.h"
 
+#include "common/logging_context.h"
+
 #include "ability.h"
 #include "ai/ai_container.h"
 #include "enmity_container.h"
@@ -105,7 +107,7 @@ auto GP_CLI_COMMAND_ACTION::validate(MapSession* PSession, const CCharEntity* PC
                     case GP_CLI_COMMAND_ACTION_ACTIONID::MonsterSkill: // MonsterSkill is entirely assumed
                     {
                         pv.blockedBy({ BlockedState::Healing, BlockedState::Crafting, BlockedState::Fishing, BlockedState::PreventAction, BlockedState::Mounted })
-                            .mustEqual(PChar->animation == ANIMATION_NONE || PChar->animation == ANIMATION_ATTACK, true, "Character in invalid animation state.");
+                            .mustEqual(PChar->animation == xi::Animation::None || PChar->animation == xi::Animation::Attack, true, "Character in invalid animation state.");
                         break;
                     }
                     case GP_CLI_COMMAND_ACTION_ACTIONID::Fish:
@@ -228,8 +230,8 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
 
                             if (PDelayedTrust && PDelayedChar && PDelayedTrust->PMaster == PDelayedChar)
                             {
-                                // For some reason they use ANIMATION_DEATH to play the special despawn.
-                                PDelayedTrust->animation = ANIMATION_DEATH;
+                                // For some reason they use xi::Animation::Death to play the special despawn.
+                                PDelayedTrust->animation = xi::Animation::Death;
                                 PDelayedTrust->updatemask |= UPDATE_HP;
 
                                 PDelayedChar->RemoveTrust(PDelayedTrust);
@@ -249,7 +251,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             }
 
             // NOTE: Moogles inside of mog houses are the exception for not requiring Spawned or Status checks.
-            if (distance(PNpc->loc.p, PChar->loc.p) <= 6.0f && ((PNpc->PAI->IsSpawned() && PNpc->status == STATUS_TYPE::NORMAL) || PChar->inMogHouse()))
+            if (distance(PNpc->loc.p, PChar->loc.p) <= 6.0f && ((PNpc->PAI->IsSpawned() && PNpc->status == xi::Status::Normal) || PChar->inMogHouse()))
             {
                 PNpc->PAI->Trigger(PChar);
                 PChar->m_charHistory.npcInteractions++;
@@ -269,7 +271,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
                 PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Mounted);
             }
 
-            PChar->PAI->Engage(this->ActIndex);
+            PChar->PAI->Engage(EntityId(PChar->GetEntity(this->ActIndex)));
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::CastMagic:
@@ -288,7 +290,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             // clang-format on
 
             const auto spellId = static_cast<SpellID>(this->CastMagic.SpellId);
-            PChar->PAI->Cast(this->ActIndex, spellId);
+            PChar->PAI->Cast(EntityId(PChar->GetEntity(this->ActIndex)), spellId);
 
             // target offset used only for luopan placement as of now
             if (spellId >= SpellID::Geo_Regen && spellId <= SpellID::Geo_Gravity)
@@ -340,7 +342,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
                 return;
             }
 
-            PChar->PAI->WeaponSkill(this->ActIndex, this->Weaponskill.SkillId);
+            PChar->PAI->WeaponSkill(EntityId(PChar->GetEntity(this->ActIndex)), this->Weaponskill.SkillId);
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::JobAbility:
@@ -355,7 +357,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
                 }
             }
 
-            PChar->PAI->Ability(this->ActIndex, this->JobAbility.SkillId);
+            PChar->PAI->Ability(EntityId(PChar->GetEntity(this->ActIndex)), this->JobAbility.SkillId);
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::HomepointMenu:
@@ -367,7 +369,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             }
 
             PChar->setCharVar("expLost", 0);
-            PChar->requestedWarp = true;
+            PChar->requestedWarp = WarpRequest::HomePoint;
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::Assist:
@@ -406,12 +408,12 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::ChangeTarget:
         {
-            PChar->PAI->ChangeTarget(this->ActIndex);
+            PChar->PAI->ChangeTarget(EntityId(PChar->GetEntity(this->ActIndex)));
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::Shoot:
         {
-            PChar->PAI->RangedAttack(this->ActIndex);
+            PChar->PAI->RangedAttack(EntityId(PChar->GetEntity(this->ActIndex)));
         }
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::ChocoboDig:
@@ -454,7 +456,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         break;
         case GP_CLI_COMMAND_ACTION_ACTIONID::Dismount:
         {
-            PChar->animation = ANIMATION_NONE;
+            PChar->animation = xi::Animation::None;
             PChar->updatemask |= UPDATE_HP;
             PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Mounted);
         }
@@ -465,7 +467,7 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
             {
                 PChar->loc.p           = PChar->m_StartActionPos;
                 PChar->loc.destination = PChar->getZone();
-                PChar->status          = STATUS_TYPE::DISAPPEAR;
+                PChar->status          = xi::Status::Disappear;
                 PChar->loc.boundary    = 0;
                 PChar->clearPacketList();
 
@@ -529,11 +531,11 @@ void GP_CLI_COMMAND_ACTION::process(MapSession* PSession, CCharEntity* PChar) co
         {
             const auto mountKeyItem = static_cast<KeyItem>(static_cast<uint16_t>(KeyItem::CHOCOBO_COMPANION) + this->Mount.MountId);
 
-            if (PChar->animation != ANIMATION_NONE || PChar->StatusEffectContainer->HasPreventActionEffect())
+            if (PChar->animation != xi::Animation::None || PChar->StatusEffectContainer->HasPreventActionEffect())
             {
                 PChar->pushPacket<GP_SERV_COMMAND_BATTLE_MESSAGE>(PChar, PChar, 0, 0, MsgBasic::CannotPerformAction);
             }
-            else if (!PChar->loc.zone->CanUseMisc(MISC_MOUNT))
+            else if (!PChar->loc.zone->CanUseMisc(xi::ZoneMisc::Mount))
             {
                 PChar->pushPacket<GP_SERV_COMMAND_BATTLE_MESSAGE>(PChar, PChar, 0, 0, MsgBasic::CannotUseInArea);
             }

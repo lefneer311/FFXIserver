@@ -24,12 +24,12 @@ end
 
 entity.onMobSpawn = function(mob)
     mob:messageText(mob, ID.text.SKY_GOD_OFFSET + 9) -- Spawn message
-    GetNPCByID(ID.npc.PORTAL_OFFSET + 2):setAnimation(xi.anim.CLOSE_DOOR)
+    GetNPCByID(ID.npc.PORTAL_OFFSET + 2):setAnimation(xi.animation.CLOSE_DOOR)
     mob:setMod(xi.mod.REGAIN, 450) -- Uses TP move every 20 seconds
 
     -- Sky gods wait 10 seconds after spawning to start casting
     mob:setMagicCastingEnabled(false)
-    mob:timer(math.random(5000, 10000), function(mobArg)
+    mob:timer(math.randomInt(5000, 10000), function(mobArg)
         if mobArg then
             mobArg:setMagicCastingEnabled(true)
         end
@@ -41,6 +41,13 @@ entity.onMobSpawn = function(mob)
             mobArg:setMobAbilityEnabled(true)
         end
     end)
+
+    xi.mix.jobSpecial.config(mob, {
+        specials =
+        {
+            { id = xi.mobSkill.HUNDRED_FISTS_1, hpp = math.random(50, 60) },
+        },
+    })
 end
 
 entity.onMobFight = function(mob, target)
@@ -77,7 +84,7 @@ entity.onMobDeath = function(mob, player, optParams)
 end
 
 entity.onMobDespawn = function(mob)
-    GetNPCByID(ID.npc.PORTAL_OFFSET + 2):setAnimation(xi.anim.OPEN_DOOR)
+    GetNPCByID(ID.npc.PORTAL_OFFSET + 2):setAnimation(xi.animation.OPEN_DOOR)
 end
 
 return entity

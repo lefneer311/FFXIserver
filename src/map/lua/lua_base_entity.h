@@ -23,6 +23,8 @@
 #define _CLUABASEENTITY_H
 
 #include "common/cbasetypes.h"
+#include "data/enums/entity_flags.h"
+#include "data/enums/mob_mod.h"
 #include "enums/mission_log.h"
 #include "luautils.h"
 #include "packets/s2c/0x009_message.h"
@@ -97,6 +99,7 @@ public:
     void entityAnimationPacket(const char* command, const sol::object& target);
     void sendDebugPacket(const sol::table& packetData);
     void sendLinkshellConcierge(const sol::table& data) const;
+    void sendChocoboRace(const sol::table& race) const;
 
     void       StartEventHelper(int32 EventID, sol::variadic_args va, EVENT_TYPE eventType);
     EventInfo* ParseEvent(int32 EventID, sol::variadic_args va, EventPrep* eventPreparation, EVENT_TYPE eventType);
@@ -136,8 +139,8 @@ public:
     // AI and Control
     void  initNpcAi();
     void  resetAI();
-    uint8 getStatus();
-    void  setStatus(uint8 status);
+    auto  getStatus() -> xi::Status;
+    void  setStatus(xi::Status status);
     uint8 getCurrentAction();
     bool  canUseAbilities();
 
@@ -174,16 +177,16 @@ public:
     void updateNPCHideTime(const sol::object& seconds); // Updates the length of time a NPC remains hidden, if shorter than the original hide time.
 
     auto getWeather(const sol::object& ignoreScholar) const -> uint8;
-    void setWeather(Weather weatherType); // Set Weather condition (GM COMMAND)
+    void setWeather(xi::Weather weatherType); // Set Weather condition (GM COMMAND)
 
     // PC Instructions
-    void changeMusic(MusicSlot slotId, uint16 trackId) const;                             // Sets the specified music Track for specified music block.
-    void sendMenu(uint32 menu);                                                           // Displays a menu (AH,Raise,Tractor,MH etc)
-    auto sendGuild(uint16 guildId, uint8 open, uint8 close, uint8 holiday) const -> bool; // Sends guild shop menu
-    auto openGuildShop(CLuaBaseEntity* PNpc, uint8 open, uint8 close) const -> bool;      // Opens a lua guild shop and remembers the NPC the PC opened it with
-    void clearGuildShop() const;                                                          // Clears the PC's open guild shop handle
-    void sendGuildClose(uint8 open, uint8 close) const;                                   // Sends the guild-open packet with a Close status
-    void openSendBox() const;                                                             // Opens send box (to deliver items)
+    void changeMusic(MusicSlot slotId, uint16 trackId) const;                                                      // Sets the specified music Track for specified music block.
+    void sendMenu(uint32 menu);                                                                                    // Displays a menu (AH,Raise,Tractor,MH etc)
+    auto sendGuild(uint16 guildId, uint8 open, uint8 close, uint8 holiday) const -> bool;                          // Sends guild shop menu
+    auto openGuildShop(CLuaBaseEntity* PNpc, uint8 open, uint8 close, sol::optional<uint8> holiday) const -> bool; // Opens a lua guild shop and remembers the NPC the PC opened it with
+    void clearGuildShop() const;                                                                                   // Clears the PC's open guild shop handle
+    void sendGuildClose(uint8 open, uint8 close, sol::optional<bool> passive) const;                               // Sends the guild-open packet with a Close status
+    void openSendBox() const;                                                                                      // Opens send box (to deliver items)
     void leaveGame();
     void sendEmote(const CLuaBaseEntity* target, uint8 emID, uint8 emMode, bool othersOnly) const;
 
@@ -212,7 +215,7 @@ public:
     void onPlayerTriggerAreaLeave(uint32 triggerAreaId);
     void clearPlayerTriggerAreas();
 
-    void updateToEntireZone(uint8 statusID, uint8 animation, const sol::object& matchTime); // Forces an update packet to update the NPC entity zone-wide
+    void updateToEntireZone(xi::Status statusID, uint8 animation, const sol::object& matchTime); // Forces an update packet to update the NPC entity zone-wide
     void sendEntityUpdateToPlayer(CLuaBaseEntity* entityToUpdate, uint8 entityUpdate, uint8 updateMask);
     void sendEmptyEntityUpdateToPlayer(CLuaBaseEntity* entityToUpdate);
 
@@ -295,7 +298,7 @@ public:
     int8  getShieldSize();
     int16 getShieldDefense();
 
-    void addGearSetMod(uint8 setId, Mod modId, uint16 modValue);
+    void addGearSetMod(uint8 setId, xi::Mod modId, uint16 modValue);
     void clearGearSetMods();
 
     // Storing
@@ -322,11 +325,11 @@ public:
     void   setCostume(uint16 costume);
     uint16 getCostume2();
     void   setCostume2(uint16 costume);
-    uint8  getAnimation();
-    void   setAnimation(uint8 animation);
+    auto   getAnimation() -> xi::Animation;
+    void   setAnimation(xi::Animation animation);
     uint8  getAnimationSub();
     void   setAnimationSub(uint8 animationsub, const sol::object& sendUpdate);
-    void   setSpawnAnimation(uint8 spawnAnimation);
+    void   setSpawnAnimation(xi::SpawnAnimation spawnAnimation);
     bool   getCallForHelpFlag() const;
     void   setCallForHelpFlag(bool cfh);
     bool   getCallForHelpBlocked() const;
@@ -335,8 +338,8 @@ public:
     // Player Status
     uint8 getNation();
     void  setNation(uint8 nation);
-    uint8 getAllegiance();
-    void  setAllegiance(uint8 allegiance);
+    auto  getAllegiance() -> xi::Allegiance;
+    void  setAllegiance(xi::Allegiance allegiance);
 
     uint8 getCampaignAllegiance();
     void  setCampaignAllegiance(uint8 allegiance);
@@ -360,7 +363,7 @@ public:
     bool isJailed();
     void jail();
 
-    bool canUseMisc(uint16 misc); // Check misc flags of current zone.
+    bool canUseMisc(xi::ZoneMisc misc); // Check misc flags of current zone.
 
     uint8 getSpeed();
     uint8 getBaseSpeed();
@@ -371,12 +374,12 @@ public:
     uint32 getTimeCreated();
 
     // Player Jobs and Levels
-    uint8 getMainJob();
-    uint8 getSubJob();
-    void  changeJob(uint8 newJob);
-    void  changesJob(uint8 subJob);
-    void  unlockJob(uint8 JobID);
-    bool  hasJob(uint8 job);
+    auto getMainJob() -> xi::Job;
+    auto getSubJob() -> xi::Job;
+    void changeJob(uint8 newJob);
+    void changesJob(uint8 subJob);
+    void unlockJob(uint8 JobID);
+    bool hasJob(uint8 job);
 
     uint8 getMainLvl();
     uint8 getSubLvl();
@@ -475,7 +478,7 @@ public:
     void   setJobPoints(uint16 amount);
     void   addJobPoints(uint8 jobID, uint16 amount);
     void   delJobPoints(uint8 jobID, uint16 amount);
-    uint16 getJobPoints(JOBTYPE jobID);
+    auto   getJobPoints(xi::Job jobID) -> uint16;
     void   setCapacityPoints(uint16 amount);
     void   masterJob();
 
@@ -492,6 +495,7 @@ public:
     int32 getCP(); // Conquest points, not to be confused with Capacity Points
     void  addCP(int32 cp);
     void  delCP(int32 cp);
+    void  gainConquestInfluence(int32 points);
 
     int32 getSeals(uint8 sealType);
     void  addSeals(int32 points, uint8 sealType);
@@ -717,8 +721,8 @@ public:
     void  setMod(uint16 modID, int16 value);
     void  delMod(uint16 modID, int16 value);
     void  printAllMods();
-    int16 getMaxGearMod(Mod modId);
-    int16 getGearModFromSlot(uint8 slot, Mod modId);
+    int16 getMaxGearMod(xi::Mod modId);
+    int16 getGearModFromSlot(uint8 slot, xi::Mod modId);
 
     void addLatent(uint16 condID, uint16 conditionValue, uint16 mID, int16 modValue);
     auto delLatent(uint16 condID, uint16 conditionValue, uint16 mID, int16 modValue) -> bool;
@@ -851,19 +855,19 @@ public:
     uint8  getEcosystem();
     uint16 getFamily();
     uint16 getSpecies();
-    auto   isMobType(uint8 mobType) const -> bool; // True if mob is of type passed to function
+    auto   isMobType(xi::MobType mobType) const -> bool; // True if mob is of type passed to function
     auto   isUndead() -> bool;
     bool   isNM();
 
-    uint8  getModelSize();
-    void   setModelSize(uint8 newSize);
-    float  getHitboxSize();
-    void   setHitboxSize(float newSize);
-    float  getMeleeRange(CLuaBaseEntity* target);
-    void   setMobFlags(uint32 flags, const sol::object& mobId); // Used to manipulate the mob's flags, such as changing size.
-    uint32 getMobFlags();
+    uint8 getModelSize();
+    void  setModelSize(uint8 newSize);
+    float getHitboxSize();
+    void  setHitboxSize(float newSize);
+    float getMeleeRange(CLuaBaseEntity* target);
+    void  setMobFlags(xi::EntityFlags flags, const sol::object& mobId); // Used to manipulate the mob's flags, such as changing size.
+    auto  getMobFlags() -> xi::EntityFlags;
 
-    void setNpcFlags(uint32 flags);
+    void setNpcFlags(xi::EntityFlags flags);
     void setNpcAlwaysRelevant(bool alwaysRelevant);
 
     void spawn(const sol::object& despawnSec, const sol::object& respawnSec);
@@ -876,15 +880,17 @@ public:
     void instantiateMob(uint32 groupID);
 
     bool hasTrait(uint16 traitID);
-    bool hasImmunity(uint32 immunityID); // Check if the mob has immunity for a type of spell (immunity list in mobentity.h)
-    void addImmunity(uint32 immunityID);
-    void delImmunity(uint32 immunityID);
+    bool hasImmunity(xi::Immunity immunityID); // Check if the mob has immunity for a type of spell (immunity list in mobentity.h)
+    void addImmunity(xi::Immunity immunityID);
+    void delImmunity(xi::Immunity immunityID);
 
     void setAggressive(bool aggressive);
     void setTrueDetection(bool truedetection);
     void setUnkillable(bool unkillable);
+    auto getUnkillable() -> bool;
     void setUntargetable(bool untargetable);
     bool getUntargetable();
+    void setPriorityRender(bool enabled) const;
     void setIsAggroable(bool isAggroable);
     bool isAggroable();
 
@@ -900,21 +906,24 @@ public:
     void setMobAbilityEnabled(bool state);   // halt/resumes mob skills
     void setMobSkillAttack(int16 listId);    // enable/disable using mobskills as regular attacks
 
-    int16 getMobMod(uint16 mobModID);
-    void  setMobMod(uint16 mobModID, int16 value);
-    void  addMobMod(uint16 mobModID, int16 value);
-    void  delMobMod(uint16 mobModID, int16 value);
+    int16 getMobMod(xi::MobMod mobModID);
+    void  setMobMod(xi::MobMod mobModID, int16 value);
+    void  addMobMod(xi::MobMod mobModID, int16 value);
+    void  delMobMod(xi::MobMod mobModID, int16 value);
+
+    auto getfTPModifierOverride(uint16 skillId) -> sol::object;
+    void setfTPModifierOverride(uint16 skillId, float ftp1, float ftp2, float ftp3);
 
     uint32 getBattleTime();
     auto   getCrystalElement() const -> ELEMENT;
     void   setCrystalElement(ELEMENT crystalElement);
 
-    uint16 getBehavior();
-    void   setBehavior(uint16 behavior);
-    uint8  getLink();
-    void   setLink(uint8 link);
-    uint16 getRoamFlags();
-    void   setRoamFlags(uint16 newRoamFlags);
+    auto  getBehavior() -> xi::Behavior;
+    void  setBehavior(xi::Behavior behavior);
+    uint8 getLink();
+    void  setLink(uint8 link);
+    auto  getRoamFlags() -> xi::RoamFlag;
+    void  setRoamFlags(xi::RoamFlag newRoamFlags);
 
     auto getTarget() -> CBaseEntity*;
     void updateTarget(); // Force mob to update target from enmity container (ie after updateEnmity)

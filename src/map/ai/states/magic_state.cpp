@@ -27,12 +27,12 @@
 #include "ai/controllers/pet_controller.h"
 #include "ai/states/inactive_state.h"
 #include "common/utils.h"
+#include "data/enums/mob_mod.h"
 #include "enmity_container.h"
 #include "entities/battle_entity.h"
 #include "entities/mob_entity.h"
 #include "job_points.h"
 #include "lua/luautils.h"
-#include "mob_modifier.h"
 #include "packets/s2c/0x028_battle2.h"
 #include "packets/s2c/0x029_battle_message.h"
 #include "spell.h"
@@ -40,61 +40,60 @@
 #include "utils/battleutils.h"
 #include "utils/zoneutils.h"
 
-CMagicState::CMagicState(CBattleEntity* PEntity, uint16 targid, SpellID spellid, uint8 flags)
-: CState(PEntity, targid)
+CMagicState::CMagicState(xi::Badge<CState>, CBattleEntity* PEntity, const EntityId& target, SpellID spellid, uint8 flags)
+: CState(PEntity, target)
 , m_PEntity(PEntity)
+, m_spellId(spellid)
 , m_PSpell(nullptr)
 , m_flags(flags)
 {
-    if (auto PMob = dynamic_cast<CMobEntity*>(m_PEntity))
+    // Capture constructor arguments into members and nothing else. All other logic goes into init().
+}
+
+auto CMagicState::init() -> StateErrorOr<void>
+{
+    if (const auto* PMob = dynamic_cast<CMobEntity*>(m_PEntity))
     {
-        if (PMob->getMobMod(MOBMOD_NO_SPELL_COST) > 0)
+        if (PMob->getMobMod(xi::MobMod::NoSpellCost) > 0)
         {
             m_flags |= MAGICFLAGS_IGNORE_MP;
         }
     }
 
-    auto* PSpell = spell::GetSpell(spellid);
+    auto* PSpell = spell::GetSpell(m_spellId);
     if (PSpell == nullptr)
     {
-        throw CStateInitException(std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, static_cast<uint16>(spellid), 0, MsgBasic::CannotCastSpell));
+        return Error{ std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, static_cast<uint16>(m_spellId), 0, MsgBasic::CannotCastSpell) };
     }
 
     m_PSpell = PSpell->clone();
 
-    auto* PTarget = m_PEntity->IsValidTarget(m_targid, m_PSpell->getValidTarget(), m_errorMsg);
+    auto* PTarget = m_PEntity->IsValidTarget(target(), m_PSpell->getValidTarget(), m_errorMsg);
     if (!PTarget || this->HasErrorMsg())
     {
-        if (this->HasErrorMsg())
-        {
-            throw CStateInitException(m_errorMsg->copy());
-        }
-        else
-        {
-            throw CStateInitException(std::make_unique<CBasicPacket>());
-        }
+        return refuseWithErrorMsg();
     }
 
     if (!CanCastSpell(PTarget, false))
     {
-        if (HasErrorMsg())
-        {
-            throw CStateInitException(m_errorMsg->copy());
-        }
-        else
-        {
-            throw CStateInitException(std::make_unique<CBasicPacket>());
-        }
+        return refuseWithErrorMsg();
     }
 
     auto errorMsg = luautils::OnMagicCastingCheck(m_PEntity, PTarget, GetSpell());
     if (errorMsg)
     {
-        throw CStateInitException(std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, static_cast<uint16>(m_PSpell->getID()), 0, errorMsg == 1 ? MsgBasic::CannotCastSpell : static_cast<MsgBasic>(errorMsg)));
+        return Error{ std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, static_cast<uint16>(m_PSpell->getID()), 0, errorMsg == 1 ? MsgBasic::CannotCastSpell : static_cast<MsgBasic>(errorMsg)) };
     }
 
     m_castTime = battleutils::CalculateSpellCastTime(m_PEntity, this);
     m_startPos = m_PEntity->loc.p;
+
+    auto targetID = PTarget->id;
+
+    if (m_PEntity->objtype != TYPE_PC && settings::get<bool>("map.HIDE_READIES_TARGET"))
+    {
+        targetID = m_PEntity->id;
+    }
 
     action_t action{
         .actorId    = m_PEntity->id,
@@ -103,11 +102,11 @@ CMagicState::CMagicState(CBattleEntity* PEntity, uint16 targid, SpellID spellid,
         .spellgroup = m_PSpell->getSpellGroup(),
         .targets    = {
             {
-                .actorId = PTarget->id,
+                .actorId = targetID,
                 .results = {
                     {
                         .param     = static_cast<int32_t>(m_PSpell->getID()),
-                        .messageID = PEntity->objtype != TYPE_PC ? MsgBasic::StartsCastingSelf : MsgBasic::StartsCastingTarget,
+                        .messageID = m_PEntity->objtype != TYPE_PC ? MsgBasic::StartsCastingSelf : MsgBasic::StartsCastingTarget,
                     },
                 },
             },
@@ -129,13 +128,15 @@ CMagicState::CMagicState(CBattleEntity* PEntity, uint16 targid, SpellID spellid,
     }
 
     m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(action));
+
+    return Success();
 }
 
-bool CMagicState::Update(timer::time_point tick)
+auto CMagicState::Update(timer::time_point tick) -> bool
 {
-    action_t action;
-    auto*    PTarget = m_PEntity->IsValidTarget(m_targid, m_PSpell->getValidTarget(), m_errorMsg);
-    auto     msg     = MsgBasic::IsInterrupted;
+    action_t   action;
+    auto*      PTarget = m_PEntity->IsValidTarget(target(), m_PSpell->getValidTarget(), m_errorMsg);
+    const auto msg     = MsgBasic::IsInterrupted;
 
     auto isTargetValid = [&]()
     {
@@ -170,6 +171,14 @@ bool CMagicState::Update(timer::time_point tick)
 
             Complete();
             return false;
+        }
+
+        auto& PSpell = m_PSpell;
+
+        // Bard songs do not get interrupted here
+        if (PSpell && PSpell->getSpellGroup() != SPELLGROUP_SONG && m_PEntity->StatusEffectContainer->HasPreventActionEffect())
+        {
+            m_interrupted = true;
         }
     }
 
@@ -254,13 +263,9 @@ bool CMagicState::Update(timer::time_point tick)
         }
 
         // Slept/stunned/petrified/etc. at the moment of completion: the cast is interrupted.
-        // A prevent-action effect that lands mid-cast does not cancel the cast on retail;
-        // the interrupt is decided here, at the finish, mirroring CMobSkillState.
         if (m_PEntity->StatusEffectContainer->HasPreventActionEffect())
         {
-            m_PEntity->OnCastInterrupted(*this, action, msg, false);
-            Complete();
-            return false;
+            m_interrupted = true;
         }
 
         if (m_interrupted)
@@ -318,17 +323,17 @@ void CMagicState::Cleanup(timer::time_point tick)
     }
 }
 
-bool CMagicState::CanChangeState()
+auto CMagicState::CanChangeState() -> bool
 {
     return false;
 }
 
-CSpell* CMagicState::GetSpell()
+auto CMagicState::GetSpell() const -> CSpell*
 {
     return m_PSpell.get();
 }
 
-bool CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast)
+auto CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast) -> bool
 {
     auto ret = m_PEntity->CanUseSpell(GetSpell());
 
@@ -340,7 +345,7 @@ bool CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast)
 
     if (!m_PEntity->loc.zone->CanUseMisc(m_PSpell->getZoneMisc()))
     {
-        m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, static_cast<uint16>(m_PSpell->getID()), 0, MsgBasic::CannotUseInArea);
+        m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, static_cast<uint16>(m_PSpell->getID()), 0, MsgBasic::CannotInThisArea);
         return false;
     }
 
@@ -415,7 +420,7 @@ bool CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast)
         }
     }
 
-    if (!isEndOfCast && m_PEntity->objtype == TYPE_PC && m_PEntity->loc.zone->CanUseMisc(MISC_LOS_PLAYER_BLOCK) && !m_PEntity->CanSeeTarget(PTarget))
+    if (!isEndOfCast && m_PEntity->objtype == TYPE_PC && m_PEntity->loc.zone->CanUseMisc(xi::ZoneMisc::LosPlayerBlock) && !m_PEntity->CanSeeTarget(PTarget))
     {
         m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, static_cast<uint16>(m_PSpell->getID()), 0, MsgBasic::CannotPerformAction);
         return false;
@@ -424,7 +429,7 @@ bool CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast)
     return true;
 }
 
-bool CMagicState::HasCost()
+auto CMagicState::HasCost() -> bool
 {
     if (m_PSpell->getSpellGroup() == SPELLGROUP_NINJUTSU)
     {
@@ -470,7 +475,7 @@ void CMagicState::SpendCost()
         }
 
         // conserve mp
-        int16 rate = m_PEntity->getMod(Mod::CONSERVE_MP);
+        int16 rate = m_PEntity->getMod(xi::Mod::CONSERVE_MP);
 
         if (xirand::GetRandomNumber(100) < rate)
         {
@@ -481,7 +486,7 @@ void CMagicState::SpendCost()
     }
 }
 
-timer::duration CMagicState::GetRecast()
+auto CMagicState::GetRecast() const -> timer::duration
 {
     if (!m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Chainspell) && !m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Spontaneity) &&
         !m_instantCast)
@@ -491,23 +496,23 @@ timer::duration CMagicState::GetRecast()
     return 0s;
 }
 
-void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve)
+void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve) const
 {
     bool enmityApplied = false;
 
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Tranquility) && m_PSpell->getSpellGroup() == SPELLGROUP_WHITE)
     {
-        m_PEntity->addModifier(Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Tranquility)->GetPower());
+        m_PEntity->addModifier(xi::Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Tranquility)->GetPower());
     }
 
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Equanimity) && m_PSpell->getSpellGroup() == SPELLGROUP_BLACK)
     {
-        m_PEntity->addModifier(Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Equanimity)->GetPower());
+        m_PEntity->addModifier(xi::Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Equanimity)->GetPower());
     }
 
     if (m_PSpell->isNa())
     {
-        m_PEntity->addModifier(Mod::ENMITY, -(m_PEntity->getMod(Mod::DIVINE_BENISON) >> 1)); // Half of divine benison mod amount = -enmity
+        m_PEntity->addModifier(xi::Mod::ENMITY, -(m_PEntity->getMod(xi::Mod::DIVINE_BENISON) >> 1)); // Half of divine benison mod amount = -enmity
     }
 
     // Subtle Sorcery sets Cumulative Enmity of spells to 0
@@ -518,13 +523,13 @@ void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve)
 
     // If The player is under the effect of Yonin, the Base Enmity generated by Utsusemi spells is increased.
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Yonin) && m_PSpell->getSpellFamily() == SPELLFAMILY_UTSUSEMI &&
-        m_PEntity->getMod(Mod::YONIN_UTSUSEMI_ENMITY) > 0)
+        m_PEntity->getMod(xi::Mod::YONIN_UTSUSEMI_ENMITY) > 0)
     {
         ce = 160;
         ve = 480;
     }
 
-    if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::DivineEmblem) && m_PSpell->getSkillType() == SKILL_DIVINE_MAGIC)
+    if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::DivineEmblem) && m_PSpell->getSkillType() == xi::SkillType::DivineMagic)
     {
         ve = ve * (1.0f + (m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::DivineEmblem)->GetPower() / 100.0f));
         ce = ce * (1.0f + (m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::DivineEmblem)->GetPower() / 100.0f));
@@ -576,7 +581,7 @@ void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve)
 
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Tranquility) && m_PSpell->getSpellGroup() == SPELLGROUP_WHITE)
     {
-        m_PEntity->delModifier(Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Tranquility)->GetPower());
+        m_PEntity->delModifier(xi::Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Tranquility)->GetPower());
 
         if (enmityApplied)
         {
@@ -586,7 +591,7 @@ void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve)
 
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Equanimity) && m_PSpell->getSpellGroup() == SPELLGROUP_BLACK)
     {
-        m_PEntity->delModifier(Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Equanimity)->GetPower());
+        m_PEntity->delModifier(xi::Mod::ENMITY, -m_PEntity->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Equanimity)->GetPower());
 
         if (enmityApplied)
         {
@@ -596,18 +601,18 @@ void CMagicState::ApplyEnmity(CBattleEntity* PTarget, int ce, int ve)
 
     if (m_PSpell->isNa())
     {
-        m_PEntity->delModifier(Mod::ENMITY, -(m_PEntity->getMod(Mod::DIVINE_BENISON) >> 1)); // Half of divine benison mod amount = -enmity
+        m_PEntity->delModifier(xi::Mod::ENMITY, -(m_PEntity->getMod(xi::Mod::DIVINE_BENISON) >> 1)); // Half of divine benison mod amount = -enmity
     }
 
     if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::DivineEmblem) &&
-        m_PSpell->getSkillType() == SKILL_DIVINE_MAGIC &&
+        m_PSpell->getSkillType() == xi::SkillType::DivineMagic &&
         enmityApplied)
     {
         m_PEntity->StatusEffectContainer->DelStatusEffect(xi::StatusEffect::DivineEmblem);
     }
 }
 
-bool CMagicState::HasMoved()
+auto CMagicState::HasMoved() const -> bool
 {
     // non-players can't get interrupted via movement due to edge case shenanigans seen from SE
     if (m_PEntity->objtype != TYPE_PC)
@@ -628,7 +633,27 @@ void CMagicState::TryInterrupt(CBattleEntity* PAttacker)
     }
 }
 
-void CMagicState::ApplyMagicCoverEnmity(CBattleEntity* PCoverAbilityTarget, CBattleEntity* PCoverAbilityUser, CMobEntity* PMob)
+void CMagicState::ApplyMagicCoverEnmity(CBattleEntity* PCoverAbilityTarget, CBattleEntity* PCoverAbilityUser, CMobEntity* PMob) const
 {
     PMob->PEnmityContainer->UpdateEnmityFromCover(PCoverAbilityTarget, PCoverAbilityUser);
+}
+
+auto CMagicState::CanFollowPath() -> bool
+{
+    return false;
+}
+
+auto CMagicState::CanInterrupt() -> bool
+{
+    return true;
+}
+
+void CMagicState::SetInstantCast(const bool bInstantCast)
+{
+    m_instantCast = bInstantCast;
+}
+
+auto CMagicState::IsInstantCast() const -> bool
+{
+    return m_instantCast;
 }

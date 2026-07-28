@@ -27,13 +27,12 @@ end
 entity.onMobSpawn = function(mob)
     mob:setUnkillable(true)
     mob:setBaseSpeed(60)
-    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 125)
     mob:setMod(xi.mod.SILENCE_RES_RANK, 4)
     mob:setMod(xi.mod.LIGHT_SLEEP_RES_RANK, 10)
 
     -- Reset mob.
     xi.combat.behavior.enableAllActions(mob)
-    mob:setLocalVar('[2hour]HPP', math.random(90, 95))
+    mob:setLocalVar('[2hour]HPP', math.randomInt(90, 95))
     mob:setLocalVar('[2hour]Used', 0)
     mob:setLocalVar('initialTaunt', 0)
     mob:setLocalVar('enrageTime', 0)
@@ -163,7 +162,7 @@ entity.onMobMobskillChoose = function(mob, target, skillId)
         xi.mobSkill.DRAGON_KICK_MAAT,
     }
 
-    return tpTable[math.random(1, #tpTable)]
+    return tpTable[math.randomInt(1, #tpTable)]
 end
 
 entity.onMobWeaponSkill = function(mob, target, skill, action)
@@ -192,7 +191,7 @@ entity.onMobWeaponSkill = function(mob, target, skill, action)
         [2] = ID.text.TAKE_THAT_YOU_WHIPPERSNAPPER,
     }
 
-    mob:showText(mob, messageTable[math.random(1, #messageTable)])
+    mob:showText(mob, messageTable[math.randomInt(1, #messageTable)])
 end
 
 entity.onMobDisengage = function(mob)

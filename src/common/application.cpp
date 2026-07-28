@@ -27,24 +27,28 @@
 #include "logging.h"
 #include "lua.h"
 #include "settings.h"
-#include "xirand.h"
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include <timeapi.h>
 #else // UNIX
 #include <sys/resource.h>
 #include <sys/time.h>
 #endif
 
 #include <csignal>
+#include <string_view>
 #include <thread>
 
 namespace
 {
 
 #ifdef _WIN32
+constexpr unsigned int kTimerResolutionMs = 1;
+
 unsigned long prevQuickEditMode;
+bool          timerResolutionRaised = false;
 #endif // _WIN32
 
 } // namespace
@@ -62,6 +66,8 @@ Application::Application(const ApplicationConfig& appConfig, int argc, char** ar
     tryDisableQuickEditMode();
     usercheck();
     tryIncreaseRLimits();
+    tryRaiseTimerResolution();
+    tryPreventBackgroundThrottling();
 
     debug::init();
 
@@ -72,6 +78,8 @@ Application::Application(const ApplicationConfig& appConfig, int argc, char** ar
     // It is safe to use the logging macros and settings from this point on
     //
 
+    debug::setCoreDumpsEnabled(settings::get<bool>("main.GENERATE_CORE_DUMP"));
+
     ShowInfoFmt("=======================================================================");
     ShowInfoFmt("Begin {}-server init...", serverName_);
 
@@ -81,11 +89,27 @@ Application::Application(const ApplicationConfig& appConfig, int argc, char** ar
     ShowInfo("32-bit environment detected");
 #endif
 
+    constexpr std::string_view builtBuildType = XI_BUILD_TYPE;
+    constexpr std::string_view cmakeBuildType = XI_CMAKE_BUILD_TYPE;
+    if (cmakeBuildType.empty())
+    {
+        ShowInfoFmt("Build type: {} (multi-config generator; config selected at build time)", builtBuildType);
+    }
+    else if (cmakeBuildType == builtBuildType)
+    {
+        ShowInfoFmt("Build type: {}", builtBuildType);
+    }
+    else
+    {
+        ShowWarningFmt("Build type: {}, but configured with CMAKE_BUILD_TYPE={}; the built binaries do NOT match the configured build type!", builtBuildType, cmakeBuildType);
+    }
+
     consoleService_ = std::make_unique<ConsoleService>(*this);
 }
 
 Application::~Application()
 {
+    tryRestoreTimerResolution();
     tryRestoreQuickEditMode();
     logging::ShutDown();
 }
@@ -129,7 +153,7 @@ void Application::registerSignalHandlers()
 #ifdef _WIN32
     signals_.add(SIGBREAK);
     // Don't register crash signals with ASIO on Windows - they need to reach SEH
-    // for WheatyExceptionReport to generate crash dumps
+    // for our unhandled-exception filter to write the tombstone and minidump
 #endif
 #ifndef _WIN32
     signals_.add(SIGXFSZ);
@@ -161,19 +185,64 @@ void Application::tryIncreaseRLimits()
 #ifndef _WIN32
     rlimit limits{};
 
-    uint32 newRLimit = 10240;
-
-    // Get old limits
+    // Raise the soft limit to the hard limit.
     if (getrlimit(RLIMIT_NOFILE, &limits) == 0)
     {
-        // Increase open file limit, which includes sockets, to newRLimit. This only effects the current process and child processes
-        limits.rlim_cur = newRLimit;
+        limits.rlim_cur = limits.rlim_max;
         if (setrlimit(RLIMIT_NOFILE, &limits) == -1)
         {
-            std::cerr << fmt::format("Failed to increase rlim_cur to {}\n", newRLimit);
+            std::cerr << fmt::format("Failed to increase rlim_cur to {}\n", static_cast<uint64>(limits.rlim_max));
         }
     }
 #endif
+}
+
+void Application::tryRaiseTimerResolution()
+{
+#ifdef _WIN32
+    // Windows' default system timer resolution is ~15.6ms, which coarsely quantises every
+    // sleep and timed wait we make. Ask the OS for the finest resolution (1ms) so our
+    // scheduler ticks and network timing behave predictably.
+    // See: https://devblogs.microsoft.com/go/high-resolution-timers-windows/
+    if (timeBeginPeriod(kTimerResolutionMs) != TIMERR_NOERROR)
+    {
+        std::cerr << fmt::format("Failed to raise the system timer resolution to {}ms; timing may be coarse\n", kTimerResolutionMs);
+        return;
+    }
+
+    timerResolutionRaised = true;
+#endif // _WIN32
+}
+
+void Application::tryRestoreTimerResolution()
+{
+#ifdef _WIN32
+    // Balance timeBeginPeriod with a matching timeEndPeriod on the way out, but only if we
+    // actually raised the resolution.
+    if (timerResolutionRaised)
+    {
+        timeEndPeriod(kTimerResolutionMs);
+        timerResolutionRaised = false;
+    }
+#endif // _WIN32
+}
+
+void Application::tryPreventBackgroundThrottling() const
+{
+#ifdef _WIN32
+    // Since Windows 10, processes that aren't in the foreground can be throttled (EcoQoS),
+    // deprioritising their execution speed even when we've asked for high-resolution timers.
+    // Opt out so the server keeps running at full speed while backgrounded.
+    PROCESS_POWER_THROTTLING_STATE powerThrottling{};
+    powerThrottling.Version     = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+    powerThrottling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
+    powerThrottling.StateMask   = 0; // 0 == throttling disabled for the masked controls
+
+    if (!SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &powerThrottling, sizeof(powerThrottling)))
+    {
+        std::cerr << fmt::format("Failed to opt out of background execution-speed throttling (error {})\n", GetLastError());
+    }
+#endif // _WIN32
 }
 
 void Application::tryDisableQuickEditMode() const

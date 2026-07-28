@@ -20,6 +20,11 @@
 */
 
 #include "packets/s2c/0x057_weather.h"
+
+#include "data/enums/weather.h"
+
+#include <common/types/hash_map.h>
+
 namespace
 {
 
@@ -75,7 +80,7 @@ CZone::CZone(Scheduler& scheduler, MapConfig config, ZONEID ZoneID, REGION_TYPE 
 , navMesh_{ std::make_unique<NullNavMesh>() }
 , xiMesh_{ std::make_unique<NullXiMesh>() }
 , m_zoneID(ZoneID)
-, m_zoneType(ZONE_TYPE::UNKNOWN)
+, m_zoneType(xi::ZoneType::Unknown)
 , m_regionID(RegionID)
 , m_continentID(ContinentID)
 , m_levelRestriction(levelRestriction)
@@ -94,20 +99,6 @@ CZone::CZone(Scheduler& scheduler, MapConfig config, ZONEID ZoneID, REGION_TYPE 
 
     LoadZoneLines();
     LoadZoneWeather();
-
-    if (config_.isTestServer)
-    {
-        return;
-    }
-
-    // This must run continually, regardless of if the zone is awake
-    spawnHandlerTimerToken_ = scheduler.intervalOnMainThread(
-        kSpawnHandlerInterval,
-        [this]() -> Task<void>
-        {
-            this->spawnHandler().Tick(timer::now());
-            co_return;
-        });
 }
 
 CZone::~CZone()
@@ -137,7 +128,7 @@ auto CZone::GetID() const -> ZONEID
     return m_zoneID;
 }
 
-ZONE_TYPE CZone::GetTypeMask()
+xi::ZoneType CZone::GetTypeMask()
 {
     return m_zoneType;
 }
@@ -300,7 +291,7 @@ uint32 CZone::GetLocalVar(const char* var)
     return localVars_[var];
 }
 
-std::unordered_map<std::string, uint32>& CZone::GetLocalVars()
+HashMap<std::string, uint32>& CZone::GetLocalVars()
 {
     return localVars_;
 }
@@ -315,7 +306,7 @@ void CZone::ResetLocalVars()
     localVars_.clear();
 }
 
-bool CZone::CanUseMisc(uint16 misc) const
+bool CZone::CanUseMisc(xi::ZoneMisc misc) const
 {
     return (m_miscMask & misc) == misc;
 }
@@ -386,7 +377,7 @@ void CZone::LoadZoneLines()
  *                                                                        *
  *  Loads weather for the zone from zone_bweather SQL Table               *
  *                                                                        *
- *  Weather is a rotating pattern of 2160 vanadiel days for each zone.    *
+ *  xi::Weather is a rotating pattern of 2160 vanadiel days for each zone.    *
  *  It's stored as a blob of 2160 16-bit values, each representing 1 day  *
  *  starting from day 0 and storing 3 5-bit weather values each.          *
  *                                                                        *
@@ -413,9 +404,9 @@ void CZone::LoadZoneWeather()
         {
             if (weatherBlob[i])
             {
-                const auto w_normal = static_cast<Weather>(weatherBlob[i] >> 10);
-                const auto w_common = static_cast<Weather>((weatherBlob[i] >> 5) & 0x1F);
-                const auto w_rare   = static_cast<Weather>(weatherBlob[i] & 0x1F);
+                const auto w_normal = static_cast<xi::Weather>(weatherBlob[i] >> 10);
+                const auto w_common = static_cast<xi::Weather>((weatherBlob[i] >> 5) & 0x1F);
+                const auto w_rare   = static_cast<xi::Weather>(weatherBlob[i] & 0x1F);
                 weather_.addEntry(i, ZoneWeather(w_normal, w_common, w_rare));
             }
         }
@@ -450,20 +441,20 @@ void CZone::LoadZoneSettings()
         m_zoneIP   = str2ip(rset->get<std::string>("zoneip"));
         m_zonePort = rset->get<uint16>("zoneport");
 
-        m_zoneMusic.m_songDay   = rset->get<uint8>("music_day");
-        m_zoneMusic.m_songNight = rset->get<uint8>("music_night");
-        m_zoneMusic.m_bSongS    = rset->get<uint8>("battlesolo");
-        m_zoneMusic.m_bSongM    = rset->get<uint8>("battlemulti");
+        m_zoneMusic.m_songDay   = rset->get<uint16>("music_day");
+        m_zoneMusic.m_songNight = rset->get<uint16>("music_night");
+        m_zoneMusic.m_bSongS    = rset->get<uint16>("battlesolo");
+        m_zoneMusic.m_bSongM    = rset->get<uint16>("battlemulti");
         m_tax                   = static_cast<uint16>(rset->get<float>("tax") * 100); // tax for bazaar
-        m_miscMask              = rset->get<uint16>("misc");
-        m_zoneType              = rset->get<ZONE_TYPE>("zonetype");
+        m_miscMask              = rset->get<xi::ZoneMisc>("misc");
+        m_zoneType              = rset->get<xi::ZoneType>("zonetype");
 
         if (rset->getOrDefault<std::string>("bcnmname", "") != "") // bcnmid cannot be used now, because they start from scratch
         {
             m_BattlefieldHandler = new CBattlefieldHandler(this);
         }
 
-        if (m_miscMask & MISC_TREASURE)
+        if ((m_miscMask & xi::ZoneMisc::Treasure) != xi::ZoneMisc::None)
         {
             m_TreasurePool = new CTreasurePool(TreasurePoolType::Zone);
         }
@@ -673,11 +664,11 @@ void CZone::updateCharLevelRestriction(CCharEntity* PChar)
     }
 }
 
-void CZone::SetWeather(const Weather weather)
+void CZone::SetWeather(const xi::Weather weather)
 {
     TracyZoneScoped;
 
-    if (!magic_enum::enum_contains<Weather>(weather))
+    if (!magic_enum::enum_contains<xi::Weather>(weather))
     {
         ShowWarningFmt("Weather value ({}) invalid.", static_cast<uint16_t>(weather));
         return;
@@ -722,7 +713,7 @@ void CZone::UpdateWeather()
 
     const ZoneWeather weatherType = weather_.entryForDay(static_cast<uint16>(WeatherDay));
 
-    auto selectedWeather = Weather::None;
+    auto selectedWeather = xi::Weather::None;
 
     // 15% chance for rare weather, 35% chance for common weather, 50% chance for normal weather
     // * Percentages were generated from a 6 hour sample and rounded down to closest multiple of 5*
@@ -743,10 +734,10 @@ void CZone::UpdateWeather()
     // (Al'Taieu likely has it every morning, while Atohwa Chasm can have it at random any time of day)
     if ((CurrentVanaDate >= StartFogVanaDate) &&
         (CurrentVanaDate < EndFogVanaDate) &&
-        (selectedWeather < Weather::HotSpell) &&
-        !(GetTypeMask() & ZONE_TYPE::CITY))
+        (selectedWeather < xi::Weather::HotSpell) &&
+        !((GetTypeMask() & xi::ZoneType::City) != xi::ZoneType::Unknown))
     {
-        selectedWeather = Weather::Fog;
+        selectedWeather = xi::Weather::Fog;
         // Force the weather to change by 7 am
         WeatherNextUpdate = EndFogVanaDate - CurrentVanaDate;
     }
@@ -765,32 +756,9 @@ void CZone::UpdateWeather()
         });
 }
 
-bool CZone::CheckMobsPathedBack()
-{
-    bool allMobsHomeAndHealed = true;
-    if (m_zoneEntities && m_zoneEntities->GetMobList().size() > 0)
-    {
-        const auto& mobListMap = m_zoneEntities->GetMobList();
-        for (const auto& pair : mobListMap)
-        {
-            CMobEntity* mob = dynamic_cast<CMobEntity*>(pair.second);
-            // if the mob is (not dead/despawned AND it is not fully healed) OR it is pathing home
-            if (mob && ((!mob->isDead() && !mob->isFullyHealed()) || mob->m_IsPathingHome))
-            {
-                // at least one mob is away from home or not fully healed
-                allMobsHomeAndHealed = false;
-                break;
-            }
-        }
-    }
-
-    return allMobsHomeAndHealed;
-}
-
 /************************************************************************
  *                                                                       *
- *  Remove a character from the zone. If ZoneServer and character are    *
- *  online, and there is no more left in the zone, then stop zone        *
+ *  Remove a character from the zone.                                     *
  *                                                                       *
  ************************************************************************/
 
@@ -800,11 +768,7 @@ void CZone::DecreaseZoneCounter(CCharEntity* PChar)
 
     m_zoneEntities->DecreaseZoneCounter(PChar);
 
-    if (m_zoneEntities->CharListEmpty())
-    {
-        m_timeZoneEmpty = timer::now();
-    }
-    else
+    if (!m_zoneEntities->CharListEmpty())
     {
         m_zoneEntities->DespawnPC(PChar);
     }
@@ -814,7 +778,7 @@ void CZone::DecreaseZoneCounter(CCharEntity* PChar)
 
 /************************************************************************
  *                                                                       *
- *  Add a character to the zone. If zone isn't running, then load zone.  *
+ *  Add a character to the zone.                                         *
  *  Be sure to check the number of characters in the zone.               *
  *  The maximum number of characters in one zone is 768                  *
  *                                                                       *
@@ -839,11 +803,6 @@ void CZone::IncreaseZoneCounter(CCharEntity* PChar)
     }
 
     m_zoneEntities->InsertPC(PChar);
-
-    if (!zoneTimerToken_.has_value() && !m_zoneEntities->CharListEmpty())
-    {
-        createZoneTimers();
-    }
 
     PChar->StatusEffectContainer->DelStatusEffectsByFlag(xi::StatusEffectFlag::OnZonePathos, EffectNotice::Silent);
 
@@ -899,8 +858,6 @@ CBaseEntity* CZone::GetEntity(uint16 targid, uint8 filter)
 void CZone::TOTDChange(vanadiel_time::TOTD TOTD)
 {
     TracyZoneScoped;
-
-    m_zoneEntities->TOTDChange(TOTD);
 
     luautils::OnTOTDChange(m_zoneID, TOTD);
 }
@@ -961,93 +918,87 @@ auto CZone::ZoneServer(timer::time_point tick) -> Task<void>
         m_BattlefieldHandler->HandleBattlefields(tick);
     }
 
-    if (zoneTimerToken_.has_value() && m_zoneEntities->CharListEmpty() && m_timeZoneEmpty + 5s < timer::now() && CheckMobsPathedBack())
-    {
-        zoneTimerToken_.reset();
-        zoneTimerTriggerAreasToken_.reset();
-    }
-
     co_return;
 }
 
-void CZone::ForEachChar(const std::function<void(CCharEntity*)>& func)
+void CZone::ForEachChar(FnRef<void(CCharEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachChar(func);
 }
 
-void CZone::ForEachCharInstance(CBaseEntity* PEntity, const std::function<void(CCharEntity*)>& func)
+void CZone::ForEachCharInstance(CBaseEntity* PEntity, FnRef<void(CCharEntity*)> func)
 {
     TracyZoneScoped;
 
     ForEachChar(func);
 }
 
-void CZone::ForEachMob(const std::function<void(CMobEntity*)>& func)
+void CZone::ForEachMob(FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachMob(func);
 }
 
-void CZone::ForEachMobInstance(CBaseEntity* PEntity, const std::function<void(CMobEntity*)>& func)
+void CZone::ForEachMobInstance(CBaseEntity* PEntity, FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
     ForEachMob(func);
 }
 
-void CZone::ForEachNpc(const std::function<void(CNpcEntity*)>& func)
+void CZone::ForEachNpc(FnRef<void(CNpcEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachNpc(func);
 }
 
-void CZone::ForEachNpcInstance(CBaseEntity* PEntity, const std::function<void(CNpcEntity*)>& func)
+void CZone::ForEachNpcInstance(CBaseEntity* PEntity, FnRef<void(CNpcEntity*)> func)
 {
     TracyZoneScoped;
 
     ForEachNpc(func);
 }
 
-void CZone::ForEachTrust(const std::function<void(CTrustEntity*)>& func)
+void CZone::ForEachTrust(FnRef<void(CTrustEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachTrust(func);
 }
 
-void CZone::ForEachTrustInstance(CBaseEntity* PEntity, const std::function<void(CTrustEntity*)>& func)
+void CZone::ForEachTrustInstance(CBaseEntity* PEntity, FnRef<void(CTrustEntity*)> func)
 {
     TracyZoneScoped;
 
     ForEachTrust(func);
 }
 
-void CZone::ForEachPet(const std::function<void(CPetEntity*)>& func)
+void CZone::ForEachPet(FnRef<void(CPetEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachPet(func);
 }
 
-void CZone::ForEachPetInstance(CBaseEntity* PEntity, const std::function<void(CPetEntity*)>& func)
+void CZone::ForEachPetInstance(CBaseEntity* PEntity, FnRef<void(CPetEntity*)> func)
 {
     TracyZoneScoped;
 
     ForEachPet(func);
 }
 
-void CZone::ForEachAlly(const std::function<void(CMobEntity*)>& func)
+void CZone::ForEachAlly(FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
     m_zoneEntities->ForEachAlly(func);
 }
 
-void CZone::ForEachAllyInstance(CBaseEntity* PEntity, const std::function<void(CMobEntity*)>& func)
+void CZone::ForEachAllyInstance(CBaseEntity* PEntity, FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -1058,11 +1009,19 @@ void CZone::createZoneTimers()
 {
     TracyZoneScoped;
 
-    // We'll manually tick on while testing, don't install the timers
+    // We'll manually tick while testing, don't install the timers.
     if (config_.isTestServer)
     {
         return;
     }
+
+    spawnHandlerTimerToken_ = scheduler_.intervalOnMainThread(
+        kSpawnHandlerInterval,
+        [this]() -> Task<void>
+        {
+            this->spawnHandler().Tick(timer::now());
+            co_return;
+        });
 
     zoneTimerToken_ = scheduler_.intervalOnMainThread(
         kLogicUpdateInterval,
@@ -1087,9 +1046,9 @@ void CZone::CharZoneIn(CCharEntity* PChar)
     PChar->loc.destination = 0;
     PChar->clearTriggerAreas();
 
-    if (PChar->isMounted() && !CanUseMisc(MISC_MOUNT))
+    if (PChar->isMounted() && !CanUseMisc(xi::ZoneMisc::Mount))
     {
-        PChar->animation = ANIMATION_NONE;
+        PChar->animation = xi::Animation::None;
         PChar->StatusEffectContainer->DelStatusEffectSilent(xi::StatusEffect::Mounted);
     }
 
@@ -1124,7 +1083,7 @@ void CZone::CharZoneIn(CCharEntity* PChar)
         }
     }
 
-    if (!(m_zoneType & ZONE_TYPE::INSTANCED))
+    if (!((m_zoneType & xi::ZoneType::Instanced) != xi::ZoneType::Unknown))
     {
         charutils::ClearTempItems(PChar);
         PChar->PInstance = nullptr;
@@ -1287,7 +1246,7 @@ void CZone::CharZoneOut(CCharEntity* PChar)
 
     PChar->loc.zone = nullptr;
 
-    if (PChar->status == STATUS_TYPE::SHUTDOWN)
+    if (PChar->status == xi::Status::Shutdown)
     {
         PChar->loc.destination = m_zoneID;
     }
@@ -1297,11 +1256,6 @@ void CZone::CharZoneOut(CCharEntity* PChar)
     }
 
     charutils::WriteHistory(PChar);
-}
-
-bool CZone::IsZoneActive() const
-{
-    return zoneTimerToken_.has_value();
 }
 
 CZoneEntities* CZone::GetZoneEntities()

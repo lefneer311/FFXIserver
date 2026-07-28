@@ -9,15 +9,15 @@ local ID = zones[xi.zone.BIBIKI_BAY]
 local function giveClammedItems(player)
     for itemId, _ in pairs(xi.clamming.itemData) do
         local varName    = xi.clamming.itemData[itemId][2]
-        local itemAmount = player:getLocalVar(varName)
+        local itemAmount = player:getCharVar(varName)
 
         if itemAmount > 0 then
             if player:addItem(itemId, itemAmount) then
                 player:messageSpecial(ID.text.YOU_OBTAIN, itemId, itemAmount)
-                player:setLocalVar(varName, 0)
+                player:setCharVar(varName, 0)
             else
                 player:messageSpecial(ID.text.WHOA_HOLD_ON_NOW)
-                player:setLocalVar('[Clam]OweItems', 1)
+                player:setCharVar('[Clam]OweItems', 1)
                 break
             end
         end
@@ -27,7 +27,7 @@ end
 local function emptyBucket(player)
     for itemId, _ in pairs(xi.clamming.itemData) do
         local varName = xi.clamming.itemData[itemId][2]
-        player:setLocalVar(varName, 0)
+        player:setCharVar(varName, 0)
     end
 end
 
@@ -36,13 +36,23 @@ local function resetVariables(player)
     player:setCharVar('[Clam]KitBroken', 0)
     player:setCharVar('[Clam]KitSize', 0)
     player:setCharVar('[Clam]KitWeight', 0)
-    player:setLocalVar('[Clam]Delay', 0)
-    player:setLocalVar('[Clam]OweItems', 0)
+    player:setCharVar('[Clam]OweItems', 0)
 
     -- Reset item variables.
     for itemId, _ in pairs(xi.clamming.itemData) do
-        player:setLocalVar(xi.clamming.itemData[itemId][2], 0)
+        player:setCharVar(xi.clamming.itemData[itemId][2], 0)
     end
+end
+
+-- Leaving Bibiki Bay for another zone drops the clamming kit and its bucket contents.
+xi.clamming.removeKit = function(player)
+    if not player:hasKeyItem(xi.ki.CLAMMING_KIT) then
+        return
+    end
+
+    player:delKeyItem(xi.ki.CLAMMING_KIT)
+    resetVariables(player)
+    player:messageSpecial(ID.text.YOU_DROPPED_THE, xi.ki.CLAMMING_KIT)
 end
 
 -----------------------------------
@@ -54,7 +64,7 @@ xi.clamming.nodeOnTrigger = function(player, npc)
         return
     end
 
-    if GetSystemTime() < player:getLocalVar('[Clam]Delay') then
+    if GetSystemTime() < player:getLocalVar('[Clam]Delay' .. npc:getName()) then
         player:messageSpecial(ID.text.IT_LOOKS_LIKE_SOMEONE)
         return
     end
@@ -83,10 +93,11 @@ xi.clamming.nodeOnEventUpdate = function(player, csid, option, npc)
     -- Check "Incidents"
     local kitSize        = player:getCharVar('[Clam]KitSize')
     local kitWeight      = player:getCharVar('[Clam]KitWeight')
-    local incidentChance = player:getMod(xi.mod.CLAMMING_REDUCED_INCIDENTS) > 0 and 5 or 10
+    -- 37% measured no-gear. Gear value set weak on purpose until a capture is provided.
+    local incidentChance = player:getMod(xi.mod.CLAMMING_REDUCED_INCIDENTS) > 0 and 36 or 37
     if
         kitSize == 200 and
-        math.random(1, 100) <= incidentChance
+        math.randomInt(1, 100) <= incidentChance
     then
         -- SE seems to add 10000 to the previous weight if Alraune had stolen your stuff.
         -- A weight higher than your capacity prevents the CS performing the clamming animation.
@@ -98,21 +109,19 @@ xi.clamming.nodeOnEventUpdate = function(player, csid, option, npc)
         return
     end
 
-    -- Fetch loot list and select rate column.
-    local lootList   = xi.clamming.lootTable[npc:getName()]
-    local rateColumn = player:getMod(xi.mod.CLAMMING_IMPROVED_RESULTS) > 0 and 1 or 0
-
-    -- Calculate total loot rate.
-    local rateSum    = 0
+    -- Roll a clammed item from the current capacity weighted table.
+    -- TODO: "Improved results" gear effect unverified
+    local lootList = xi.clamming.lootTable[kitSize]
+    local rateSum  = 0
     for i = 1, #lootList do
-        rateSum = rateSum + lootList[i][2 + rateColumn]
+        rateSum = rateSum + lootList[i][2]
     end
 
-    -- Roll based on rate sum and decide clammed item.
-    local itemId     = 0
-    local randomRoll = math.random(1, rateSum)
+    local itemId     = lootList[#lootList][1]
+    local randomRoll = math.randomInt(1, rateSum)
     for i = 1, #lootList do
-        if lootList[i][2 + rateColumn] <= randomRoll then
+        randomRoll = randomRoll - lootList[i][2]
+        if randomRoll <= 0 then
             itemId = lootList[i][1]
             break
         end
@@ -130,13 +139,13 @@ xi.clamming.nodeOnEventUpdate = function(player, csid, option, npc)
 
     -- Add item to bucket.
     else
-        player:setLocalVar(varName, player:getLocalVar(varName) + 1)
+        player:setCharVar(varName, player:getCharVar(varName) + 1)
         player:messageSpecial(ID.text.YOU_FIND_ITEM, itemId)
     end
 
     -- Update delay and weight, no matter the result.
     player:setCharVar('[Clam]KitWeight', kitWeight + itemWeight)
-    player:setLocalVar('[Clam]Delay', GetSystemTime() + 10)
+    player:setLocalVar('[Clam]Delay' .. npc:getName(), GetSystemTime() + 16)
 end
 
 xi.clamming.nodeOnEventFinish = function(player, csid, option, npc)
@@ -160,7 +169,7 @@ xi.clamming.zonikkiOnTrigger = function(player, npc)
     -- Clamming not started.
     else
         -- Previous clamming session interrupted.
-        if player:getLocalVar('[Clam]OweItems') ~= 0 then
+        if player:getCharVar('[Clam]OweItems') ~= 0 then
             player:messageSpecial(ID.text.YOU_GIT_YER_BAG_READY)
             giveClammedItems(player)
 

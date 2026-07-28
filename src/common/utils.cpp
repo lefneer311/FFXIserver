@@ -22,13 +22,13 @@
 #include "common/utils.h"
 
 #include "common/logging.h"
+#include "common/macros.h"
 #include "common/md52.h"
 #include "common/stdext.h"
 
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <regex>
@@ -797,7 +797,7 @@ bool matches(const std::string& target, const std::string& pattern)
 
 bool starts_with(const std::string& target, const std::string& pattern)
 {
-    return target.rfind(pattern, 0) != std::string::npos;
+    return target.starts_with(pattern);
 }
 
 std::string replace(const std::string& target, const std::string& search, const std::string& replace)
@@ -892,15 +892,20 @@ bool definitelyLessThan(float a, float b)
     return (b - a) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
 }
 
-void crash()
+XI_NOINLINE void crash()
 {
-#ifndef _DEBUG
-    ShowInfo("crash command is likely optimized out in release mode.");
-#endif
-
-    int* volatile ptr = nullptr;
+    unsigned long long* volatile ptr = nullptr;
     // cppcheck-suppress nullPointer
-    *ptr = 0xDEAD;
+    *ptr = 0xDEADBEEF;
+}
+
+XI_NOINLINE void hang()
+{
+    // NOLINTNEXTLINE(bugprone-infinite-loop): the hang is deliberate.
+    for (volatile bool spin = true; spin;)
+    {
+        // Spin! Wheeeee!
+    }
 }
 
 std::unique_ptr<FILE> utils::openFile(const std::string& path, const std::string& mode)

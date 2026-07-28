@@ -22,19 +22,12 @@
 #include "char_status.h"
 
 #include "aman.h"
-#include "common/logging.h"
-
-#include "common/vana_time.h"
 
 #include <cstring>
 
-#include "ai/ai_container.h"
-#include "ai/states/death_state.h"
 #include "entities/char_entity.h"
-#include "item_container.h"
 #include "items/item_linkshell.h"
 #include "status_effect_container.h"
-#include "utils/itemutils.h"
 #include "utils/mountutils.h"
 
 // https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037
@@ -120,7 +113,7 @@ struct flags5_t
 {
     uint8_t unknown_0_0 : 2;
     uint8_t unknown_0_2 : 2;
-    uint8_t unknown_0_4 : 4;
+    uint8_t unknown_0_4 : 4; // GateId for fenced content
 };
 
 struct flags6_t
@@ -218,7 +211,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     std::memcpy(&packet->BufStatusBits, &PChar->StatusEffectContainer->statusBits(), sizeof(status_bits_t));
 
     packet->UniqueNo      = PChar->id;
-    packet->server_status = PChar->animation;
+    packet->server_status = static_cast<uint8_t>(PChar->animation);
 
     CItemLinkshell* linkshell = (CItemLinkshell*)PChar->getEquip(SLOT_LINK1);
 
@@ -241,7 +234,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     packet->model_hitbox_size = static_cast<uint8_t>(PChar->modelHitboxSize * 10);
     packet->mount_id          = 0;
 
-    if (PChar->animation == ANIMATION_FISHING_START)
+    if (PChar->animation == xi::Animation::NewFishingStart)
     {
         packet->fishing_timer = PChar->hookDelay;
     }
@@ -249,16 +242,16 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     // flags 0 starts at 0x28
     charStatusFlags::flags0_t flags0 = {};
 
-    flags0.HideFlag        = false; // This hides your UI. Probably used for the Live Vanadiel streams.
-    flags0.SleepFlag       = false; // Hides the player, probably also used for Live Vanadiel
-    flags0.GroundFlag      = false; // Do not ignore collision
-    flags0.CliPosInitFlag  = false; // Ready to render?
+    flags0.HideFlag        = PChar->m_isPCHidden; // Hides the player from themselves.
+    flags0.SleepFlag       = false;               // Hides the player, probably also used for Live Vanadiel
+    flags0.GroundFlag      = false;               // Do not ignore collision
+    flags0.CliPosInitFlag  = false;               // Ready to render?
     flags0.LfgFlag         = PChar->isSeekingParty();
     flags0.CfhFlag         = false; // Orange name for CFH, players don't currently use this?
     flags0.AwayFlag        = PChar->isAway();
     flags0.AnonymousFlag   = PChar->isAnon();
     flags0.Gender          = PChar->GetGender();
-    flags0.unknown_1_9     = PChar->loc.zone ? PChar->loc.zone->CanUseMisc(MISC_TREASURE) : 0; // Set global treasure pool;
+    flags0.unknown_1_9     = PChar->loc.zone ? PChar->loc.zone->CanUseMisc(xi::ZoneMisc::Treasure) : 0; // Set global treasure pool;
     flags0.unknown_1_10    = 0;
     flags0.GraphSize       = PChar->look.size;
     flags0.Chocobo_Index   = 0;
@@ -327,7 +320,7 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     flags4.GeoIndiElement = 0;
     flags4.GeoIndiSize    = 1;
     flags4.GeoIndiFlag    = 0;
-    flags4.JobMasterFlag  = PChar->getMod(Mod::SUPERIOR_LEVEL) == 5 && PChar->m_jobMasterDisplay;
+    flags4.JobMasterFlag  = PChar->getMod(xi::Mod::SUPERIOR_LEVEL) == 5 && PChar->m_jobMasterDisplay;
 
     // GEO bubble effects, changes bubble effect depending on what effect is activated.
     if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::ColureActive))
@@ -344,7 +337,10 @@ CCharStatusPacket::CCharStatusPacket(CCharEntity* PChar)
     }
 
     // flags5 starts at 0x5A
-    charStatusFlags::flags5_t flags5 = {}; // All unknown, see https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037
+    charStatusFlags::flags5_t flags5 = {}; // Mostly unknown, see https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037
+
+    // Also known as "GateId". Fenced content ID.
+    flags5.unknown_0_4 = PChar->StatusEffectContainer->GetConfrontationSubPower() & 0x0F;
 
     // flags6 starts at 0x5C
     charStatusFlags::flags6_t flags6 = {}; // All unknown, see https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037

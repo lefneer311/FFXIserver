@@ -67,7 +67,7 @@ quest.sections =
                         if numCorrect < 10 then
                             player:updateEvent(player:getGil(), 0, 0, 0, 0, 0, 0, successParams[math.floor(numCorrect / 2) + 1])
                         else
-                            local requiredItem = math.random(1, 3)
+                            local requiredItem = math.randomInt(1, 3)
 
                             quest:setVar(player, 'Option', requiredItem)
                             player:updateEvent(player:getGil(), 0, 0, 0, 0, 0, requiredItem, 70)
@@ -111,8 +111,8 @@ quest.sections =
                     local requiredItem = quest:getVar(player, 'Option')
 
                     if
-                        npcUtil.tradeHasExactly(trade, requiredItemList[requiredItem]) and
-                        quest:getVar(player, 'Prog') == 1
+                        quest:getVar(player, 'Prog') == 1 and
+                        npcUtil.tradeHasExactly(trade, requiredItemList[requiredItem])
                     then
                         return quest:progressEvent(67, requiredItemList[requiredItem])
                     end
@@ -225,7 +225,7 @@ quest.sections =
             {
                 [78] = function(player, csid, option, npc)
                     if option == 40 then
-                        player:updateEvent(player:getGil(), 0, 0, 0, 0, 0, 0, math.random(1, 5) * 10)
+                        player:updateEvent(player:getGil(), 0, 0, 0, 0, 0, 0, math.randomInt(1, 5) * 10)
                     end
                 end,
             },

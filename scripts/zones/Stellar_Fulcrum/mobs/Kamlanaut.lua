@@ -24,13 +24,18 @@ entity.onMobInitialize = function(mob)
     mob:addImmunity(xi.immunity.TERROR)
 end
 
+entity.onMobSpawn = function(mob)
+    mob:setMobMod(xi.mobMod.DETECTION, xi.detects.HEARING)
+    mob:setMobMod(xi.mobMod.SOUND_RANGE, 15)
+end
+
 entity.onMobEngage = function(mob, target)
     mob:setLocalVar('nextEnSkill', GetSystemTime() + 10)
 end
 
 entity.onMobFight = function(mob, target)
     if GetSystemTime() > mob:getLocalVar('nextEnSkill') then
-        local skill = math.random(823, 828)
+        local skill = math.randomInt(823, 828)
         mob:setLocalVar('currentTP', mob:getTP())
         mob:useMobAbility(skill)
         mob:setLocalVar('nextEnSkill', GetSystemTime() + 20)

@@ -21,11 +21,20 @@
 
 #include "interrupts.h"
 
+#include "action/action.h"
+#include "enums/action/resolution.h"
+#include "spell.h"
+
+#include "enums/action/category.h"
+#include "enums/four_cc.h"
+#include "zone.h"
+
 #include "packets/s2c/0x028_battle2.h"
 #include "petskill.h"
 
 namespace ActionInterrupts
 {
+
 void AvatarOutOfRange(CBattleEntity* PAvatar, const CPetSkill* PSkill, const CBattleEntity* PTarget)
 {
     // Avatars using BP against an enemy out of range use a specific set of BATTLE2 packets:
@@ -413,25 +422,7 @@ void AttackIntimidated(CBattleEntity* PEntity, const CBattleEntity* PTarget)
 
 void AbilityParalyzed(CBattleEntity* PEntity, const CBattleEntity* PTarget)
 {
-    // 1. Generic MagicFinish with Paralyzed message
-    auto magicFinishSelfAction = action_t{
-        .actorId    = PEntity->id,
-        .actiontype = ActionCategory::MagicFinish,
-        .targets    = {
-            {
-                .actorId = PEntity->id,
-                .results = {
-                    {
-                        .animation = ActionAnimation::SkillInterrupt,
-                        .messageID = MsgBasic::IsParalyzed2,
-                    },
-                },
-            },
-        },
-    };
-
-    // 2. Generic MagicFinish with Paralyzed message
-    auto magicFinishTargetAction = action_t{
+    auto magicFinishAction = action_t{
         .actorId    = PEntity->id,
         .actiontype = ActionCategory::MagicFinish,
         .targets    = {
@@ -447,8 +438,7 @@ void AbilityParalyzed(CBattleEntity* PEntity, const CBattleEntity* PTarget)
         },
     };
 
-    PEntity->loc.zone->PushPacket(PEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(magicFinishSelfAction));
-    PEntity->loc.zone->PushPacket(PEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(magicFinishTargetAction));
+    PEntity->loc.zone->PushPacket(PEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(magicFinishAction));
 }
 
 void ItemInterrupt(CBattleEntity* PEntity)

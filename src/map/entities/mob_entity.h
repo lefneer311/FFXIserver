@@ -23,92 +23,39 @@
 #define _MOBENTITY_H
 
 #include "battle_entity.h"
-#include <unordered_map>
+
+#include <array>
+
+#include <common/types/hash_map.h>
+#include <common/types/maybe.h>
+
+#include "data/enums/behavior.h"
+#include "data/enums/claim_type.h"
+#include "data/enums/detects.h"
+#include "data/enums/mob_mod.h"
+#include "data/enums/mob_type.h"
+#include "data/enums/roam_flag.h"
+#include "data/enums/spawn_type.h"
 
 enum class MsgBasic : uint16_t;
+
 // forward declaration
 class CMobSpellContainer;
 class CMobSpellList;
 class CEnmityContainer;
 class SpawnSlot;
 
-enum SPAWNTYPE
+// Per-mob spawn window in Vana'diel hours; the mob spawns only within [spawnHour, despawnHour) (wraps past midnight).
+struct SpawnWindow
 {
-    SPAWNTYPE_NORMAL    = 0x00, // 00:00-24:00
-    SPAWNTYPE_ATNIGHT   = 0x01, // 20:00-04:00
-    SPAWNTYPE_ATEVENING = 0x02, // 18:00-06:00
-    SPAWNTYPE_WEATHER   = 0x04,
-    SPAWNTYPE_FOG       = 0x08, // 02:00-07:00
-    SPAWNTYPE_MOONPHASE = 0x10,
-    SPAWNTYPE_LOTTERY   = 0x20,
-    SPAWNTYPE_WINDOWED  = 0x40,
-    SPAWNTYPE_SCRIPTED  = 0x80 // scripted spawn
+    uint8 spawnHour;
+    uint8 despawnHour;
 };
 
 enum SPECIALFLAG
 {
     SPECIALFLAG_NONE   = 0x0,
     SPECIALFLAG_HIDDEN = 0x1 // only use special when hidden
-};
-
-enum ROAMFLAG : uint16
-{
-    ROAMFLAG_NONE     = 0x00,
-    ROAMFLAG_NONE0    = 0x01,  //
-    ROAMFLAG_NONE1    = 0x02,  //
-    ROAMFLAG_NONE2    = 0x04,  //
-    ROAMFLAG_NONE3    = 0x08,  //
-    ROAMFLAG_NONE4    = 0x10,  //
-    ROAMFLAG_NONE5    = 0x20,  //
-    ROAMFLAG_WORM     = 0x40,  // pop up and down when moving
-    ROAMFLAG_AMBUSH   = 0x80,  // stays hidden until someone comes close (antlion)
-    ROAMFLAG_SCRIPTED = 0x100, // calls lua method for roaming logic
-    ROAMFLAG_IGNORE   = 0x200, // ignore all hate, except linking hate
-    ROAMFLAG_STEALTH  = 0x400, // stays name hidden and untargetable until someone comes close (chigoe)
-    ROAMFLAG_FOLLOW   = 0x800, // follows a player when sighted for a little while
-};
-
-enum MOBTYPE
-{
-    MOBTYPE_NORMAL      = 0x00,
-    MOBTYPE_0X01        = 0x01, // available for use
-    MOBTYPE_NOTORIOUS   = 0x02,
-    MOBTYPE_FISHED      = 0x04,
-    MOBTYPE_CALLED      = 0x08,
-    MOBTYPE_BATTLEFIELD = 0x10,
-    MOBTYPE_EVENT       = 0x20
-};
-
-enum DETECT : uint16
-{
-    DETECT_NONE        = 0x00,
-    DETECT_SIGHT       = 0x01,
-    DETECT_HEARING     = 0x02,
-    DETECT_LOWHP       = 0x04,
-    DETECT_NONE1       = 0x08,
-    DETECT_NONE2       = 0x10,
-    DETECT_MAGIC       = 0x20,
-    DETECT_WEAPONSKILL = 0x40,
-    DETECT_JOBABILITY  = 0x80,
-    DETECT_SCENT       = 0x100
-};
-
-enum BEHAVIOR : uint16
-{
-    BEHAVIOR_NONE         = 0x000,
-    BEHAVIOR_NO_DESPAWN   = 0x001, // mob does not despawn on death
-    BEHAVIOR_STANDBACK    = 0x002, // mob will standback forever
-    BEHAVIOR_RAISABLE     = 0x004, // mob can be raised via Raise spells
-    BEHAVIOR_NO_ASSIST    = 0x008, // mob can not be targeted by helpful magic from players (cure, protect, etc)
-    BEHAVIOR_AGGRO_AMBUSH = 0x200, // mob aggroes by ambush
-    BEHAVIOR_NO_TURN      = 0x400  // mob does not turn to face target
-};
-
-enum class ClaimType : uint8
-{
-    Exclusive    = 0, // Regular exclusive claim behavior. Only one entity and related group can attack.
-    NonExclusive = 1, // Regular claim behavior but multiple unrelated entities can attack and compete for claim. Rewards distributed to last claiming entity.
-    Unclaimable  = 2, // Mob cannot be claimed. Multiple unrelated entities can attack. Rewards will not be distributed.
 };
 
 class CMobSkillState;
@@ -119,8 +66,8 @@ public:
     CMobEntity();
     ~CMobEntity() override;
 
-    uint32 getEntityFlags() const;             // Returns the current value in m_flags
-    void   setEntityFlags(uint32 EntityFlags); // Change the current value in m_flags
+    auto getEntityFlags() const -> xi::EntityFlags;   // Returns the current value in m_flags
+    void setEntityFlags(xi::EntityFlags EntityFlags); // Change the current value in m_flags
 
     bool IsFarFromHome();      // check if mob is too far from spawn
     bool CanBeNeutral() const; // check if mob can have killing pause
@@ -132,7 +79,12 @@ public:
     void              SetDespawnTime(timer::duration _duration);
     void              SetSpawnSlot(SpawnSlot* sharedSpawn);
     SpawnSlot*        GetSpawnSlot();
-    bool              TrySpawn();
+
+    // Optional per-mob spawn window; overrides the SPAWNTYPE time flags when set.
+    auto spawnWindow() const -> const Maybe<SpawnWindow>&;
+    void setSpawnWindow(uint8 spawnHour, uint8 despawnHour);
+
+    bool TrySpawn();
 
     uint32 GetRandomGil();   // returns a random amount of gil
     bool   CanRoamHome();    // is it possible for me to walk back?
@@ -148,13 +100,13 @@ public:
     auto GetEligibleSeals() -> std::vector<uint16>;
     auto GetEligibleGeodes() const -> std::vector<uint16>;
 
-    void  setMobMod(uint16 type, int16 value);
-    int16 getMobMod(uint16 type);
-    void  addMobMod(uint16 type, int16 value);
-    void  defaultMobMod(uint16 type, int16 value); // set value if value has not been already set
-    void  resetMobMod(uint16 type);                // resets mob mod to original value
-    void  saveMobModifiers();                      // save current state of modifiers
-    void  restoreMobModifiers();                   // restore to saved state
+    void setMobMod(xi::MobMod type, int16 value);
+    auto getMobMod(xi::MobMod type) const -> int16;
+    void addMobMod(xi::MobMod type, int16 value);
+    void defaultMobMod(xi::MobMod type, int16 value); // set value if value has not been already set
+    void resetMobMod(xi::MobMod type);                // resets mob mod to original value
+    void saveMobModifiers();                          // save current state of modifiers
+    void restoreMobModifiers();                       // restore to saved state
 
     void SetCallForHelpFlag(bool call);
     bool GetCallForHelpFlag() const;
@@ -171,7 +123,11 @@ public:
     virtual void HandleErrorMessage(std::unique_ptr<CBasicPacket>&) override
     {
     }
+
     virtual void Die() override;
+
+    auto getfTPModifierOverride(uint16 skillId) -> Maybe<std::array<float, 3>>;
+    void setfTPModifierOverride(uint16 skillId, float ftp1, float ftp2, float ftp3);
 
     virtual void OnWeaponSkillFinished(CWeaponSkillState&, action_t&) override;
     virtual void OnMobSkillFinished(CMobSkillState&, action_t&) override;
@@ -207,10 +163,8 @@ public:
     float HPscale; // HP boost percentage
     float MPscale; // MP boost percentage
 
-    uint16 m_roamFlags;    // defines its roaming behavior
-    uint8  m_specialFlags; // flags for special skill
-
-    bool m_StatPoppedMobs; // true if dyna statue has popped mobs
+    xi::RoamFlag m_roamFlags;    // defines its roaming behavior
+    uint8        m_specialFlags; // flags for special skill
 
     uint8 strRank;
     uint8 dexRank;
@@ -230,13 +184,13 @@ public:
     bool  m_disableScent;    // stop detecting by scent
     float m_maxRoamDistance; // maximum distance mob can be from spawn before despawning
 
-    uint8     m_Type; // mob type
-    bool      m_Aggro;
-    bool      m_TrueDetection; // Has true sight or sound
-    uint8     m_Link;          // link with mobs of it's family
-    bool      m_isAggroable;   // Can be aggroed by other monsters when in the player allegiance
-    uint16    m_Behavior;      // mob behavior
-    SPAWNTYPE m_SpawnType;     // condition for mob to spawn
+    xi::MobType   m_Type; // mob type
+    bool          m_Aggro;
+    bool          m_TrueDetection; // Has true sight or sound
+    uint8         m_Link;          // link with mobs of it's family
+    bool          m_isAggroable;   // Can be aggroed by other monsters when in the player allegiance
+    xi::Behavior  m_Behavior;      // mob behavior
+    xi::SpawnType m_SpawnType;     // condition for mob to spawn
 
     int8   m_battlefieldID; // battlefield belonging to
     uint16 m_bcnmID;        // belongs to which battlefield
@@ -260,12 +214,8 @@ public:
     CMobSpellList*           m_SpellListContainer; // The spells list container for this mob
     std::map<uint16, uint16> m_UsedSkillIds;       // mob skill ids used (key) along with mob level (value)
 
-    uint32 m_flags;       // includes the CFH flag and whether the HP bar should be shown or not (e.g. Yilgeban doesnt)
-    uint8  m_name_prefix; // The ding bats VS Ding bats
-
-    uint8 m_unk0; // possibly campaign related (entity 0x24)
-    uint8 m_unk1; // (entity_update 0x25)
-    uint8 m_unk2; // (entity_update 0x26)
+    xi::EntityFlags m_flags;       // includes the CFH flag and whether the HP bar should be shown or not (e.g. Yilgeban doesnt)
+    uint8           m_name_prefix; // The ding bats VS Ding bats
 
     bool m_CallForHelpBlocked;
 
@@ -284,11 +234,13 @@ protected:
     void DropItems(CCharEntity* PChar);
 
 private:
-    timer::time_point              m_DespawnTimer{ timer::time_point::min() }; // Despawn Timer to despawn mob after set duration
-    std::unordered_map<int, int16> m_mobModStat;
-    std::unordered_map<int, int16> m_mobModStatSave;
-    static constexpr float         roam_home_distance{ 60.f };
-    SpawnSlot*                     spawnSlot = nullptr;
+    timer::time_point                     m_DespawnTimer{ timer::time_point::min() }; // Despawn Timer to despawn mob after set duration
+    HashMap<xi::MobMod, int16>            m_mobModStat;
+    HashMap<xi::MobMod, int16>            m_mobModStatSave;
+    HashMap<uint16, std::array<float, 3>> m_fTPModifierOverrides;
+    static constexpr float                roam_home_distance{ 60.f };
+    SpawnSlot*                            spawnSlot = nullptr;
+    Maybe<SpawnWindow>                    spawnWindow_;
 };
 
 #endif

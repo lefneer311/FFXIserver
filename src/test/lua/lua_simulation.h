@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/cbasetypes.h"
-#include "entities/base_entity.h"
 #include "lua_client_entity_pair.h"
 
 #include <sol/forward.hpp>
@@ -66,9 +65,11 @@ public:
     void setVanaTime(uint8 vanaHour, uint8 vanaMinute) const;
     void setVanaDay(uint8 day) const;
     void skipToNextVanaDay() const;
+    void skipVanaDays(uint32 days) const;
     void setRegionOwner(REGION_TYPE region, NATION_TYPE nation) const;
     void setSeed(uint64 seed) const;
     void seed() const;
+    void resetWeather() const;
     void setSetupContext(bool inSetup);
     auto spawnPlayer(sol::optional<sol::table> params) -> CLuaClientEntityPair*;
     auto getSpawnSlot(ZONEID zoneId, uint32 slotId) const -> sol::table;

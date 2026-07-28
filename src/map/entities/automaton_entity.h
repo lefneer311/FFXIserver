@@ -28,8 +28,6 @@
 
 #include <array>
 
-class CCharEntity;
-
 class CAutomatonEntity final : public CPetEntity
 {
 public:
@@ -41,9 +39,6 @@ public:
     auto attachment(uint8 slotid) const -> uint8;
     auto hasAttachment(uint8 attachment) const -> bool;
     void setEquip(const AutomatonEquip& equip);
-
-    auto elementMax(uint8 element) const -> uint8;
-    auto elementCapacity(uint8 element) const -> uint8;
 
     void burdenTick();
     auto burden() const -> const std::array<uint8, 8>&;
@@ -68,7 +63,5 @@ public:
 
 private:
     AutomatonEquip       equip_{};
-    std::array<uint8, 8> elementMax_{};
-    std::array<uint8, 8> elementEquip_{};
     std::array<uint8, 8> burden_{};
 };

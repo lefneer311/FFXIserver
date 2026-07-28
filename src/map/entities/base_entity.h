@@ -25,8 +25,16 @@
 #include "common/cbasetypes.h"
 #include "common/mmo.h"
 #include "common/timer.h"
+#include "entities/entity_id.h"
 #include "los_cache.h"
 #include "packets/basic.h"
+
+#include "data/enums/allegiance.h"
+#include "data/enums/animation.h"
+#include "data/enums/entity_flags.h"
+#include "data/enums/name_vis.h"
+#include "data/enums/spawn_animation.h"
+#include "data/enums/status.h"
 
 #include <map>
 #include <memory>
@@ -43,71 +51,8 @@ enum ENTITYTYPE : uint8
     TYPE_TRUST  = 0x20,
     TYPE_FELLOW = 0x40,
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(ENTITYTYPE);
-
-enum class STATUS_TYPE : uint8
-{
-    NORMAL        = 0,
-    UPDATE        = 1,
-    DISAPPEAR     = 2,
-    INVISIBLE     = 3,
-    STATUS_4      = 4,
-    CUTSCENE_ONLY = 6,
-    STATUS_18     = 18,
-    SHUTDOWN      = 20,
-};
-DECLARE_FORMAT_AS_UNDERLYING(STATUS_TYPE);
-
-enum ANIMATIONTYPE : uint8
-{
-    ANIMATION_NONE    = 0,
-    ANIMATION_ATTACK  = 1,
-    ANIMATION_DESPAWN = 2,
-    ANIMATION_DEATH   = 3,
-    ANIMATION_EVENT   = 4,
-    ANIMATION_CHOCOBO = 5,
-    ANIMATION_FISHING = 6,
-    // Healing                      = 7,
-    ANIMATION_OPEN_DOOR     = 8,
-    ANIMATION_CLOSE_DOOR    = 9,
-    ANIMATION_ELEVATOR_UP   = 10,
-    ANIMATION_ELEVATOR_DOWN = 11,
-    // seems to be WALLHACK                     = 28,
-    // seems to be WALLHACK also..              = 31,
-    ANIMATION_HEALING                = 33,
-    ANIMATION_FISHING_FISH_OLD       = 38,
-    ANIMATION_FISHING_CAUGHT_OLD     = 39,
-    ANIMATION_FISHING_ROD_BREAK_OLD  = 40,
-    ANIMATION_FISHING_LINE_BREAK_OLD = 41,
-    ANIMATION_FISHING_MONSTER_OLD    = 42,
-    ANIMATION_FISHING_STOP_OLD       = 43,
-    ANIMATION_SYNTH                  = 44,
-    ANIMATION_SIT                    = 47,
-    ANIMATION_RANGED                 = 48,
-    ANIMATION_FISHING_START_OLD      = 50,
-    ANIMATION_FISHING_START          = 56,
-    ANIMATION_FISHING_FISH           = 57,
-    ANIMATION_FISHING_CAUGHT         = 58,
-    ANIMATION_FISHING_ROD_BREAK      = 59,
-    ANIMATION_FISHING_LINE_BREAK     = 60,
-    ANIMATION_FISHING_MONSTER        = 61,
-    ANIMATION_FISHING_STOP           = 62,
-    // 63 through 72 are used with /sitchair
-    ANIMATION_SITCHAIR_0  = 63,
-    ANIMATION_SITCHAIR_1  = 64,
-    ANIMATION_SITCHAIR_2  = 65,
-    ANIMATION_SITCHAIR_3  = 66,
-    ANIMATION_SITCHAIR_4  = 67,
-    ANIMATION_SITCHAIR_5  = 68,
-    ANIMATION_SITCHAIR_6  = 69,
-    ANIMATION_SITCHAIR_7  = 70,
-    ANIMATION_SITCHAIR_8  = 71,
-    ANIMATION_SITCHAIR_9  = 72,
-    ANIMATION_SITCHAIR_10 = 73,
-    // 74 through 83 sitting on air (guessing future use for more chairs..)
-    ANIMATION_MOUNT = 85,
-    // ANIMATION_TRUST              = 90 // This is the animation for a trust NPC spawning in.
-};
 
 enum MOUNTTYPE : uint8
 {
@@ -153,17 +98,6 @@ enum MOUNTTYPE : uint8
     MOUNT_MAX = 38,
 };
 
-enum class ALLEGIANCE_TYPE : uint8
-{
-    MOB       = 0,
-    PLAYER    = 1,
-    SAN_DORIA = 2,
-    BASTOK    = 3,
-    WINDURST  = 4,
-    WYVERNS   = 5,
-    GRIFFONS  = 6,
-};
-
 enum UPDATETYPE : uint8
 {
     UPDATE_NONE     = 0x00,
@@ -178,57 +112,7 @@ enum UPDATETYPE : uint8
     UPDATE_DESPAWN  = 0x20,
 };
 
-enum ENTITYFLAGS : uint16
-{
-    FLAG_NONE      = 0x000,
-    FLAG_INFO_ICON = 0x001, // (I) Icon next to name
-
-    // TODO: Flags 0x002, 0x004 and 0x008 do different things for different entities.
-    //     : It isn't one-size-fits-all, and different combinations may do different things.
-    //     : It'll need to researched more.
-    // FLAG_ALT_APPEARANCE = 0x002,
-
-    FLAG_HIDE_NAME     = 0x008,
-    FLAG_CALL_FOR_HELP = 0x020,
-    FLAG_HIDE_MODEL    = 0x080,
-    FLAG_HIDE_HP       = 0x100,
-    FLAG_UNTARGETABLE  = 0x800,
-};
-
-enum NAMEVIS : uint8
-{
-    VIS_NONE        = 0x00,
-    VIS_ICON        = 0x01,
-    VIS_HIDE_NAME   = 0x08,
-    VIS_GHOST_PHASE = 0x80,
-};
-
-enum class SPAWN_ANIMATION : uint8
-{
-    NORMAL  = 0,
-    SPECIAL = 1,
-};
-
-// TODO: It is possible to make this structure part of the class, instead of the current ID and Targid, but without the clean() method.
-struct EntityID_t
-{
-    // TODO: Add a constructor that takes an id and targid.
-    // TODO: Clean with a destructor.
-    void clean()
-    {
-        id     = 0;
-        targid = 0;
-    }
-
-    // TODO: Globally rename targid to index, zoneIndex, etc.
-
-    uint32 id;     // "Long" global ID of the entity. Built from 0x10000000 | (zoneId << 16) | targid.
-    uint16 targid; // The "index" of the entity in the current zone. Used for local targeting and referencing.
-
-    // TODO: Store the zoneId of this entity's zone. We can then use the targid (index) and the zoneId to build the global id.
-    // TODO: Store an incremental u64 as a UUID for the entity for disambiguation in the case of dynamic entities that might have the same targid.
-};
-
+class CBaseEntity;
 class CAIContainer;
 class CBattlefield;
 class CInstance;
@@ -307,24 +191,26 @@ public:
 
     bool IsDynamicEntity() const;
 
-    uint32          id;             // global identifier unique on the server
-    uint16          targid;         // local identifier unique to the zone
-    ENTITYTYPE      objtype;        // Type of entity
-    STATUS_TYPE     status;         // Entity status (different entities - different statuses)
-    uint16          m_TargID;       // the targid of the object the entity is looking at
-    std::string     name;           // Entity name
-    std::string     packetName;     // Used to override name when being sent to the client
-    look_t          look;           //
-    look_t          mainlook;       // only used if mob use changeSkin() or player /lockstyle
-    location_t      loc;            // Location of entity
-    uint8           animation;      // animation
-    uint8           animationsub;   // Additional animation parameter
-    uint8           baseSpeed;      // base movement speed
-    uint8           animationSpeed; // speed of movement animation
-    uint8           namevis;
-    ALLEGIANCE_TYPE allegiance;     // what types of targets the entity can fight
-    uint8           updatemask;     // what to update next server tick to players nearby
-    bool            priorityRender; // CliPriorityFlag, will force this entity to render on clients if set. See https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037 (also applies to 0x00E)
+    auto           serial() const -> uint64;
+    auto           entityId() const -> EntityId;
+    uint32         id;             // global identifier unique on the server
+    uint16         targid;         // local identifier unique to the zone
+    ENTITYTYPE     objtype;        // Type of entity
+    xi::Status     status;         // Entity status (different entities - different statuses)
+    uint16         m_TargID;       // the targid of the object the entity is looking at
+    std::string    name;           // Entity name
+    std::string    packetName;     // Used to override name when being sent to the client
+    look_t         look;           //
+    look_t         mainlook;       // only used if mob use changeSkin() or player /lockstyle
+    location_t     loc;            // Location of entity
+    xi::Animation  animation;      // animation
+    uint8          animationsub;   // Additional animation parameter
+    uint8          baseSpeed;      // base movement speed
+    uint8          animationSpeed; // speed of movement animation
+    xi::NameVis    namevis;
+    xi::Allegiance allegiance;     // what types of targets the entity can fight
+    uint8          updatemask;     // what to update next server tick to players nearby
+    bool           priorityRender; // CliPriorityFlag, will force this entity to render on clients if set. See https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037 (also applies to 0x00E)
 
     float modelHitboxSize = 0.0f; // used for distance calculations and is in packets
     uint8 modelSize       = 0;
@@ -333,7 +219,7 @@ public:
 
     bool m_bReleaseTargIDOnDisappear;
 
-    SPAWN_ANIMATION spawnAnimation;
+    xi::SpawnAnimation spawnAnimation;
 
     std::unique_ptr<CAIContainer> PAI;          // AI container
     CBattlefield*                 PBattlefield; // pointer to battlefield (if in one)
@@ -346,6 +232,9 @@ protected:
     uint8                         speed; // speed of movement
 
     LineOfSightCache losCache_;
+
+private:
+    uint64 serial_{ 0 };
 };
 
 #endif // _BASEENTITY_H

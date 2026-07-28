@@ -23,7 +23,6 @@
 #define _CWEAPONSKILL_H
 
 #include "common/cbasetypes.h"
-#include "common/mmo.h"
 
 #include "entities/battle_entity.h"
 #include "enums/action/animation.h"
@@ -36,7 +35,7 @@ public:
     CWeaponSkill(uint16 id);
 
     uint16 getID() const;
-    uint8  getJob(JOBTYPE JobID);
+    auto   getJob(xi::Job JobID) -> uint8;
     uint16 getSkillLevel() const;
     uint8  getRange() const;
     uint8  getElement() const;

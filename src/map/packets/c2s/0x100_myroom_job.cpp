@@ -21,6 +21,9 @@
 
 #include "0x100_myroom_job.h"
 
+#include "ai/ai_container.h"
+#include "ai/states/item_state.h"
+#include "ai/states/magic_state.h"
 #include "entities/char_entity.h"
 #include "items/item_weapon.h"
 #include "job_points.h"
@@ -45,7 +48,7 @@ auto GP_CLI_COMMAND_MYROOM_JOB::validate(MapSession* PSession, const CCharEntity
 {
     auto pv = PacketValidator(PChar)
                   .blockedBy({ BlockedState::InEvent })
-                  .mustEqual(PChar->loc.zone->CanUseMisc(MISC_MOGMENU) || PChar->m_moghouseID == PChar->id, true, "Player not in MH or zone with Moogle.");
+                  .mustEqual(PChar->loc.zone->CanUseMisc(xi::ZoneMisc::Mogmenu) || PChar->m_moghouseID == PChar->id, true, "Player not in MH or zone with Moogle.");
 
     if (this->MainJobIndex)
     {
@@ -64,30 +67,33 @@ auto GP_CLI_COMMAND_MYROOM_JOB::validate(MapSession* PSession, const CCharEntity
 
 void GP_CLI_COMMAND_MYROOM_JOB::process(MapSession* PSession, CCharEntity* PChar) const
 {
-    if ((this->MainJobIndex > 0x00) && (this->MainJobIndex < MAX_JOBTYPE) && (PChar->jobs.unlocked & (1 << this->MainJobIndex)))
+    const xi::Job prevMainJob = PChar->GetMJob();
+    const xi::Job prevSubJob  = PChar->GetSJob();
+    const bool    hadBlueMage = prevMainJob == xi::Job::BLU || prevSubJob == xi::Job::BLU;
+
+    const bool changingMainJob = this->MainJobIndex > 0x00;
+
+    if (changingMainJob)
     {
-        const JOBTYPE prevjob = PChar->GetMJob();
         PChar->resetPetZoningInfo();
 
         charutils::SaveJobChangeGear(PChar);
         charutils::RemoveAllEquipment(PChar);
         PChar->SetMJob(this->MainJobIndex);
-        PChar->SetMLevel(PChar->jobs.job[PChar->GetMJob()]);
-        PChar->SetSLevel(PChar->jobs.job[PChar->GetSJob()]);
+
+        // New main matches the current sub, swap them like retail.
+        if (PChar->GetSJob() == PChar->GetMJob())
+        {
+            PChar->SetSJob(static_cast<uint8>(prevMainJob));
+        }
+
+        PChar->SetMLevel(PChar->jobs.job[static_cast<uint8>(PChar->GetMJob())]);
+        PChar->SetSLevel(PChar->jobs.job[static_cast<uint8>(PChar->GetSJob())]);
 
         // If removing RemoveAllEquipment, please add a charutils::CheckUnarmedItem(PChar) if main hand is empty.
         puppetutils::LoadAutomaton(PChar);
 
-        if (this->MainJobIndex == JOB_BLU)
-        {
-            blueutils::LoadSetSpells(PChar);
-        }
-        else if (prevjob == JOB_BLU)
-        {
-            blueutils::UnequipAllBlueSpells(PChar);
-        }
-
-        bool canUseMeritMode = PChar->jobs.job[PChar->GetMJob()] >= 75 && charutils::hasKeyItem(PChar, KeyItem::LIMIT_BREAKER);
+        bool canUseMeritMode = PChar->jobs.job[static_cast<uint8>(PChar->GetMJob())] >= 75 && charutils::hasKeyItem(PChar, KeyItem::LIMIT_BREAKER);
         if (!canUseMeritMode && PChar->MeritMode)
         {
             if (db::preparedStmt("UPDATE char_exp SET mode = ? WHERE charid = ? LIMIT 1", 0, PChar->id))
@@ -97,24 +103,18 @@ void GP_CLI_COMMAND_MYROOM_JOB::process(MapSession* PSession, CCharEntity* PChar
         }
     }
 
-    if ((this->SupportJobIndex > 0x00) && (this->SupportJobIndex < MAX_JOBTYPE) && (PChar->jobs.unlocked & (1 << this->SupportJobIndex)))
+    // Reject a sub change that equals the current main.
+    const bool changingSubJob    = this->SupportJobIndex > 0x00;
+    const bool subJobMatchesMain = this->SupportJobIndex == static_cast<uint8>(PChar->GetMJob());
+
+    if (changingSubJob && !subJobMatchesMain)
     {
-        JOBTYPE prevsjob = PChar->GetSJob();
         PChar->resetPetZoningInfo();
 
         PChar->SetSJob(this->SupportJobIndex);
-        PChar->SetSLevel(PChar->jobs.job[PChar->GetSJob()]);
+        PChar->SetSLevel(PChar->jobs.job[static_cast<uint8>(PChar->GetSJob())]);
 
         puppetutils::LoadAutomaton(PChar);
-
-        if (this->SupportJobIndex == JOB_BLU)
-        {
-            blueutils::LoadSetSpells(PChar);
-        }
-        else if (prevsjob == JOB_BLU)
-        {
-            blueutils::UnequipAllBlueSpells(PChar);
-        }
 
         xi::DamageType subType = xi::DamageType::None;
         if (auto* weapon = dynamic_cast<CItemWeapon*>(PChar->m_Weapons[SLOT_SUB]))
@@ -126,6 +126,21 @@ void GP_CLI_COMMAND_MYROOM_JOB::process(MapSession* PSession, CCharEntity* PChar
         {
             charutils::UnequipItem(PChar, SLOT_SUB);
         }
+    }
+
+    // Refresh blue magic for the resulting jobs.
+    const bool hasBlueMage = PChar->GetMJob() == xi::Job::BLU || PChar->GetSJob() == xi::Job::BLU;
+    if (hasBlueMage && !hadBlueMage)
+    {
+        blueutils::LoadSetSpells(PChar);
+    }
+    else if (hasBlueMage)
+    {
+        blueutils::ValidateBlueSpells(PChar);
+    }
+    else if (hadBlueMage)
+    {
+        blueutils::UnequipAllBlueSpells(PChar);
     }
 
     charutils::SetStyleLock(PChar, false);
@@ -149,6 +164,12 @@ void GP_CLI_COMMAND_MYROOM_JOB::process(MapSession* PSession, CCharEntity* PChar
     }
 
     PChar->StatusEffectContainer->DelStatusEffectsByFlag(xi::StatusEffectFlag::Dispelable | xi::StatusEffectFlag::Roll | xi::StatusEffectFlag::OnJobchange);
+
+    // Changing jobs interrupts any spell being cast or item being used
+    if (PChar->PAI->IsCurrentState<CMagicState>() || PChar->PAI->IsCurrentState<CItemState>())
+    {
+        PChar->PAI->InterruptStates();
+    }
 
     // clang-format off
     PChar->ForParty([](CBattleEntity* PMember)

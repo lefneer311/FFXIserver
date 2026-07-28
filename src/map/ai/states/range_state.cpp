@@ -21,9 +21,12 @@
 
 #include "range_state.h"
 
+#include "enums/four_cc.h"
+
 #include "action/action.h"
 #include "action/interrupts.h"
 #include "ai/ai_container.h"
+#include "common/settings.h"
 #include "entities/char_entity.h"
 #include "entities/trust_entity.h"
 #include "enums/action/category.h"
@@ -34,41 +37,35 @@
 #include "utils/battleutils.h"
 #include "utils/charutils.h"
 
-CRangeState::CRangeState(CBattleEntity* PEntity, uint16 targid)
-: CState(PEntity, targid)
+CRangeState::CRangeState(xi::Badge<CState>, CBattleEntity* PEntity, const EntityId& target)
+: CState(PEntity, target)
 , m_PEntity(PEntity)
 {
-    auto* PTarget = m_PEntity->IsValidTarget(m_targid, TARGET_ENEMY, m_errorMsg);
+    // Capture constructor arguments into members and nothing else. All other logic goes into init().
+}
+
+auto CRangeState::init() -> StateErrorOr<void>
+{
+    auto* PTarget = m_PEntity->IsValidTarget(target(), TARGET_ENEMY, m_errorMsg);
 
     if (!PTarget || this->HasErrorMsg())
     {
-        if (this->HasErrorMsg())
-        {
-            throw CStateInitException(m_errorMsg->copy());
-        }
-        else
-        {
-            throw CStateInitException(std::make_unique<CBasicPacket>());
-        }
+        return refuseWithErrorMsg();
     }
 
     if (!CanUseRangedAttack(PTarget, false))
     {
-        if (this->HasErrorMsg())
-        {
-            throw CStateInitException(m_errorMsg->copy());
-        }
-        else
-        {
-            throw CStateInitException(std::make_unique<CBasicPacket>());
-        }
+        return refuseWithErrorMsg();
     }
 
     if (distance(m_PEntity->loc.p, PTarget->loc.p) > m_PEntity->GetRangedAttackRange())
     {
         m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, 0, 0, MsgBasic::TooFarAway);
-        throw CStateInitException(m_errorMsg->copy());
+        return refuseWithErrorMsg();
     }
+
+    // Configured in main. default : 500ms
+    m_freePhaseTimePlayer = std::chrono::milliseconds(settings::get<uint32>("main.RANGED_ATTACK_FREE_PHASE_DELAY"));
 
     // https://www.bg-wiki.com/ffxi/Delay#Ranged_Delay
     // GetRangedDelayReduction is 2 of the 3 steps of `Ranged Weapon Delay x (1 - Snapshot) x (1 - Velocity Shot) x (1 - Rapid Shot)`
@@ -79,12 +76,12 @@ CRangeState::CRangeState(CBattleEntity* PEntity, uint16 targid)
     // Rapid Shot
     if (m_PEntity->objtype == TYPE_PC || m_PEntity->objtype == TYPE_TRUST)
     {
-        CItemWeapon* weapon     = dynamic_cast<CItemWeapon*>(m_PEntity->m_Weapons[SLOT_RANGED]);
-        bool         isThrowing = weapon && weapon->isThrowing();
+        const CItemWeapon* weapon     = dynamic_cast<CItemWeapon*>(m_PEntity->m_Weapons[SLOT_RANGED]);
+        const bool         isThrowing = weapon && weapon->isThrowing();
         // Don't apply Rapid Shot to throwing weapons
         if (!isThrowing)
         {
-            auto chance{ m_PEntity->getMod(Mod::RAPID_SHOT) };
+            auto chance{ m_PEntity->getMod(xi::Mod::RAPID_SHOT) };
 
             if (auto* PChar = dynamic_cast<CCharEntity*>(m_PEntity))
             {
@@ -113,7 +110,7 @@ CRangeState::CRangeState(CBattleEntity* PEntity, uint16 targid)
 
         if (distance(m_PEntity->loc.p, PTarget->loc.p) <= m_PEntity->GetMeleeRange(PTarget))
         {
-            m_freePhaseTime = 6500ms + std::chrono::milliseconds(xirand::GetRandomNumber(0, 1500)); // Seems to have a random factor on to when it can shoot next. 1 or 2 melee auto attacks
+            m_freePhaseTimeMob = 6500ms + std::chrono::milliseconds(xirand::GetRandomNumber(0, 1500)); // Seems to have a random factor on to when it can shoot next. 1 or 2 melee auto attacks
         }
     }
 
@@ -138,22 +135,24 @@ CRangeState::CRangeState(CBattleEntity* PEntity, uint16 targid)
 
     m_PEntity->PAI->EventHandler.triggerListener("RANGE_START", m_PEntity, &action);
     m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE2>(action));
+
+    return Success();
 }
 
-void CRangeState::SpendCost()
+void CRangeState::SpendCost() const
 {
 }
 
-bool CRangeState::CanChangeState()
+auto CRangeState::CanChangeState() -> bool
 {
     return false;
 }
 
-bool CRangeState::Update(timer::time_point tick)
+auto CRangeState::Update(const timer::time_point tick) -> bool
 {
     if (m_PEntity && m_PEntity->isAlive() && (tick > GetEntryTime() + m_aimTime && !IsCompleted()))
     {
-        auto* PTarget = m_PEntity->IsValidTarget(m_targid, TARGET_ENEMY, m_errorMsg);
+        auto* PTarget = m_PEntity->IsValidTarget(target(), TARGET_ENEMY, m_errorMsg);
 
         CanUseRangedAttack(PTarget, true);
 
@@ -204,7 +203,7 @@ bool CRangeState::Update(timer::time_point tick)
         }
         else if (auto* PMob = dynamic_cast<CMobEntity*>(m_PEntity))
         {
-            PMob->m_LastRangedAttackTime = GetEntryTime() + m_aimTime + m_freePhaseTime;
+            PMob->m_LastRangedAttackTime = GetEntryTime() + m_aimTime + m_freePhaseTimeMob;
         }
         return true;
     }
@@ -216,7 +215,7 @@ void CRangeState::Cleanup(timer::time_point tick)
 {
 }
 
-bool CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, bool isEndOfAttack)
+auto CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, const bool isEndOfAttack) -> bool
 {
     if (!PTarget)
     {
@@ -239,14 +238,14 @@ bool CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, bool isEndOfAttack)
 
         switch (SkillType)
         {
-            case SKILL_THROWING:
+            case xi::SkillType::Throwing:
             {
                 // remove barrage, doesn't work here
                 PChar->StatusEffectContainer->DelStatusEffect(xi::StatusEffect::Barrage);
                 break;
             }
-            case SKILL_ARCHERY:
-            case SKILL_MARKSMANSHIP:
+            case xi::SkillType::Archery:
+            case xi::SkillType::Marksmanship:
             {
                 PRanged = dynamic_cast<CItemWeapon*>(PChar->getEquip(SLOT_AMMO));
                 if (PRanged != nullptr && PRanged->isType(ITEM_WEAPON))
@@ -282,15 +281,15 @@ bool CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, bool isEndOfAttack)
     // make sure player is waiting the appropriate time between ranged attacks
     if (auto PChar = dynamic_cast<CCharEntity*>(m_PEntity))
     {
-        if (m_PEntity->PAI->getTick() - PChar->m_LastRangedAttackTime < m_freePhaseTime)
+        if (m_PEntity->PAI->getTick() - PChar->m_LastRangedAttackTime < m_freePhaseTimePlayer)
         {
             m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, 0, 0, MsgBasic::WaitLonger);
             return false;
         }
     }
 
-    uint8 anim = m_PEntity->animation;
-    if (anim != ANIMATION_NONE && anim != ANIMATION_ATTACK)
+    const auto anim = m_PEntity->animation;
+    if (anim != xi::Animation::None && anim != xi::Animation::Attack)
     {
         m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget, 0, 0, MsgBasic::CannotPerformAction);
         return false;
@@ -299,7 +298,7 @@ bool CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, bool isEndOfAttack)
     return true;
 }
 
-bool CRangeState::HasMoved()
+auto CRangeState::HasMoved() const -> bool
 {
     if (m_PEntity->objtype != TYPE_PC)
     {
@@ -309,4 +308,24 @@ bool CRangeState::HasMoved()
     float charDistance = distance(m_startPos, m_PEntity->loc.p, true);
 
     return charDistance > 0.3;
+}
+
+auto CRangeState::IsRapidShot() const -> bool
+{
+    return m_rapidShot;
+}
+
+auto CRangeState::IsOutOfRange() const -> bool
+{
+    return m_isOutOfRange;
+}
+
+auto CRangeState::CanFollowPath() -> bool
+{
+    return false;
+}
+
+auto CRangeState::CanInterrupt() -> bool
+{
+    return true;
 }

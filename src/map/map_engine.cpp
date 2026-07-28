@@ -21,13 +21,9 @@
 
 #include "map_engine.h"
 
-#include "common/blowfish.h"
-#include "common/console_service.h"
-#include "common/database.h"
 #include "common/debug.h"
 #include "common/ipp.h"
 #include "common/logging.h"
-#include "common/macros.h"
 #include "common/settings.h"
 #include "common/timer.h"
 #include "common/utils.h"
@@ -39,7 +35,6 @@
 #include "daily_system.h"
 #include "ipc_client.h"
 #include "job_points.h"
-#include "latent_effect_container.h"
 #include "map_networking.h"
 #include "map_statistics.h"
 #include "mob_spell_list.h"
@@ -74,9 +69,7 @@
 #include "utils/trustutils.h"
 #include "utils/zoneutils.h"
 
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <thread>
 
 #ifdef _WIN32
@@ -199,7 +192,6 @@ auto MapEngine::init() -> Task<void>
     battleutils::LoadWeaponSkillsList();
     battleutils::LoadMobSkillsList();
     battleutils::LoadPetSkillsList();
-    battleutils::LoadSkillChainDamageModifiers();
     petutils::LoadPetList();
     trustutils::LoadTrustList();
     mobutils::LoadSqlModifiers();
@@ -324,32 +316,22 @@ auto MapEngine::watchdogWatcher() -> Task<void>
         {
             if (debug::isRunningUnderDebugger())
             {
-                ShowCritical("!!! INACTIVITY WATCHDOG HAS TRIGGERED !!!");
+                ShowCriticalFmt("!!! INACTIVITY WATCHDOG HAS TRIGGERED !!!");
                 ShowCriticalFmt("Process main tick has taken {}ms or more.", period);
-                ShowCritical("Detaching watchdog thread, it will not fire again until restart.");
+                ShowCriticalFmt("Detaching watchdog thread, it will not fire again until restart.");
                 break;
             }
             else if (!settings::get<bool>("main.DISABLE_INACTIVITY_WATCHDOG"))
             {
-                std::string outputStr = "!!! INACTIVITY WATCHDOG HAS TRIGGERED !!!\n\n";
-
-                outputStr += fmt::format("Process main tick has taken {}ms or more.\n", period);
-                outputStr += fmt::format("Backtrace Messages:\n\n");
-
-                const auto backtrace = logging::GetBacktrace();
-                for (const auto& line : backtrace)
-                {
-                    outputStr += fmt::format("    {}\n", line);
-                }
-
-                outputStr += "\nKilling Process!!!\n";
-
-                ShowCritical(outputStr);
+                ShowCriticalFmt("!!! INACTIVITY WATCHDOG HAS TRIGGERED !!!");
+                ShowCriticalFmt("Process main tick has taken {}ms or more.", period);
+                ShowCriticalFmt("Killing Process!!!");
 
                 // Allow some time for logging to flush
                 std::this_thread::sleep_for(200ms);
 
-                throw std::runtime_error("Watchdog thread time exceeded. Killing process.");
+                // Terminate directly rather than throwing.
+                crash();
             }
         }
 

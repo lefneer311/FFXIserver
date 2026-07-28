@@ -22,10 +22,13 @@
 #include "auth_session.h"
 
 #include "common/ipc.h"
+#include "common/md52.h"
 #include "common/utils.h"
 #include "otp_helpers.h"
 
 #include <bcrypt/BCrypt.hpp>
+
+#include <atomic>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -287,9 +290,15 @@ void auth_session::read_func()
             */
 
             // Success
+            static std::atomic<uint32> authSeq{ 0 };
+
+            uint32 hashData[] = {
+                earth_time::timestamp() ^ static_cast<uint32>(getpid()),
+                authSeq.fetch_add(1, std::memory_order_relaxed),
+            };
+
             unsigned char hash[16];
-            uint32        hashData = earth_time::timestamp() ^ getpid();
-            md5(reinterpret_cast<uint8*>(&hashData), hash, sizeof(hashData));
+            md5(reinterpret_cast<uint8*>(hashData), hash, sizeof(hashData));
 
             json loginSuccessReply;
             loginSuccessReply["result"]       = static_cast<uint8>(login_result::LOGIN_SUCCESS);

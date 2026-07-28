@@ -20,7 +20,11 @@ zones[xi.zone.XARCABARD] =
         LOGIN_NUMBER                   = 7020,  -- In celebration of your most recent login (login no. <number>), we have provided you with <number> points! You currently have a total of <number> points.
         MEMBERS_LEVELS_ARE_RESTRICTED  = 7040,  -- Your party is unable to participate because certain members' levels are restricted.
         CONQUEST_BASE                  = 7085,  -- Tallying conquest results...
-        BEASTMEN_BANNER                = 7164,  -- There was a curse on the beastmen's banner!
+        REGION_POINTS_SANDORIA         = 7150,  -- San d'Oria's region points have increased!
+        EXP_FORCE_KILL_SANDORIA        = 7153,  -- San d'Orian E.F. defeats beastmen hordes... Maintain current momentum.
+        BEASTMEN_BANNER_CURSE          = 7164,  -- There was a curse on the beastmen's banner!
+        BEASTMEN_BANNER_LIFTED         = 7165,  -- The curse of the beastmen's banner has been lifted!
+        BEASTMEN_BANNER                = 7166,  -- There is a beastmen's banner.
         PRESENCE_IN_CAVE               = 7245,  -- You sense a presence in the cave...
         MONSTER_APPEARS                = 7248,  -- A monster appears from deep within the cave!
         SENSE_EVIL                     = 7374,  -- You can sense an evil force around you.
@@ -33,6 +37,7 @@ zones[xi.zone.XARCABARD] =
         PERENNIAL_SNOW_WAIT            = 7745,  -- The <keyitem> you buried is not yet purified.
         CAVERN_CONTINUES               = 7800,  -- The cavern continues on for quite a distance.
         NOTHING_MORE                   = 7801,  -- There is nothing more to be done here.
+        SOMETHING_BURIED               = 7829,  -- It looks like something was buried here.
         YOU_CANNOT_ENTER_DYNAMIS       = 7867,  -- You cannot enter Dynamis - [Dummy/San d'Oria/Bastok/Windurst/Jeuno/Beaucedine/Xarcabard/Valkurm/Buburimu/Qufim/Tavnazia] for <number> [day/days] (Vana'diel time).
         PLAYERS_HAVE_NOT_REACHED_LEVEL = 7869,  -- Players who have not reached level <number> are prohibited from entering Dynamis.
         DYNA_NPC_DEFAULT_MESSAGE       = 7906,  -- There is a symbol carved into the rock here.
@@ -59,16 +64,28 @@ zones[xi.zone.XARCABARD] =
     },
     mob =
     {
-        BARBARIC_WEAPON  = GetFirstID('Barbaric_Weapon'),
-        BOREAL_HOUND     = GetFirstID('Boreal_Hound'),
-        BOREAL_COEURL    = GetFirstID('Boreal_Coeurl'),
-        BOREAL_TIGER     = GetFirstID('Boreal_Tiger'),
-        CHAOS_ELEMENTAL  = GetFirstID('Chaos_Elemental'),
-        ERESHKIGAL       = GetFirstID('Ereshkigal'),
-        KOENIGSTIGER     = GetFirstID('Koenigstiger'),
-        SHADOW_EYE       = GetFirstID('Shadow_Eye'),
-        TIMEWORN_WARRIOR = GetFirstID('Timeworn_Warrior'),
-        VOIDWALKER       =
+        BARBARIC_WEAPON       = GetFirstID('Barbaric_Weapon'),
+        BOREAL_COEURL         = GetFirstID('Boreal_Coeurl'),
+        BOREAL_HOUND          = GetFirstID('Boreal_Hound'),
+        BOREAL_TIGER          = GetFirstID('Boreal_Tiger'),
+        CHAOS_ELEMENTAL       = GetFirstID('Chaos_Elemental'),
+        ERESHKIGAL            = GetFirstID('Ereshkigal'),
+        GIGAS_BEASTMASTER     = GetFirstID('Gigas_Beastmaster'),
+        GIGAS_MONK            = GetFirstID('Gigas_Monk'),
+        GIGAS_RANGER          = GetFirstID('Gigas_Ranger'),
+        GIGAS_WARRIOR         = GetFirstID('Gigas_Warrior'),
+        HOBGOBLIN_BEASTMASTER = GetFirstID('Hobgoblin_Beastmaster'),
+        HOBGOBLIN_BLACK_MAGE  = GetFirstID('Hobgoblin_Black_Mage'),
+        HOBGOBLIN_DARK_KNIGHT = GetFirstID('Hobgoblin_Dark_Knight'),
+        HOBGOBLIN_RANGER      = GetFirstID('Hobgoblin_Ranger'),
+        HOBGOBLIN_RED_MAGE    = GetFirstID('Hobgoblin_Red_Mage'),
+        HOBGOBLIN_THIEF       = GetFirstID('Hobgoblin_Thief'),
+        HOBGOBLIN_WARRIOR     = GetFirstID('Hobgoblin_Warrior'),
+        HOBGOBLIN_WHITE_MAGE  = GetFirstID('Hobgoblin_White_Mage'),
+        KOENIGSTIGER          = GetFirstID('Koenigstiger'),
+        SHADOW_EYE            = GetFirstID('Shadow_Eye'),
+        TIMEWORN_WARRIOR      = GetFirstID('Timeworn_Warrior'),
+        VOIDWALKER            =
         {
             [xi.keyItem.CLEAR_ABYSSITE] =
             {
@@ -98,13 +115,14 @@ zones[xi.zone.XARCABARD] =
     },
     npc =
     {
-        OVERSEER_BASE    = GetFirstID('Jeantelas_RK'),
-        BOREAL_TIGER_QM  = GetFirstID('qm_boreal_tiger'),
+        BEASTMENS_BANNER = GetFirstID('Beastmens_Banner'),
         BOREAL_COEURL_QM = GetFirstID('qm_boreal_coeurl'),
         BOREAL_HOUND_QM  = GetFirstID('qm_boreal_hound'),
+        BOREAL_TIGER_QM  = GetFirstID('qm_boreal_tiger'),
         OPTION_ONE       = GetFirstID('Option_One'),
         OPTION_TWO       = GetFirstID('Option_Two'),
         OPTION_THREE     = GetFirstID('Option_Three'),
+        OVERSEER_BASE    = GetFirstID('Jeantelas_RK'),
     },
 }
 

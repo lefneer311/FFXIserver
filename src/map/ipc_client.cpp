@@ -21,10 +21,11 @@
 
 #include "ipc_client.h"
 
+#include "common/logging_context.h"
+
 #include "common/ipp.h"
 
 #include <concurrentqueue.h>
-#include <queue>
 
 #include "alliance.h"
 #include "aman.h"
@@ -236,7 +237,7 @@ void IPCClient::handleMessage_ChatMessageTell(const IPP& ipp, const ipc::ChatMes
     TracyZoneScoped;
 
     CCharEntity* PChar = zoneutils::GetCharByName(message.recipientName);
-    if (PChar && PChar->status != STATUS_TYPE::DISAPPEAR && !jailutils::InPrison(PChar))
+    if (PChar && PChar->status != xi::Status::Disappear && !jailutils::InPrison(PChar))
     {
         const auto gmSent = message.gmLevel > 0;
 
@@ -365,7 +366,7 @@ void IPCClient::handleMessage_ChatMessageYell(const IPP& ipp, const ipc::ChatMes
     // clang-format off
     zoneutils::ForEachZone([&](CZone* PZone)
     {
-        if (PZone->CanUseMisc(MISC_YELL))
+        if (PZone->CanUseMisc(xi::ZoneMisc::Yell))
         {
             PZone->ForEachChar([&](CCharEntity* PChar)
             {
@@ -387,7 +388,7 @@ void IPCClient::handleMessage_ChatMessageAssist(const IPP& ipp, const ipc::ChatM
     // clang-format off
     zoneutils::ForEachZone([&](CZone* PZone)
     {
-        if (PZone->CanUseMisc(MISC_ASSIST))
+        if (PZone->CanUseMisc(xi::ZoneMisc::Assist))
         {
             PZone->ForEachChar([&](CCharEntity* PChar)
             {
@@ -430,7 +431,7 @@ void IPCClient::handleMessage_ChatMessageCustom(const IPP& ipp, const ipc::ChatM
     TracyZoneScoped;
 
     CCharEntity* PChar = zoneutils::GetChar(message.recipientId);
-    if (PChar && PChar->status != STATUS_TYPE::DISAPPEAR && !jailutils::InPrison(PChar))
+    if (PChar && PChar->status != xi::Status::Disappear && !jailutils::InPrison(PChar))
     {
         PChar->pushPacket(std::make_unique<GP_SERV_COMMAND_CHAT_STD>(PChar, message.messageType, message.message, message.senderName));
     }
@@ -445,7 +446,7 @@ void IPCClient::handleMessage_PartyInvite(const IPP& ipp, const ipc::PartyInvite
         // make sure invitee isn't dead or in jail, they aren't a party member and don't already have an invite pending, and your party is not full
         if (PInvitee->isDead() ||
             jailutils::InPrison(PInvitee) ||
-            PInvitee->InvitePending.id != 0 ||
+            PInvitee->InvitePending.UniqueNo != 0 ||
             (PInvitee->PParty && message.inviteType == PartyKind::Party) ||
             (message.inviteType == PartyKind::Alliance && (!PInvitee->PParty || PInvitee->PParty->GetLeader() != PInvitee || (PInvitee->PParty && PInvitee->PParty->m_PAlliance))))
         {
@@ -487,8 +488,8 @@ void IPCClient::handleMessage_PartyInvite(const IPP& ipp, const ipc::PartyInvite
             return;
         }
 
-        PInvitee->InvitePending.id     = message.inviterId;
-        PInvitee->InvitePending.targid = message.inviterTargId;
+        PInvitee->InvitePending.UniqueNo = message.inviterId;
+        PInvitee->InvitePending.ActIndex = message.inviterTargId;
 
         PInvitee->pushPacket(std::make_unique<GP_SERV_COMMAND_GROUP_SOLICIT_REQ>(message.inviterId, message.inviterTargId, message.inviterName, message.inviteType));
     }
@@ -841,7 +842,7 @@ void IPCClient::handleMessage_EntityInformationRequest(const IPP& ipp, const ipc
 
     if (PEntity && PEntity->loc.zone)
     {
-        const bool isSpawned = PEntity->status != STATUS_TYPE::DISAPPEAR;
+        const bool isSpawned = PEntity->status != xi::Status::Disappear;
 
         float x = 0.0f;
         float y = 0.0f;
@@ -911,8 +912,8 @@ void IPCClient::handleMessage_EntityInformationResponse(const IPP& ipp, const ip
             PChar->loc.boundary = 0;
             PChar->updatemask   = 0;
 
-            PChar->status    = STATUS_TYPE::DISAPPEAR;
-            PChar->animation = ANIMATION_NONE;
+            PChar->status    = xi::Status::Disappear;
+            PChar->animation = xi::Animation::None;
 
             PChar->clearPacketList();
 
@@ -944,12 +945,12 @@ void IPCClient::handleMessage_SendPlayerToLocation(const IPP& ipp, const ipc::Se
         PChar->loc.boundary = 0;
         PChar->updatemask   = 0;
 
-        PChar->status    = STATUS_TYPE::DISAPPEAR;
-        PChar->animation = ANIMATION_NONE;
+        PChar->status    = xi::Status::Disappear;
+        PChar->animation = xi::Animation::None;
 
         PChar->clearPacketList();
 
-        PChar->requestedWarp = true;
+        PChar->requestedZoneChange = true;
 
         // Save pet if any
         if (PChar->shouldPetPersistThroughZoning())

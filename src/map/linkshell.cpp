@@ -25,14 +25,11 @@
 
 #include "packets/char_status.h"
 #include "packets/s2c/0x009_message.h"
-#include "packets/s2c/0x017_chat_std.h"
 #include "packets/s2c/0x01d_item_same.h"
 #include "packets/s2c/0x01f_item_list.h"
 #include "packets/s2c/0x020_item_attr.h"
-#include "packets/s2c/0x053_systemmes.h"
 #include "packets/s2c/0x0e0_group_comlink.h"
 
-#include "conquest_system.h"
 #include "ipc_client.h"
 #include "item_container.h"
 #include "items/item_linkshell.h"
@@ -45,7 +42,6 @@
 #include "utils/charutils.h"
 #include "utils/itemutils.h"
 #include "utils/jailutils.h"
-#include "utils/zoneutils.h"
 
 CLinkshell::CLinkshell(uint32 id)
 : m_postRights(GP_CLI_COMMAND_SET_LSMSG_WRITELEVEL::Linkshell)
@@ -215,10 +211,13 @@ void CLinkshell::ChangeMemberRank(const std::string& MemberName, const uint8 req
                     newShellItem->setSubType(ITEM_LOCKED);
                     uint8 LocationID = PItemLinkshell->getLocationID();
                     uint8 SlotID     = PItemLinkshell->getSlotID();
+
+                    PMember->clearEquip(slot);
                     PMember->getStorage(LocationID)->RemoveItem(SlotID);
 
                     PItemLinkshell = newShellItem;
                     PMember->getStorage(LocationID)->InsertItem(std::move(PNewItem), SlotID);
+                    PMember->bindEquip(slot, newShellItem);
                     db::preparedStmt("UPDATE char_inventory SET itemid = ?, extra = ? WHERE charid = ? AND location = ? AND slot = ? LIMIT 1",
                                      PItemLinkshell->getID(),
                                      PItemLinkshell->m_extra,
@@ -358,7 +357,7 @@ void CLinkshell::PushPacket(uint32 senderID, const std::unique_ptr<CBasicPacket>
 {
     for (auto& member : members)
     {
-        if (member->id != senderID && member->status != STATUS_TYPE::DISAPPEAR && !jailutils::InPrison(member))
+        if (member->id != senderID && member->status != xi::Status::Disappear && !jailutils::InPrison(member))
         {
             auto newPacket = packet->copy();
             if (member->PLinkshell2 == this)

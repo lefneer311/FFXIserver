@@ -21,25 +21,20 @@
 
 #include "lua_test_entity_assertions.h"
 
-#include "common/lua.h"
 #include "lua_test_entity.h"
-#include "map/entities/char_entity.h"
-#include "map/modifier.h"
-#include "map/status_effect.h"
-#include "map/zone.h"
-#include "status_effect_container.h"
 #include "test_common.h"
+
+#include <common/types/hash_map.h>
 
 #include <algorithm>
 #include <format>
 #include <sol/sol.hpp>
-#include <unordered_map>
 
 namespace
 {
 
 // Mission log IDs - used for xi.mission.id.*
-const std::unordered_map<uint8, std::string> missionLogIdMap = {
+const HashMap<uint8, std::string> missionLogIdMap = {
     { 0, "sandoria" },
     { 1, "bastok" },
     { 2, "windurst" },
@@ -60,7 +55,7 @@ const std::unordered_map<uint8, std::string> missionLogIdMap = {
 };
 
 // Quest log IDs - used for xi.quest.id.*
-const std::unordered_map<uint8, std::string> questLogIdMap = {
+const HashMap<uint8, std::string> questLogIdMap = {
     { 0, "sandoria" },
     { 1, "bastok" },
     { 2, "windurst" },
@@ -224,11 +219,11 @@ auto CLuaTestEntityAssertions::hasEffect(const xi::StatusEffect effectId) -> CLu
  *  Notes   :
  ************************************************************************/
 
-auto CLuaTestEntityAssertions::hasAnimation(const uint8 animation) -> CLuaTestEntityAssertions&
+auto CLuaTestEntityAssertions::hasAnimation(const xi::Animation animation) -> CLuaTestEntityAssertions&
 {
     assertCondition(entity_->getAnimation() == animation,
-                    std::format("Does not have animation {} set", getEnumKey("xi.animation", animation)),
-                    std::format("Does have animation {} set", getEnumKey("xi.animation", animation)));
+                    std::format("Does not have animation {} set", getEnumKey("xi.animation", static_cast<uint32>(animation))),
+                    std::format("Does have animation {} set", getEnumKey("xi.animation", static_cast<uint32>(animation))));
     return *this;
 }
 
@@ -357,7 +352,7 @@ auto CLuaTestEntityAssertions::hasItem(const uint16 itemId) -> CLuaTestEntityAss
  *  Notes   :
  ************************************************************************/
 
-auto CLuaTestEntityAssertions::hasModifier(const Mod modifierId, int32 expectedValue) -> CLuaTestEntityAssertions&
+auto CLuaTestEntityAssertions::hasModifier(const xi::Mod modifierId, int32 expectedValue) -> CLuaTestEntityAssertions&
 {
     auto actualValue = entity_->getMod(static_cast<uint16>(modifierId));
 

@@ -111,7 +111,7 @@ xi.quest.id =
         TEA_WITH_A_TONBERRY             = 109, -- + Converted
         SPICE_GALS                      = 110, -- + Converted
         OVER_THE_HILLS_AND_FAR_AWAY     = 112, -- +
-        LURE_OF_THE_WILDCAT             = 113, -- +
+        LURE_OF_THE_WILDCAT             = 113, -- + Converted
         ATELLOUNES_LAMENT               = 114, -- + Converted
         THICK_SHELLS                    = 117, -- +
         FOREST_FOR_THE_TREES            = 118,
@@ -733,7 +733,7 @@ xi.quest.id =
         BOY_AND_THE_BEAST                = 24, -- + Converted
         WRATH_OF_THE_GRIFFON             = 25, -- + Converted
         THE_LOST_BOOK                    = 26, -- + Converted
-        KNOT_QUITE_THERE                 = 27,
+        KNOT_QUITE_THERE                 = 27, -- + TODO: Partial conversion
         A_MANIFEST_PROBLEM               = 28,
         BEANS_AHOY                       = 29, -- +
         BEAST_FROM_THE_EAST              = 30,
@@ -1247,7 +1247,7 @@ xi.quest.setLocalVar = function(player, areaId, questId, name, value)
 end
 
 xi.quest.getMustZone = function(player, areaId, questId)
-    return player:setCharVar(getVarPrefix(areaId, questId) .. 'mustZone') ~= 0 and true or false
+    return player:getCharVar(getVarPrefix(areaId, questId) .. 'mustZone') ~= 0 and true or false
 end
 
 xi.quest.setMustZone = function(player, areaId, questId)

@@ -90,6 +90,14 @@ CBaseEntity* CZoneInstance::GetEntity(uint16 targid, uint8 filter)
     return PEntity;
 }
 
+auto CZoneInstance::getInstanceByRunId(uint32 runId) const -> CInstance*
+{
+    TracyZoneScoped;
+
+    const auto it = instancesByRun_.find(runId);
+    return it != instancesByRun_.end() ? it->second : nullptr;
+}
+
 void CZoneInstance::InsertMOB(CBaseEntity* PMob)
 {
     TracyZoneScoped;
@@ -209,11 +217,6 @@ void CZoneInstance::IncreaseZoneCounter(CCharEntity* PChar)
 
     if (PChar->PInstance)
     {
-        if (!zoneTimerToken_.has_value())
-        {
-            createZoneTimers();
-        }
-
         PChar->targid = PChar->PInstance->GetNewCharTargID();
 
         if (PChar->targid >= 0x700)
@@ -343,16 +346,6 @@ void CZoneInstance::SpawnTransport(CCharEntity* PChar)
     }
 }
 
-void CZoneInstance::TOTDChange(vanadiel_time::TOTD TOTD)
-{
-    TracyZoneScoped;
-
-    for (const auto& PInstance : m_InstanceList)
-    {
-        PInstance->TOTDChange(TOTD);
-    }
-}
-
 void CZoneInstance::PushPacket(CBaseEntity* PEntity, GLOBAL_MESSAGE_TYPE message_type, const std::unique_ptr<CBasicPacket>& packet)
 {
     TracyZoneScoped;
@@ -423,6 +416,8 @@ auto CZoneInstance::ZoneServer(timer::time_point tick) -> Task<void>
     {
         ShowDebug("[CZoneInstance] ZoneServer cleaned up Instance %s", PInstance->GetName());
 
+        instancesByRun_.erase(PInstance->runId());
+
         m_InstanceList.erase(
             std::find_if(
                 m_InstanceList.begin(),
@@ -477,7 +472,7 @@ auto CZoneInstance::CheckTriggerAreas() -> Task<void>
     co_return;
 }
 
-void CZoneInstance::ForEachChar(const std::function<void(CCharEntity*)>& func)
+void CZoneInstance::ForEachChar(FnRef<void(CCharEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -487,7 +482,7 @@ void CZoneInstance::ForEachChar(const std::function<void(CCharEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, const std::function<void(CCharEntity*)>& func)
+void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, FnRef<void(CCharEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -497,7 +492,7 @@ void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, const std::functio
     }
 }
 
-void CZoneInstance::ForEachMob(const std::function<void(CMobEntity*)>& func)
+void CZoneInstance::ForEachMob(FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -507,7 +502,7 @@ void CZoneInstance::ForEachMob(const std::function<void(CMobEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, const std::function<void(CMobEntity*)>& func)
+void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -517,7 +512,7 @@ void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, const std::function
     }
 }
 
-void CZoneInstance::ForEachNpc(const std::function<void(CNpcEntity*)>& func)
+void CZoneInstance::ForEachNpc(FnRef<void(CNpcEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -527,7 +522,7 @@ void CZoneInstance::ForEachNpc(const std::function<void(CNpcEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachNpcInstance(CBaseEntity* PEntity, const std::function<void(CNpcEntity*)>& func)
+void CZoneInstance::ForEachNpcInstance(CBaseEntity* PEntity, FnRef<void(CNpcEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -537,7 +532,7 @@ void CZoneInstance::ForEachNpcInstance(CBaseEntity* PEntity, const std::function
     }
 }
 
-void CZoneInstance::ForEachTrust(const std::function<void(CTrustEntity*)>& func)
+void CZoneInstance::ForEachTrust(FnRef<void(CTrustEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -547,7 +542,7 @@ void CZoneInstance::ForEachTrust(const std::function<void(CTrustEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachTrustInstance(CBaseEntity* PEntity, const std::function<void(CTrustEntity*)>& func)
+void CZoneInstance::ForEachTrustInstance(CBaseEntity* PEntity, FnRef<void(CTrustEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -557,7 +552,7 @@ void CZoneInstance::ForEachTrustInstance(CBaseEntity* PEntity, const std::functi
     }
 }
 
-void CZoneInstance::ForEachPet(const std::function<void(CPetEntity*)>& func)
+void CZoneInstance::ForEachPet(FnRef<void(CPetEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -567,7 +562,7 @@ void CZoneInstance::ForEachPet(const std::function<void(CPetEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachPetInstance(CBaseEntity* PEntity, const std::function<void(CPetEntity*)>& func)
+void CZoneInstance::ForEachPetInstance(CBaseEntity* PEntity, FnRef<void(CPetEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -577,7 +572,7 @@ void CZoneInstance::ForEachPetInstance(CBaseEntity* PEntity, const std::function
     }
 }
 
-void CZoneInstance::ForEachAlly(const std::function<void(CMobEntity*)>& func)
+void CZoneInstance::ForEachAlly(FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -587,7 +582,7 @@ void CZoneInstance::ForEachAlly(const std::function<void(CMobEntity*)>& func)
     }
 }
 
-void CZoneInstance::ForEachAllyInstance(CBaseEntity* PEntity, const std::function<void(CMobEntity*)>& func)
+void CZoneInstance::ForEachAllyInstance(CBaseEntity* PEntity, FnRef<void(CMobEntity*)> func)
 {
     TracyZoneScoped;
 
@@ -602,5 +597,9 @@ CInstance* CZoneInstance::CreateInstance(uint32 instanceid)
     TracyZoneScoped;
 
     m_InstanceList.emplace_back(std::make_unique<CInstance>(scheduler_, config_, this, instanceid));
-    return m_InstanceList.back().get();
+
+    auto* PInstance = m_InstanceList.back().get();
+    instancesByRun_.emplace(PInstance->runId(), PInstance);
+
+    return PInstance;
 }

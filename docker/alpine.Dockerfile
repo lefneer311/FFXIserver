@@ -12,6 +12,7 @@ apk --update-cache add \
     bash \
     binutils \
     git \
+    libdwarf \
     lua5.1-dev \
     luajit \
     mariadb-client \
@@ -65,13 +66,15 @@ apk --update-cache add \
     ccache \
     cmake \
     g++ \
+    libdwarf-dev \
     linux-headers \
     luajit-dev \
     make \
     mariadb-dev \
+    ninja-build \
+    ninja-is-really-ninja \
     openssl-dev \
     python3-dev \
-    samurai \
     zeromq-dev \
     zlib-dev \
     zstd-dev

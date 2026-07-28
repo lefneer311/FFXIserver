@@ -37,9 +37,9 @@ entity.onMobSpawn = function(mob)
 end
 
 entity.onMobFight = function(mob, target)
-    local delay = mob:getLocalVar('delay')
+    local delay    = mob:getLocalVar('delay')
     local lastCast = mob:getLocalVar('LAST_CAST')
-    local spell = mob:getLocalVar('COPY_SPELL')
+    local spell    = mob:getLocalVar('COPY_SPELL')
 
     if mob:getBattleTime() - lastCast > 30 then
         mob:setLocalVar('COPY_SPELL', 0)
@@ -94,7 +94,7 @@ end
 
 entity.onMobDespawn = function(mob)
     -- Move QM to random location
-    GetNPCByID(ID.npc.QM_JAILER_OF_FORTITUDE):setPos(unpack(gardenGlobal.qmPosFortTable[math.random(1, 5)]))
+    GetNPCByID(ID.npc.QM_JAILER_OF_FORTITUDE):setPos(unpack(gardenGlobal.qmPosFortTable[math.randomInt(1, 5)]))
 end
 
 return entity

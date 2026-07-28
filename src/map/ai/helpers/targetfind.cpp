@@ -22,15 +22,13 @@
 #include "targetfind.h"
 
 #include "ai/ai_container.h"
-#include "ai/states/inactive_state.h"
-#include "alliance.h"
 #include "common/mmo.h"
 #include "common/utils.h"
+#include "data/enums/mob_mod.h"
 #include "enmity_container.h"
 #include "entities/char_entity.h"
 #include "entities/mob_entity.h"
 #include "entities/trust_entity.h"
-#include "mob_modifier.h"
 #include "status_effect_container.h"
 #include "utils/zoneutils.h"
 
@@ -191,7 +189,7 @@ void CTargetFind::findWithinArea(CBattleEntity* PTarget, AOE_RADIUS radiusType, 
                 m_PMasterTarget = findMaster(m_PBattleEntity->GetBattleTarget());
             }
         }
-        else if (m_PMasterTarget->objtype == TYPE_PC || m_PBattleEntity->allegiance == ALLEGIANCE_TYPE::PLAYER || m_PMasterTarget->allegiance == ALLEGIANCE_TYPE::PLAYER)
+        else if (m_PMasterTarget->objtype == TYPE_PC || m_PBattleEntity->allegiance == xi::Allegiance::Player || m_PMasterTarget->allegiance == xi::Allegiance::Player)
         {
             m_findType = FIND_TYPE::MONSTER_PLAYER;
         }
@@ -213,7 +211,7 @@ void CTargetFind::findWithinArea(CBattleEntity* PTarget, AOE_RADIUS radiusType, 
         }
 
         if (m_findType == FIND_TYPE::MONSTER_PLAYER &&
-            ((m_PBattleEntity->objtype == TYPE_MOB && static_cast<CMobEntity*>(m_PBattleEntity)->getMobMod(MOBMOD_AOE_HIT_ALL)) ||
+            ((m_PBattleEntity->objtype == TYPE_MOB && static_cast<CMobEntity*>(m_PBattleEntity)->getMobMod(xi::MobMod::AoeHitAll)) ||
              static_cast<CMobEntity*>(m_PBattleEntity)->GetCallForHelpFlag()))
         {
             addAllInZone(m_PMasterTarget, withPet);
@@ -228,8 +226,8 @@ void CTargetFind::findWithinArea(CBattleEntity* PTarget, AOE_RADIUS radiusType, 
                 // Treat AoE as player-side if either:
                 // 1) The caster is player-aligned (trust, pet, charmed, etc.), OR
                 // 2) The base target is a player-aligned mob (mission / battlefield allies)
-                if (m_PBattleEntity->allegiance == ALLEGIANCE_TYPE::PLAYER ||
-                    (m_PMasterTarget->objtype == TYPE_MOB && m_PMasterTarget->allegiance == ALLEGIANCE_TYPE::PLAYER))
+                if (m_PBattleEntity->allegiance == xi::Allegiance::Player ||
+                    (m_PMasterTarget->objtype == TYPE_MOB && m_PMasterTarget->allegiance == xi::Allegiance::Player))
                 {
                     addAllInZone(m_PMasterTarget, withPet);
                 }
@@ -380,12 +378,12 @@ void CTargetFind::addAllInEnmityList()
     }
 }
 
-void CTargetFind::addAllInRange(CBattleEntity* PTarget, float radius, ALLEGIANCE_TYPE allegiance)
+void CTargetFind::addAllInRange(CBattleEntity* PTarget, float radius, xi::Allegiance allegiance)
 {
     m_radius        = radius;
     m_PRadiusAround = &(m_PBattleEntity->loc.p);
 
-    if (PTarget && allegiance == ALLEGIANCE_TYPE::PLAYER)
+    if (PTarget && allegiance == xi::Allegiance::Player)
     {
         if (PTarget->objtype == TYPE_PC)
         {
@@ -397,7 +395,7 @@ void CTargetFind::addAllInRange(CBattleEntity* PTarget, float radius, ALLEGIANCE
                     if (PBattleEntity &&
                         isWithinArea(&(PBattleEntity->loc.p)) &&
                         !PBattleEntity->isDead() &&
-                        PBattleEntity->allegiance == ALLEGIANCE_TYPE::PLAYER)
+                        PBattleEntity->allegiance == xi::Allegiance::Player)
                     {
                         m_targets.emplace_back(PBattleEntity);
                     }
@@ -450,14 +448,14 @@ bool CTargetFind::isMobOwner(CBattleEntity* PTarget)
         return true;
     }
 
-    if (PTarget->m_OwnerID.id == 0 || PTarget->m_OwnerID.id == findMaster(m_PBattleEntity)->id)
+    if (PTarget->m_OwnerID.UniqueNo == 0 || PTarget->m_OwnerID.UniqueNo == findMaster(m_PBattleEntity)->id)
     {
         return true;
     }
 
     if (auto* PMob = dynamic_cast<CMobEntity*>(PTarget))
     {
-        if (PMob->getMobMod(MOBMOD_CLAIM_TYPE) == static_cast<int16>(ClaimType::NonExclusive))
+        if (PMob->getMobMod(xi::MobMod::ClaimType) == static_cast<int16>(xi::ClaimType::NonExclusive))
         {
             return true;
         }
@@ -468,7 +466,7 @@ bool CTargetFind::isMobOwner(CBattleEntity* PTarget)
     // clang-format off
     findMaster(m_PBattleEntity)->ForAlliance([&found, &PTarget](CBattleEntity* PMember)
     {
-        if (PMember->id == PTarget->m_OwnerID.id)
+        if (PMember->id == PTarget->m_OwnerID.UniqueNo)
         {
             found = true;
         }
@@ -508,7 +506,7 @@ bool CTargetFind::validEntity(CBattleEntity* PTarget)
         return false;
     }
 
-    if (m_PTarget == PTarget || PTarget->getZone() != m_zone || PTarget->GetUntargetable() || PTarget->status == STATUS_TYPE::INVISIBLE)
+    if (m_PTarget == PTarget || PTarget->getZone() != m_zone || PTarget->GetUntargetable() || PTarget->status == xi::Status::Invisible)
     {
         return false;
     }
@@ -689,10 +687,13 @@ bool CTargetFind::isWithinRange(position_t* pos, float range)
     return distance(m_PBattleEntity->loc.p, *pos) <= range;
 }
 
-CBattleEntity* CTargetFind::getValidTarget(uint16 actionTargetID, uint16 validTargetFlags)
+auto CTargetFind::getValidTarget(const uint16 actionTargetID, const uint16 validTargetFlags) const -> CBattleEntity*
 {
-    CBattleEntity* PTarget = (CBattleEntity*)m_PBattleEntity->GetEntity(actionTargetID, TYPE_MOB | TYPE_PC | TYPE_PET | TYPE_TRUST);
+    return getValidTarget(dynamic_cast<CBattleEntity*>(m_PBattleEntity->GetEntity(actionTargetID, TYPE_MOB | TYPE_PC | TYPE_PET | TYPE_TRUST)), validTargetFlags);
+}
 
+auto CTargetFind::getValidTarget(CBattleEntity* PTarget, const uint16 validTargetFlags) const -> CBattleEntity*
+{
     if (PTarget == nullptr)
     {
         return nullptr;

@@ -23,15 +23,16 @@
 
 #include "map_engine.h"
 
+#include "common/database.h"
+#include "common/logging.h"
+#include "common/sjis.h"
+
+#include <common/types/hash_map.h>
+
 #include <algorithm>
 #include <array>
 #include <cstring>
 #include <map>
-#include <unordered_map>
-
-#include "common/database.h"
-#include "common/logging.h"
-#include "common/sjis.h"
 
 #include "entities/battle_entity.h"
 #include "enums/item_types.h"
@@ -45,16 +46,18 @@
 
 namespace
 {
+
 std::array<std::unique_ptr<CItem>, MAX_ITEMID> itemTemplates;
 std::unique_ptr<CItemWeapon>                   unarmedItem;
 std::unique_ptr<CItemWeapon>                   unarmedH2HItem;
+
 } // namespace
 
 std::array<DropList_t*, MAX_DROPID> g_pDropList; // global array of monster droplist items
 std::array<LootList_t*, MAX_LOOTID> g_pLootList; // global array of BCNM lootlist items
 
 // Translation lookup: language -> (name -> {item id, translated name})
-std::map<GP_CLI_COMMAND_TRANSLATE_INDEX, std::unordered_map<std::string, std::pair<uint16, std::string>>> g_TranslateMap;
+std::map<GP_CLI_COMMAND_TRANSLATE_INDEX, HashMap<std::string, std::pair<uint16, std::string>>> g_TranslateMap;
 
 DropItem_t::DropItem_t(uint8 DropType, uint16 ItemID, uint16 DropRate)
 : DropType(DropType)
@@ -89,7 +92,7 @@ LootContainer::LootContainer(DropList_t* dropList)
 {
 }
 
-void LootContainer::ForEachGroup(const std::function<void(const DropGroup_t&)>& func)
+void LootContainer::ForEachGroup(FnRef<void(const DropGroup_t&)> func)
 {
     for (const auto& group : dropList->Groups)
     {
@@ -102,7 +105,7 @@ void LootContainer::ForEachGroup(const std::function<void(const DropGroup_t&)>& 
     }
 }
 
-void LootContainer::ForEachItem(const std::function<void(const DropItem_t&)>& func)
+void LootContainer::ForEachItem(FnRef<void(const DropItem_t&)> func)
 {
     for (const auto& item : dropList->Items)
     {
@@ -347,7 +350,7 @@ void LoadItemList()
 
             if (PItem->isType(ITEM_WEAPON))
             {
-                static_cast<CItemWeapon*>(PItem)->setSkillType(rset->get<uint8>("skill"));
+                static_cast<CItemWeapon*>(PItem)->setSkillType(rset->get<xi::SkillType>("skill"));
                 static_cast<CItemWeapon*>(PItem)->setSubSkillType(rset->get<uint8>("subskill"));
                 static_cast<CItemWeapon*>(PItem)->setILvlSkill(rset->get<uint16>("ilvl_skill"));
                 static_cast<CItemWeapon*>(PItem)->setILvlParry(rset->get<uint16>("ilvl_parry"));
@@ -361,7 +364,7 @@ void LoadItemList()
 
                 int        dmg   = rset->get<uint16>("dmg");
                 int        delay = rset->get<uint16>("delay");
-                const bool isH2H = static_cast<CItemWeapon*>(PItem)->getSkillType() == SKILL_HAND_TO_HAND;
+                const bool isH2H = static_cast<CItemWeapon*>(PItem)->getSkillType() == xi::SkillType::HandToHand;
 
                 if ((dmg > 0 || isH2H) && delay > 0) // avoid division by zero for items not yet implemented. Zero dmg h2h weapons don't actually have zero dmg for the purposes of DPS.
                 {
@@ -429,7 +432,7 @@ void LoadItemList()
     FOR_DB_MULTIPLE_RESULTS(rset)
     {
         const auto ItemID = rset->get<uint16>("itemId");
-        const auto modID  = rset->get<Mod>("modId");
+        const auto modID  = rset->get<xi::Mod>("modId");
         const auto value  = rset->get<int16>("value");
 
         if (auto* tpl = itemTemplates[ItemID].get(); tpl != nullptr && tpl->isType(ITEM_EQUIPMENT))
@@ -445,7 +448,7 @@ void LoadItemList()
     FOR_DB_MULTIPLE_RESULTS(rset)
     {
         const auto ItemID  = rset->get<uint16>("itemId");
-        const auto modID   = rset->get<Mod>("modId");
+        const auto modID   = rset->get<xi::Mod>("modId");
         const auto value   = rset->get<int16>("value");
         const auto petType = rset->get<PetModType>("petType");
 
@@ -462,7 +465,7 @@ void LoadItemList()
     FOR_DB_MULTIPLE_RESULTS(rset)
     {
         const auto ItemID      = rset->get<uint16>("itemId");
-        const auto modID       = rset->get<Mod>("modId");
+        const auto modID       = rset->get<xi::Mod>("modId");
         const auto value       = rset->get<int16>("value");
         const auto latentId    = rset->get<xi::Latent>("latentId");
         const auto latentParam = rset->get<uint16>("latentParam");
@@ -536,12 +539,12 @@ void Initialize()
 
     unarmedItem = std::make_unique<CItemWeapon>(0);
     unarmedItem->setDmgType(xi::DamageType::None);
-    unarmedItem->setSkillType(SKILL_NONE);
+    unarmedItem->setSkillType(xi::SkillType::None);
     unarmedItem->setDamage(3);
 
     unarmedH2HItem = std::make_unique<CItemWeapon>(0);
     unarmedH2HItem->setDmgType(xi::DamageType::HandToHand);
-    unarmedH2HItem->setSkillType(SKILL_HAND_TO_HAND);
+    unarmedH2HItem->setSkillType(xi::SkillType::HandToHand);
     unarmedH2HItem->setDamage(0);
 
     // load magian trial data AFTER items
@@ -578,7 +581,7 @@ void FreeItemList()
 }
 
 auto TranslateItemName(GP_CLI_COMMAND_TRANSLATE_INDEX fromLang, GP_CLI_COMMAND_TRANSLATE_INDEX toLang, const std::string& name)
-    -> std::optional<std::pair<uint16, std::string>>
+    -> Maybe<std::pair<uint16, std::string>>
 {
     std::ignore = toLang; // With only EN/JP, the "from" map already stores the other language's translation.
 

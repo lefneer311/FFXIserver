@@ -22,10 +22,9 @@
 #include "synthutils.h"
 
 #include "charutils.h"
-#include "common/database.h"
 #include "common/logging.h"
 #include "common/timer.h"
-#include "common/utils.h"
+#include "common/types/flat_hash_map.h"
 #include "entities/battle_entity.h"
 #include "enums/key_items.h"
 #include "enums/synthesis_effect.h"
@@ -41,7 +40,9 @@
 #include "packets/s2c/0x070_combine_inf.h"
 #include "roe.h"
 #include "zone.h"
-#include "zoneutils.h"
+
+#include <algorithm>
+#include <cmath>
 
 // TODO: This largely overlaps with SYNTHESIS_RESULT and could be simplified.
 #define RESULT_SUCCESS 0x00
@@ -88,25 +89,25 @@ struct SynthRecipe
     std::string ResultName;
     std::string ContentTag;
 
-    uint16 getSkillValue(SKILLTYPE type) const
+    uint16 getSkillValue(xi::SkillType type) const
     {
         switch (type)
         {
-            case SKILL_WOODWORKING:
+            case xi::SkillType::Woodworking:
                 return Wood;
-            case SKILL_SMITHING:
+            case xi::SkillType::Smithing:
                 return Smith;
-            case SKILL_GOLDSMITHING:
+            case xi::SkillType::Goldsmithing:
                 return Gold;
-            case SKILL_CLOTHCRAFT:
+            case xi::SkillType::Clothcraft:
                 return Cloth;
-            case SKILL_LEATHERCRAFT:
+            case xi::SkillType::Leathercraft:
                 return Leather;
-            case SKILL_BONECRAFT:
+            case xi::SkillType::Bonecraft:
                 return Bone;
-            case SKILL_ALCHEMY:
+            case xi::SkillType::Alchemy:
                 return Alchemy;
-            case SKILL_COOKING:
+            case xi::SkillType::Cooking:
                 return Cook;
             default:
                 return 0;
@@ -192,7 +193,7 @@ struct SynthRecipe
     }
 };
 
-std::unordered_map<std::string, SynthRecipe> synthRecipes;
+FlatHashMap<std::string, SynthRecipe> synthRecipes;
 
 struct CrystalProps
 {
@@ -399,12 +400,12 @@ auto resolveRecipe(CCharEntity* PChar, const SynthOffer& offer) -> bool
         data.ingredientItemIds[i] = offer.ingredients[i].itemId;
     }
 
-    for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+    for (uint8 skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID)
     {
-        const uint16 skillValue   = recipe.getSkillValue(static_cast<SKILLTYPE>(skillID));
+        const uint16 skillValue   = recipe.getSkillValue(static_cast<xi::SkillType>(skillID));
         const uint16 currentSkill = PChar->RealSkills.skill[skillID];
 
-        data.skillRequired[skillID - SKILL_WOODWORKING] = static_cast<uint8>(skillValue);
+        data.skillRequired[skillID - static_cast<uint8>(xi::SkillType::Woodworking)] = static_cast<uint8>(skillValue);
 
         if (currentSkill < (skillValue * 10 - 150))
         {
@@ -420,38 +421,40 @@ auto resolveRecipe(CCharEntity* PChar, const SynthOffer& offer) -> bool
 // Used in: LOCAL handleSynthResult
 auto getSynthDifficulty(CCharEntity* PChar, uint8 skillID) -> int16
 {
-    Mod ModID = Mod::NONE;
+    xi::Mod ModID = xi::Mod::NONE;
 
-    switch (skillID)
+    switch (static_cast<xi::SkillType>(skillID))
     {
-        case SKILL_WOODWORKING:
-            ModID = Mod::WOOD;
+        case xi::SkillType::Woodworking:
+            ModID = xi::Mod::WOOD;
             break;
-        case SKILL_SMITHING:
-            ModID = Mod::SMITH;
+        case xi::SkillType::Smithing:
+            ModID = xi::Mod::SMITH;
             break;
-        case SKILL_GOLDSMITHING:
-            ModID = Mod::GOLDSMITH;
+        case xi::SkillType::Goldsmithing:
+            ModID = xi::Mod::GOLDSMITH;
             break;
-        case SKILL_CLOTHCRAFT:
-            ModID = Mod::CLOTH;
+        case xi::SkillType::Clothcraft:
+            ModID = xi::Mod::CLOTH;
             break;
-        case SKILL_LEATHERCRAFT:
-            ModID = Mod::LEATHER;
+        case xi::SkillType::Leathercraft:
+            ModID = xi::Mod::LEATHER;
             break;
-        case SKILL_BONECRAFT:
-            ModID = Mod::BONE;
+        case xi::SkillType::Bonecraft:
+            ModID = xi::Mod::BONE;
             break;
-        case SKILL_ALCHEMY:
-            ModID = Mod::ALCHEMY;
+        case xi::SkillType::Alchemy:
+            ModID = xi::Mod::ALCHEMY;
             break;
-        case SKILL_COOKING:
-            ModID = Mod::COOK;
+        case xi::SkillType::Cooking:
+            ModID = xi::Mod::COOK;
+            break;
+        default:
             break;
     }
 
-    uint8 charSkill  = PChar->RealSkills.skill[skillID] / 10; // Player skill level is truncated before synth difficulty is calculated
-    int16 difficulty = PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING) - charSkill - PChar->getMod(ModID);
+    const uint8 charSkill  = static_cast<uint8>(PChar->RealSkills.skill[skillID] / 10); // Player skill level is truncated before synth difficulty is calculated
+    const int16 difficulty = static_cast<int16>(PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)) - charSkill - PChar->getMod(ModID));
 
     return difficulty;
 }
@@ -459,33 +462,35 @@ auto getSynthDifficulty(CCharEntity* PChar, uint8 skillID) -> int16
 // Used in: LOCAL handleSynthResult
 auto canSynthesizeHQ(CCharEntity* PChar, uint8 skillID) -> bool
 {
-    Mod ModID = Mod::NONE;
+    xi::Mod ModID = xi::Mod::NONE;
 
-    switch (skillID)
+    switch (static_cast<xi::SkillType>(skillID))
     {
-        case SKILL_WOODWORKING:
-            ModID = Mod::SYNTH_ANTI_HQ_WOODWORKING;
+        case xi::SkillType::Woodworking:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_WOODWORKING;
             break;
-        case SKILL_SMITHING:
-            ModID = Mod::SYNTH_ANTI_HQ_SMITHING;
+        case xi::SkillType::Smithing:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_SMITHING;
             break;
-        case SKILL_GOLDSMITHING:
-            ModID = Mod::SYNTH_ANTI_HQ_GOLDSMITHING;
+        case xi::SkillType::Goldsmithing:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_GOLDSMITHING;
             break;
-        case SKILL_CLOTHCRAFT:
-            ModID = Mod::SYNTH_ANTI_HQ_CLOTHCRAFT;
+        case xi::SkillType::Clothcraft:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_CLOTHCRAFT;
             break;
-        case SKILL_LEATHERCRAFT:
-            ModID = Mod::SYNTH_ANTI_HQ_LEATHERCRAFT;
+        case xi::SkillType::Leathercraft:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_LEATHERCRAFT;
             break;
-        case SKILL_BONECRAFT:
-            ModID = Mod::SYNTH_ANTI_HQ_BONECRAFT;
+        case xi::SkillType::Bonecraft:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_BONECRAFT;
             break;
-        case SKILL_ALCHEMY:
-            ModID = Mod::SYNTH_ANTI_HQ_ALCHEMY;
+        case xi::SkillType::Alchemy:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_ALCHEMY;
             break;
-        case SKILL_COOKING:
-            ModID = Mod::SYNTH_ANTI_HQ_COOKING;
+        case xi::SkillType::Cooking:
+            ModID = xi::Mod::SYNTH_ANTI_HQ_COOKING;
+            break;
+        default:
             break;
     }
 
@@ -494,38 +499,38 @@ auto canSynthesizeHQ(CCharEntity* PChar, uint8 skillID) -> bool
 
 auto calculateSynthResult(CCharEntity* PChar) -> uint8
 {
-    uint8 synthResult     = SYNTHESIS_SUCCESS;
-    uint8 skillID         = 0;
-    uint8 finalHQTier     = 4;
-    uint8 currentHQTier   = 0;
-    int16 synthDifficulty = 0;
-    float successRate     = 0.0f;
-    bool  canHQ           = true;
+    uint8  synthResult     = SYNTHESIS_SUCCESS;
+    uint8  skillID         = 0;
+    uint8  finalHQTier     = 4;
+    uint8  currentHQTier   = 0;
+    int16  synthDifficulty = 0;
+    double successRate     = 0.0;
+    bool   canHQ           = true;
 
     //------------------------------
     // Section 2: Break handling
     //------------------------------
-    for (skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+    for (skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID)
     {
         // Skip current iteration if skill isn't involved.
-        if (PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING) == 0)
+        if (PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)) == 0)
         {
             continue;
         }
 
         // Skill is involved. Get synth difficulty for current skill.
         synthDifficulty = getSynthDifficulty(PChar, skillID);
-        successRate     = 95.0f;
+        successRate     = 95.0;
         currentHQTier   = 0;
 
         if (synthDifficulty >= 4)
         {
-            successRate = 80.0f - 10.0f * (synthDifficulty - 3);
+            successRate = 80.0 - 10.0 * static_cast<double>(synthDifficulty - 3);
             canHQ       = false;
         }
         else if (synthDifficulty >= 1)
         {
-            successRate = 95.0f - 5.0f * synthDifficulty;
+            successRate = 95.0 - 5.0 * static_cast<double>(synthDifficulty);
             canHQ       = false;
         }
         else if (synthDifficulty >= -10) // 0-10 levels over recipe.
@@ -551,24 +556,21 @@ auto calculateSynthResult(CCharEntity* PChar) -> uint8
             finalHQTier = currentHQTier;
         }
 
-        successRate = successRate + PChar->getMod(Mod::SYNTH_SUCCESS_RATE);
+        successRate = successRate + static_cast<double>(PChar->getMod(xi::Mod::SYNTH_SUCCESS_RATE));
 
         // Crafting ring handling.
         if (!canSynthesizeHQ(PChar, skillID))
         {
-            canHQ       = false;           // Assuming here that if a crafting ring is used matching a recipe's subsynth, overall HQ will still be blocked
-            successRate = successRate + 1; // The crafting rings that block HQ synthesis all also increase their respective craft's success rate by 1%
+            canHQ       = false;             // Assuming here that if a crafting ring is used matching a recipe's subsynth, overall HQ will still be blocked
+            successRate = successRate + 1.0; // The crafting rings that block HQ synthesis all also increase their respective craft's success rate by 1%
         }
 
         // Clamp success rate to 99%
         // https://www.bluegartr.com/threads/120352-CraftyMath
         // http://www.ffxiah.com/item/5781/kitron-macaron
-        if (successRate > 99.0f)
-        {
-            successRate = 99.0f;
-        }
+        successRate = std::min(successRate, 99.0);
 
-        if (xirand::GetRandomNumber(0.0f, 100.f) > successRate) // Synthesis broke. This is not a mistake, the break check HAS to be done per craft skill involved.
+        if (xirand::GetRandomNumber(0.0, 100.0) > successRate) // Synthesis broke. This is not a mistake, the break check HAS to be done per craft skill involved.
         {
             // Keep the skill because of which the synthesis failed.
             PChar->craftState().setFailingSkill(skillID);
@@ -590,37 +592,34 @@ auto calculateSynthResult(CCharEntity* PChar) -> uint8
         return SYNTHESIS_SUCCESS;
     }
 
-    float chanceHQ = 0.0f;
+    double chanceHQ = 0.0;
     switch (finalHQTier)
     {
         case 4: // 1 in 2
-            chanceHQ = 50.0f;
+            chanceHQ = 50.0;
             break;
         case 3: // 1 in 4
-            chanceHQ = 25.0f;
+            chanceHQ = 25.0;
             break;
         case 2: // 1 in 16
-            chanceHQ = 6.25f;
+            chanceHQ = 6.25;
             break;
         case 1: // 1 in 64
-            chanceHQ = 1.5625f;
+            chanceHQ = 1.5625;
             break;
         default: // No chance
-            chanceHQ = 0.0f;
+            chanceHQ = 0.0;
             break;
     }
 
     // See: https://www.bluegartr.com/threads/130586-CraftyMath-v2-Post-September-2017-Update page 3.
-    chanceHQ = (chanceHQ + 100.0f * PChar->getMod(Mod::SYNTH_HQ_RATE) / 512.0f) * settings::get<float>("map.CRAFT_HQ_CHANCE_MULTIPLIER");
+    chanceHQ = (chanceHQ + 100.0 * static_cast<double>(PChar->getMod(xi::Mod::SYNTH_HQ_RATE)) / 512.0) * settings::get<double>("map.CRAFT_HQ_CHANCE_MULTIPLIER");
 
-    // limit max hq chance
-    if (chanceHQ > 80.0f)
-    {
-        chanceHQ = 80.0f;
-    }
+    // Limit max hq chance
+    chanceHQ = std::min(chanceHQ, 80.0);
 
     // Early return: We fail HQ check.
-    if (xirand::GetRandomNumber(0.0f, 100.f) > chanceHQ)
+    if (xirand::GetRandomNumber(0.0, 100.0) > chanceHQ)
     {
         return SYNTHESIS_SUCCESS;
     }
@@ -636,7 +635,7 @@ auto calculateSynthResult(CCharEntity* PChar) -> uint8
     uint8 upgradeHQ       = 0;
     for (uint8 tries = 0; tries < allowedUpgrades; ++tries)
     {
-        if (xirand::GetRandomNumber(0.0f, 100.f) <= 25.0f) // 25% Chance to upgrade HQ
+        if (xirand::GetRandomNumber(0.0, 100.0) <= 25.0) // 25% Chance to upgrade HQ
         {
             upgradeHQ = upgradeHQ + 1;
         }
@@ -646,22 +645,22 @@ auto calculateSynthResult(CCharEntity* PChar) -> uint8
         }
     }
 
-    return SYNTHESIS_HQ + upgradeHQ;
+    return static_cast<uint8>(SYNTHESIS_HQ + upgradeHQ);
 }
 
 auto calculateDesynthResult(CCharEntity* PChar) -> uint8
 {
-    uint8 synthResult     = SYNTHESIS_SUCCESS;
-    uint8 skillID         = 0;
-    int16 synthDifficulty = 0;
-    float successRate     = 0.0f;
-    bool  canHQ           = true;
+    uint8  synthResult     = SYNTHESIS_SUCCESS;
+    uint8  skillID         = 0;
+    int16  synthDifficulty = 0;
+    double successRate     = 0.0;
+    bool   canHQ           = true;
 
     // Calculate success or break.
-    for (skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+    for (skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID)
     {
         // Skip current iteration if skill isn't involved.
-        if (PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING) == 0)
+        if (PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)) == 0)
         {
             continue;
         }
@@ -671,27 +670,27 @@ auto calculateDesynthResult(CCharEntity* PChar) -> uint8
 
         if (synthDifficulty >= 8)
         {
-            successRate = 10.0f - 10.0f * (synthDifficulty - 7) / 3.0f;
+            successRate = 10.0 - 10.0 * static_cast<double>(synthDifficulty - 7) / 3.0;
         }
         else if (synthDifficulty >= 1)
         {
-            successRate = 40.0f - 5.0f * (synthDifficulty - 1);
+            successRate = 40.0 - 5.0 * static_cast<double>(synthDifficulty - 1);
         }
         else
         {
-            successRate = 40.0f;
+            successRate = 40.0;
         }
 
-        successRate = successRate + PChar->getMod(Mod::SYNTH_SUCCESS_RATE_DESYNTHESIS);
+        successRate = successRate + static_cast<double>(PChar->getMod(xi::Mod::SYNTH_SUCCESS_RATE_DESYNTHESIS));
 
         // Crafting ring handling.
         if (!canSynthesizeHQ(PChar, skillID))
         {
-            successRate = successRate + 1.0f; // The crafting rings that block HQ synthesis all also increase their respective craft's success rate by 1%
-            canHQ       = false;              // Assuming here that if a crafting ring is used matching a recipe's subsynth, overall HQ will still be blocked
+            successRate = successRate + 1.0; // The crafting rings that block HQ synthesis all also increase their respective craft's success rate by 1%
+            canHQ       = false;             // Assuming here that if a crafting ring is used matching a recipe's subsynth, overall HQ will still be blocked
         }
 
-        if (xirand::GetRandomNumber(0.0f, 100.f) > successRate) // Synthesis broke. This is not a mistake, the break check HAS to be done per craft skill involved.
+        if (xirand::GetRandomNumber(0.0, 100.0) > successRate) // Synthesis broke. This is not a mistake, the break check HAS to be done per craft skill involved.
         {
             // Keep the skill because of which the synthesis failed.
             PChar->craftState().setFailingSkill(skillID);
@@ -714,16 +713,13 @@ auto calculateDesynthResult(CCharEntity* PChar) -> uint8
     }
 
     // See: https://www.bluegartr.com/threads/130586-CraftyMath-v2-Post-September-2017-Update page 3.
-    float chanceHQ = (60.0f + 100.0f * PChar->getMod(Mod::SYNTH_HQ_RATE) / 512.0f) * settings::get<float>("map.CRAFT_HQ_CHANCE_MULTIPLIER");
+    double chanceHQ = (60.0 + 100.0 * static_cast<double>(PChar->getMod(xi::Mod::SYNTH_HQ_RATE)) / 512.0) * settings::get<double>("map.CRAFT_HQ_CHANCE_MULTIPLIER");
 
     // Limit max hq chance
-    if (chanceHQ > 80.0f)
-    {
-        chanceHQ = 80.0f;
-    }
+    chanceHQ = std::min(chanceHQ, 80.0);
 
     // Early return: We fail HQ check.
-    if (xirand::GetRandomNumber(0.0f, 100.f) > chanceHQ)
+    if (xirand::GetRandomNumber(0.0, 100.0) > chanceHQ)
     {
         return SYNTHESIS_SUCCESS;
     }
@@ -737,17 +733,17 @@ auto calculateDesynthResult(CCharEntity* PChar) -> uint8
     // (NQ , HQ1, HQ2, HQ3)
     // (40%, 30%, 20%, 10%)
     // roll a 50% HQ2 rate, then a 33.33(...)% rate for HQ3
-    if (xirand::GetRandomNumber(0.0f, 100.f) < 50.0f)
+    if (xirand::GetRandomNumber(0.0, 100.0) < 50.0)
     {
         upgradeHQ = 1;
 
-        if (xirand::GetRandomNumber(0.0f, 100.f) < 100.f / 3.0f)
+        if (xirand::GetRandomNumber(0.0, 100.0) < (100.0 / 3.0))
         {
             upgradeHQ = 2;
         }
     }
 
-    return SYNTHESIS_HQ + upgradeHQ;
+    return static_cast<uint8>(SYNTHESIS_HQ + upgradeHQ);
 }
 
 // Used in: startSynth
@@ -792,19 +788,16 @@ void handleMaterialLoss(CCharEntity* PChar)
 
     uint8 currentCraft = craftState.failingSkill();
 
-    int16 breakGlobalReduction    = PChar->getMod(Mod::SYNTH_MATERIAL_LOSS);
-    int16 breakElementalReduction = PChar->getMod((Mod)((int32)Mod::SYNTH_MATERIAL_LOSS_FIRE + craftState.element()));
-    int16 breakTypeReduction      = PChar->getMod((Mod)((int32)Mod::SYNTH_MATERIAL_LOSS_WOODWORKING + currentCraft - SKILL_WOODWORKING));
-    int16 synthDifficulty         = getSynthDifficulty(PChar, currentCraft);
+    const int16 breakGlobalReduction    = PChar->getMod(xi::Mod::SYNTH_MATERIAL_LOSS);
+    const int16 breakElementalReduction = PChar->getMod(static_cast<xi::Mod>(static_cast<int32>(xi::Mod::SYNTH_MATERIAL_LOSS_FIRE) + craftState.element()));
+    const int16 breakTypeReduction      = PChar->getMod(static_cast<xi::Mod>(static_cast<int32>(xi::Mod::SYNTH_MATERIAL_LOSS_WOODWORKING) + currentCraft - static_cast<uint8>(xi::SkillType::Woodworking)));
+    int16       synthDifficulty         = getSynthDifficulty(PChar, currentCraft);
 
-    if (synthDifficulty < 0)
-    {
-        synthDifficulty = 0;
-    }
+    synthDifficulty = std::max<int16>(synthDifficulty, 0);
 
     // Break Chance.
     // Clamp note: https://wiki-ffo-jp.translate.goog/html/36626.html?_x_tr_sl=ja&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=sc
-    int16 breakChance = std::clamp(50 - breakGlobalReduction - breakElementalReduction - breakTypeReduction + 5 * synthDifficulty, 20, 100);
+    const int16 breakChance = static_cast<int16>(std::clamp(50 - breakGlobalReduction - breakElementalReduction - breakTypeReduction + 5 * synthDifficulty, 20, 100));
 
     for (uint8 idx = 0; idx < SynthMaxIngredients; ++idx)
     {
@@ -813,7 +806,7 @@ void handleMaterialLoss(CCharEntity* PChar)
             continue;
         }
 
-        const uint8 random = 1 + xirand::GetRandomNumber(100);
+        const uint8 random = static_cast<uint8>(1 + xirand::GetRandomNumber(100));
         if (random <= breakChance)
         {
             craftState.markBroken(idx);
@@ -843,9 +836,9 @@ void handleSynthSuccess(CCharEntity* PChar)
     // Calculate what craft this recipe "belongs" to based on highest skill required
     uint32 skillType    = 0;
     uint32 highestSkill = 0;
-    for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+    for (uint8 skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID)
     {
-        uint8 skillRequired = craftState.skillRequired(skillID - SKILL_WOODWORKING);
+        uint8 skillRequired = craftState.skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking));
         if (skillRequired > highestSkill)
         {
             skillType    = skillID;
@@ -899,14 +892,14 @@ void handleSynthFail(CCharEntity* PChar)
 // Used in: sendSynthDone
 void doSynthSkillUp(CCharEntity* PChar)
 {
-    for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID) // Check for all skills involved in a recipe, to check for skill up
+    for (uint8 skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID) // Check for all skills involved in a recipe, to check for skill up
     {
         //------------------------------
         // Section 1: Checks
         //------------------------------
 
         // We don't Skill Up if the recipe doesn't involve the currently checked skill.
-        if (PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING) == 0)
+        if (PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)) == 0)
         {
             continue; // Break current loop iteration.
         }
@@ -923,8 +916,8 @@ void doSynthSkillUp(CCharEntity* PChar)
         // We don't Skill Up if the recipe isn't difficult enough.
         // Era -> Char lvl must be bellow recipe level. Retail -> Char level myst be bellow recipe level + 10.
         // Char level does NOT count the effects of image support/gear.
-        int16 baseDiff = PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING) - charSkill / 10;
-        int8  minDiff  = settings::get<bool>("map.CRAFT_MODERN_SYSTEM") ? -11 : 0;
+        const int16 baseDiff = static_cast<int16>(PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)) - charSkill / 10);
+        const int8  minDiff  = settings::get<bool>("map.CRAFT_MODERN_SYSTEM") ? -11 : 0;
         if (baseDiff <= minDiff)
         {
             continue; // Break current loop iteration.
@@ -939,31 +932,31 @@ void doSynthSkillUp(CCharEntity* PChar)
         //------------------------------
         // Section 2: Skill up chance calculation
         //------------------------------
-        double skillUpChance = 0;
+        double skillUpChance = 0.0;
 
         if (settings::get<bool>("map.CRAFT_MODERN_SYSTEM"))
         {
             if (baseDiff > 1)
             {
-                skillUpChance = (double)baseDiff * (3 - log(1.2 + charSkill / 100)) / 5; // Original skill up equation with "x2 chance" applied.
+                skillUpChance = static_cast<double>(baseDiff) * (3.0 - std::log(1.2 + static_cast<double>(charSkill) / 100.0)) / 5.0; // Original skill up equation with "x2 chance" applied.
             }
             else
             {
-                skillUpChance = (3 - log(1.2 + charSkill / 100)) / (6 - baseDiff); // Equation used when over cap.
+                skillUpChance = (3.0 - std::log(1.2 + static_cast<double>(charSkill) / 100.0)) / static_cast<double>(6 - baseDiff); // Equation used when over cap.
             }
         }
         else
         {
-            skillUpChance = (double)baseDiff * (3 - log(1.2 + charSkill / 100)) / 10; // Original skill up equation.
+            skillUpChance = static_cast<double>(baseDiff) * (3.0 - std::log(1.2 + static_cast<double>(charSkill) / 100.0)) / 10.0; // Original skill up equation.
         }
 
         // Apply synthesis skill gain rate modifier before synthesis fail modifier
-        double modSynthSkillGain = PChar->getMod(Mod::SYNTH_SKILL_GAIN) / 100.0f;
-        skillUpChance            = skillUpChance + modSynthSkillGain;
+        const double modSynthSkillGain = static_cast<double>(PChar->getMod(xi::Mod::SYNTH_SKILL_GAIN)) / 100.0;
+        skillUpChance                  = skillUpChance + modSynthSkillGain;
 
         // Apply setting multiplier.
-        double craftChanceMultiplier = settings::get<double>("map.CRAFT_CHANCE_MULTIPLIER");
-        skillUpChance                = skillUpChance * craftChanceMultiplier;
+        const double craftChanceMultiplier = settings::get<double>("map.CRAFT_CHANCE_MULTIPLIER");
+        skillUpChance                      = skillUpChance * craftChanceMultiplier;
 
         // Chance penalties.
         uint8 penalty = 1;
@@ -978,12 +971,12 @@ void doSynthSkillUp(CCharEntity* PChar)
             penalty += 1;
         }
 
-        skillUpChance = skillUpChance / penalty; // Lower skill up chance if synth breaks
+        skillUpChance = skillUpChance / static_cast<double>(penalty); // Lower skill up chance if synth breaks
 
         //------------------------------
         // Section 3: Skill Up or break loop
         //------------------------------
-        double random = xirand::GetRandomNumber(1.);
+        const double random = xirand::GetRandomNumber(1.0);
 
         if (random >= skillUpChance) // If character doesn't skill up
         {
@@ -1014,14 +1007,14 @@ void doSynthSkillUp(CCharEntity* PChar)
         uint8 skillUpAmount = 1;
         if (maxAllowedAmount > 1)
         {
-            uint8  cicles = maxAllowedAmount - 1;
-            double chance = 0.0f;
+            const uint8 cicles = static_cast<uint8>(maxAllowedAmount - 1);
+            double      chance = 0.0;
 
             for (uint8 i = 1; i <= cicles; i++) // Cicle up to 3 times until cap (0.4 skill-up value) or break. The lower the maxAllowedAmount, the more likely it will break.
             {
-                chance = maxAllowedAmount * 0.1f;
+                chance = static_cast<double>(maxAllowedAmount) * 0.1;
 
-                if (chance < xirand::GetRandomNumber(1.))
+                if (chance < xirand::GetRandomNumber(1.0))
                 {
                     break;
                 }
@@ -1034,18 +1027,14 @@ void doSynthSkillUp(CCharEntity* PChar)
         // Settings skill amount multiplier
         if (settings::get<uint8>("map.CRAFT_AMOUNT_MULTIPLIER") > 1)
         {
-            skillUpAmount += skillUpAmount * settings::get<uint8>("map.CRAFT_AMOUNT_MULTIPLIER");
-            if (skillUpAmount > 9)
-            {
-                skillUpAmount = 9;
-            }
+            // Scaled at int width: at uint8 width a large multiplier setting wraps before the cap below can catch it.
+            const int scaledAmount = skillUpAmount + skillUpAmount * settings::get<uint8>("map.CRAFT_AMOUNT_MULTIPLIER");
+
+            skillUpAmount = static_cast<uint8>(std::min(scaledAmount, 9));
         }
 
         // Cap skill gain amount if character hits the current cap
-        if ((skillUpAmount + charSkill) > maxSkill)
-        {
-            skillUpAmount = maxSkill - charSkill;
-        }
+        skillUpAmount = static_cast<uint8>(std::min<uint16>(skillUpAmount, maxSkill - charSkill));
 
         //------------------------------
         // Section 5: Spezialization System (Craft delevel system over certain point)
@@ -1057,7 +1046,7 @@ void doSynthSkillUp(CCharEntity* PChar)
 
         if ((charSkill + skillUpAmount) > craftCommonCap) // If server is using the specialization system
         {
-            for (uint8 i = SKILL_WOODWORKING; i <= SKILL_COOKING; i++) // Cycle through all skills
+            for (uint8 i = static_cast<uint8>(xi::SkillType::Woodworking); i <= static_cast<uint8>(xi::SkillType::Cooking); i++) // Cycle through all skills
             {
                 if (PChar->RealSkills.skill[i] > craftCommonCap) // If the skill being checked is above the cap from wich spezialitation points start counting.
                 {
@@ -1142,30 +1131,30 @@ void startSynth(CCharEntity* PChar, const SynthOffer& offer)
     // Calculate what craft this recipe "belongs" to based on highest skill required
     uint32 skillType    = 0;
     uint32 highestSkill = 0;
-    for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+    for (uint8 skillID = static_cast<uint8>(xi::SkillType::Woodworking); skillID <= static_cast<uint8>(xi::SkillType::Cooking); ++skillID)
     {
-        if (const uint8 skillRequired = PChar->craftState().skillRequired(skillID - SKILL_WOODWORKING); skillRequired > highestSkill)
+        if (const uint8 skillRequired = PChar->craftState().skillRequired(skillID - static_cast<uint8>(xi::SkillType::Woodworking)); skillRequired > highestSkill)
         {
             skillType    = skillID;
             highestSkill = skillRequired;
         }
     }
 
-    PChar->animation = ANIMATION_SYNTH;
+    PChar->animation = xi::Animation::Synth;
     PChar->updatemask |= UPDATE_HP;
     PChar->pushPacket<CCharStatusPacket>(PChar);
-    PChar->startSynth(static_cast<SKILLTYPE>(skillType));
+    PChar->startSynth(static_cast<xi::SkillType>(skillType));
 
     PChar->loc.zone->PushPacket(PChar, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_EFFECT>(PChar, effect, result));
 }
 
 void sendSynthDone(CCharEntity* PChar)
 {
-    // forceSynthCritFail already ran, the transaction is gone -- clear the ANIMATION_SYNTH flag and bail.
+    // forceSynthCritFail already ran, the transaction is gone -- clear the xi::Animation::Synth flag and bail.
     auto* synthTransaction = PChar->activeTransaction<SynthTransaction>();
     if (!synthTransaction)
     {
-        PChar->animation = ANIMATION_NONE;
+        PChar->animation = xi::Animation::None;
         PChar->updatemask |= UPDATE_HP;
         PChar->pushPacket<CCharStatusPacket>(PChar);
         return;
@@ -1185,7 +1174,7 @@ void sendSynthDone(CCharEntity* PChar)
     std::ignore = synthTransaction->commit();
     PChar->removeTransaction(synthTransaction);
 
-    PChar->animation = ANIMATION_NONE;
+    PChar->animation = xi::Animation::None;
     PChar->updatemask |= UPDATE_HP;
     PChar->pushPacket<CCharStatusPacket>(PChar);
 }
@@ -1223,7 +1212,7 @@ void doSynthCriticalFail(CCharEntity* PChar)
     std::ignore = synthTransaction->commit();
     PChar->removeTransaction(synthTransaction);
 
-    PChar->animation = ANIMATION_NONE;
+    PChar->animation = xi::Animation::None;
     PChar->updatemask |= UPDATE_HP;
     PChar->pushPacket<CCharStatusPacket>(PChar);
 }

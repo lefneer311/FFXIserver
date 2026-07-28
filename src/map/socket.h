@@ -23,18 +23,22 @@
 
 #include <common/cbasetypes.h>
 #include <common/ipp.h>
-
-#include <functional>
+#include <common/types/fn.h>
 
 class Socket
 {
 public:
     // Called when bytes are received from a client, with the sender's address.
-    using ReceiveFn = std::function<void(ByteSpan, const IPP&)>;
+    using ReceiveFn = Fn<void(ByteSpan, const IPP&)>;
 
     virtual ~Socket() = default;
 
     virtual void send(const IPP& ipp, ByteSpan buffer) = 0;
+
+    // Called once per tick to emit aggregated diagnostics (e.g. send failures).
+    virtual void flushDiagnostics()
+    {
+    }
 
     // TODO: Mockable receive()
 };

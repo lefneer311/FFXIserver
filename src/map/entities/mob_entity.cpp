@@ -26,24 +26,19 @@
 #include "ai/helpers/pathfind.h"
 #include "ai/helpers/targetfind.h"
 #include "ai/states/attack_state.h"
-#include "ai/states/mobskill_state.h"
-#include "ai/states/weaponskill_state.h"
 #include "battlefield.h"
 #include "common/timer.h"
 #include "common/utils.h"
 #include "conquest_system.h"
+#include "data/enums/mob_mod.h"
+#include "data/enums/weather.h"
 #include "enmity_container.h"
 #include "entities/char_entity.h"
 #include "enums/loot_recast.h"
-#include "enums/weather.h"
 #include "items.h"
-#include "lua/lua_loot.h"
 #include "lua/luautils.h"
-#include "mob_modifier.h"
 #include "mob_spell_container.h"
-#include "mob_spell_list.h"
 #include "mobskill.h"
-#include "packets/entity_update.h"
 #include "packets/pet_sync.h"
 #include "packets/s2c/0x029_battle_message.h"
 #include "recast_container.h"
@@ -58,9 +53,6 @@
 #include "utils/mobutils.h"
 #include "utils/petutils.h"
 #include "utils/zoneutils.h"
-#include "weapon_skill.h"
-
-#include <cstring>
 
 namespace
 {
@@ -105,9 +97,8 @@ CMobEntity::CMobEntity()
 , MPmodifier(0)
 , HPscale(1.0)
 , MPscale(1.0)
-, m_roamFlags(ROAMFLAG_NONE)
+, m_roamFlags(xi::RoamFlag::None)
 , m_specialFlags(SPECIALFLAG_NONE)
-, m_StatPoppedMobs(false)
 , strRank(3)
 , dexRank(3)
 , vitRank(3)
@@ -122,13 +113,13 @@ CMobEntity::CMobEntity()
 , m_dmgMult(100)
 , m_disableScent(false)
 , m_maxRoamDistance(50.0f)
-, m_Type(MOBTYPE_NORMAL)
+, m_Type(xi::MobType::Normal)
 , m_Aggro(false)
 , m_TrueDetection(false)
 , m_Link(0)
 , m_isAggroable(false)
-, m_Behavior(BEHAVIOR_NONE)
-, m_SpawnType(SPAWNTYPE_NORMAL)
+, m_Behavior(xi::Behavior::None)
+, m_SpawnType(xi::SpawnType::Normal)
 , m_battlefieldID(0)
 , m_bcnmID(0)
 , m_giveExp(false)
@@ -144,18 +135,15 @@ CMobEntity::CMobEntity()
 , m_Family(0)
 , m_MobSkillList(0)
 , m_Pool(0)
-, m_flags(0)
+, m_flags(xi::EntityFlags::None)
 , m_name_prefix(0)
-, m_unk0(0)
-, m_unk1(8)
-, m_unk2(0)
 , m_CallForHelpBlocked(false)
 , m_IsPathingHome(false)
 {
     TracyZoneScoped;
 
     objtype     = ENTITYTYPE::TYPE_MOB;
-    allegiance  = ALLEGIANCE_TYPE::MOB;
+    allegiance  = xi::Allegiance::Mob;
     m_EcoSystem = xi::Ecosystem::Unclassified;
 
     m_SpellListContainer = nullptr;
@@ -199,12 +187,12 @@ CMobEntity::~CMobEntity()
     }
 }
 
-uint32 CMobEntity::getEntityFlags() const
+auto CMobEntity::getEntityFlags() const -> xi::EntityFlags
 {
     return m_flags;
 }
 
-void CMobEntity::setEntityFlags(uint32 EntityFlags)
+void CMobEntity::setEntityFlags(xi::EntityFlags EntityFlags)
 {
     m_flags = EntityFlags;
 }
@@ -242,6 +230,16 @@ SpawnSlot* CMobEntity::GetSpawnSlot()
     return this->spawnSlot;
 }
 
+auto CMobEntity::spawnWindow() const -> const Maybe<SpawnWindow>&
+{
+    return spawnWindow_;
+}
+
+void CMobEntity::setSpawnWindow(uint8 spawnHour, uint8 despawnHour)
+{
+    spawnWindow_ = SpawnWindow{ spawnHour, despawnHour };
+}
+
 bool CMobEntity::TrySpawn()
 {
     if (m_AllowRespawn && !PAI->IsSpawned())
@@ -263,8 +261,8 @@ bool CMobEntity::TrySpawn()
 
 uint32 CMobEntity::GetRandomGil()
 {
-    int16 min = getMobMod(MOBMOD_GIL_MIN);
-    int16 max = getMobMod(MOBMOD_GIL_MAX);
+    int16 min = getMobMod(xi::MobMod::GilMin);
+    int16 max = getMobMod(xi::MobMod::GilMax);
 
     if (min && max)
     {
@@ -310,9 +308,9 @@ uint32 CMobEntity::GetRandomGil()
         gil = min;
     }
 
-    if (getMobMod(MOBMOD_GIL_BONUS) != 0)
+    if (getMobMod(xi::MobMod::GilBonus) != 0)
     {
-        gil *= (getMobMod(MOBMOD_GIL_BONUS) / 100.0f);
+        gil *= (getMobMod(xi::MobMod::GilBonus) / 100.0f);
     }
 
     return (uint32)gil;
@@ -321,17 +319,17 @@ uint32 CMobEntity::GetRandomGil()
 bool CMobEntity::CanDropGil()
 {
     // smaller than 0 means drop no gil
-    if (getMobMod(MOBMOD_GIL_MAX) < 0)
+    if (getMobMod(xi::MobMod::GilMax) < 0)
     {
         return false;
     }
 
-    if (getMobMod(MOBMOD_GIL_MIN) > 0 || getMobMod(MOBMOD_GIL_MAX))
+    if (getMobMod(xi::MobMod::GilMin) > 0 || getMobMod(xi::MobMod::GilMax))
     {
         return true;
     }
 
-    return getMobMod(MOBMOD_GIL_BONUS) > 0;
+    return getMobMod(xi::MobMod::GilBonus) > 0;
 }
 
 bool CMobEntity::CanStealGil()
@@ -347,17 +345,17 @@ void CMobEntity::ResetGilPurse()
     {
         purse = GetRandomGil();
     }
-    setMobMod(MOBMOD_MUG_GIL, purse);
+    setMobMod(xi::MobMod::MugGil, purse);
 }
 
 bool CMobEntity::CanRoamHome()
 {
-    if ((speed == 0 && !(m_roamFlags & ROAMFLAG_WORM)) || getMobMod(MOBMOD_NO_MOVE) > 0)
+    if ((speed == 0 && !((m_roamFlags & xi::RoamFlag::Worm) != xi::RoamFlag::None)) || getMobMod(xi::MobMod::NoMove) > 0)
     {
         return false;
     }
 
-    if (getMobMod(MOBMOD_NO_DESPAWN) != 0 || settings::get<bool>("map.MOB_NO_DESPAWN"))
+    if (getMobMod(xi::MobMod::NoDespawn) != 0 || settings::get<bool>("map.MOB_NO_DESPAWN"))
     {
         return true;
     }
@@ -367,7 +365,7 @@ bool CMobEntity::CanRoamHome()
 
 bool CMobEntity::CanRoam()
 {
-    return !(m_roamFlags & ROAMFLAG_SCRIPTED) && PMaster == nullptr && (speed > 0 || (m_roamFlags & ROAMFLAG_WORM)) && getMobMod(MOBMOD_NO_MOVE) == 0;
+    return !((m_roamFlags & xi::RoamFlag::Scripted) != xi::RoamFlag::None) && PMaster == nullptr && (speed > 0 || ((m_roamFlags & xi::RoamFlag::Worm) != xi::RoamFlag::None)) && getMobMod(xi::MobMod::NoMove) == 0;
 }
 
 void CMobEntity::TapDeaggroTime()
@@ -385,7 +383,7 @@ bool CMobEntity::CanLink(position_t* pos, int16 superLink)
     TracyZoneScoped;
 
     // handle super linking
-    if (superLink && getMobMod(MOBMOD_SUPERLINK) == superLink)
+    if (superLink && getMobMod(xi::MobMod::Superlink) == superLink)
     {
         return true;
     }
@@ -397,29 +395,30 @@ bool CMobEntity::CanLink(position_t* pos, int16 superLink)
     }
 
     // Don't link I'm an underground worm
-    if ((m_roamFlags & ROAMFLAG_WORM) && IsNameHidden())
+    if (((m_roamFlags & xi::RoamFlag::Worm) != xi::RoamFlag::None) && IsNameHidden())
     {
         return false;
     }
 
     // Don't link I'm an underground antlion
-    if ((m_roamFlags & ROAMFLAG_AMBUSH) && IsNameHidden())
+    if (((m_roamFlags & xi::RoamFlag::Ambush) != xi::RoamFlag::None) && IsNameHidden())
     {
         return false;
     }
 
     // If a mob detects by both sight and hearing it only needs to meet one check.
-    if ((getMobMod(MOBMOD_DETECTION) & DETECT_SIGHT) && !(getMobMod(MOBMOD_DETECTION) & DETECT_HEARING) && !facing(loc.p, *pos, 64))
+    const auto detects = static_cast<xi::Detects>(getMobMod(xi::MobMod::Detection));
+    if (((detects & xi::Detects::Sight) != xi::Detects::None) && !((detects & xi::Detects::Hearing) != xi::Detects::None) && !facing(loc.p, *pos, 64))
     {
         return false;
     }
 
-    if (distance(loc.p, *pos) > getMobMod(MOBMOD_LINK_RADIUS))
+    if (distance(loc.p, *pos) > getMobMod(xi::MobMod::LinkRadius))
     {
         return false;
     }
 
-    if (getMobMod(MOBMOD_NO_LINK) > 0)
+    if (getMobMod(xi::MobMod::NoLink) > 0)
     {
         return false;
     }
@@ -436,17 +435,17 @@ bool CMobEntity::ShouldForceLink()
     // There are certain cases where mobs should always be able
     // to link with other mobs, even if their families or sublinks
     // do not align
-    if (loc.zone->GetTypeMask() & ZONE_TYPE::DYNAMIS)
+    if ((loc.zone->GetTypeMask() & xi::ZoneType::Dynamis) != xi::ZoneType::Unknown)
     {
         return true;
     }
 
-    if (m_Type & MOBTYPE_BATTLEFIELD)
+    if ((m_Type & xi::MobType::Battlefield) != xi::MobType::Normal)
     {
         return true;
     }
 
-    if (getMobMod(MOBMOD_SUPERLINK))
+    if (getMobMod(xi::MobMod::Superlink))
     {
         return true;
     }
@@ -456,7 +455,7 @@ bool CMobEntity::ShouldForceLink()
 
 bool CMobEntity::CanDeaggro() const
 {
-    return !(m_Type & MOBTYPE_NOTORIOUS || m_Type & MOBTYPE_BATTLEFIELD);
+    return !((m_Type & xi::MobType::Notorious) != xi::MobType::Normal || (m_Type & xi::MobType::Battlefield) != xi::MobType::Normal);
 }
 
 bool CMobEntity::IsFarFromHome()
@@ -466,12 +465,12 @@ bool CMobEntity::IsFarFromHome()
 
 bool CMobEntity::CanBeNeutral() const
 {
-    return !(m_Type & MOBTYPE_NOTORIOUS);
+    return !((m_Type & xi::MobType::Notorious) != xi::MobType::Normal);
 }
 
 bool CMobEntity::shouldUseTPMove(uint16 tpThreshold)
 {
-    const auto& MobSkillList = battleutils::GetMobSkillList(getMobMod(MOBMOD_SKILL_LIST));
+    const auto& MobSkillList = battleutils::GetMobSkillList(getMobMod(xi::MobMod::SkillList));
 
     if (health.tp < 1000 || MobSkillList.empty() || !static_cast<CMobController*>(PAI->GetController())->IsWeaponSkillEnabled())
     {
@@ -492,22 +491,23 @@ bool CMobEntity::shouldUseTPMove(uint16 tpThreshold)
     return health.tp >= tpThreshold;
 }
 
-void CMobEntity::setMobMod(uint16 type, int16 value)
+void CMobEntity::setMobMod(xi::MobMod type, int16 value)
 {
     m_mobModStat[type] = value;
 }
 
-int16 CMobEntity::getMobMod(uint16 type)
+auto CMobEntity::getMobMod(xi::MobMod type) const -> int16
 {
-    return m_mobModStat[type];
+    const auto it = m_mobModStat.find(type);
+    return it != m_mobModStat.end() ? it->second : 0;
 }
 
-void CMobEntity::addMobMod(uint16 type, int16 value)
+void CMobEntity::addMobMod(xi::MobMod type, int16 value)
 {
     m_mobModStat[type] += value;
 }
 
-void CMobEntity::defaultMobMod(uint16 type, int16 value)
+void CMobEntity::defaultMobMod(xi::MobMod type, int16 value)
 {
     if (m_mobModStat[type] == 0)
     {
@@ -515,7 +515,7 @@ void CMobEntity::defaultMobMod(uint16 type, int16 value)
     }
 }
 
-void CMobEntity::resetMobMod(uint16 type)
+void CMobEntity::resetMobMod(xi::MobMod type)
 {
     m_mobModStat[type] = m_mobModStatSave[type];
 }
@@ -530,59 +530,74 @@ void CMobEntity::restoreMobModifiers()
     m_mobModStat = m_mobModStatSave;
 }
 
+auto CMobEntity::getfTPModifierOverride(uint16 skillId) -> Maybe<std::array<float, 3>>
+{
+    if (const auto it = m_fTPModifierOverrides.find(skillId); it != m_fTPModifierOverrides.end())
+    {
+        return it->second;
+    }
+
+    return std::nullopt;
+}
+
+void CMobEntity::setfTPModifierOverride(uint16 skillId, float ftp1, float ftp2, float ftp3)
+{
+    m_fTPModifierOverrides[skillId] = { ftp1, ftp2, ftp3 };
+}
+
 void CMobEntity::HideHP(bool hide)
 {
     if (hide)
     {
-        m_flags |= FLAG_HIDE_HP;
+        m_flags |= xi::EntityFlags::HideHp;
     }
     else
     {
-        m_flags &= ~FLAG_HIDE_HP;
+        m_flags &= ~xi::EntityFlags::HideHp;
     }
     updatemask |= UPDATE_HP;
 }
 
 bool CMobEntity::IsHPHidden() const
 {
-    return m_flags & FLAG_HIDE_HP;
+    return (m_flags & xi::EntityFlags::HideHp) != xi::EntityFlags::None;
 }
 
 void CMobEntity::SetCallForHelpFlag(bool call)
 {
     if (call)
     {
-        m_flags |= FLAG_CALL_FOR_HELP;
+        m_flags |= xi::EntityFlags::CallForHelp;
         m_OwnerID.clean();
     }
     else
     {
-        m_flags &= ~FLAG_CALL_FOR_HELP;
+        m_flags &= ~xi::EntityFlags::CallForHelp;
     }
     updatemask |= UPDATE_COMBAT;
 }
 
 bool CMobEntity::GetCallForHelpFlag() const
 {
-    return m_flags & FLAG_CALL_FOR_HELP;
+    return (m_flags & xi::EntityFlags::CallForHelp) != xi::EntityFlags::None;
 }
 
 void CMobEntity::SetUntargetable(bool untargetable)
 {
     if (untargetable)
     {
-        m_flags |= FLAG_UNTARGETABLE;
+        m_flags |= xi::EntityFlags::Untargetable;
     }
     else
     {
-        m_flags &= ~FLAG_UNTARGETABLE;
+        m_flags &= ~xi::EntityFlags::Untargetable;
     }
     updatemask |= UPDATE_HP;
 }
 
 bool CMobEntity::GetUntargetable() const
 {
-    return m_flags & FLAG_UNTARGETABLE;
+    return (m_flags & xi::EntityFlags::Untargetable) != xi::EntityFlags::None;
 }
 
 void CMobEntity::PostTick()
@@ -608,19 +623,19 @@ void CMobEntity::PostTick()
 
 float CMobEntity::GetRoamDistance()
 {
-    return (float)getMobMod(MOBMOD_ROAM_DISTANCE);
+    return (float)getMobMod(xi::MobMod::RoamDistance);
 }
 
 float CMobEntity::GetRoamRate()
 {
-    return (float)getMobMod(MOBMOD_ROAM_RATE) / 10.0f;
+    return (float)getMobMod(xi::MobMod::RoamRate) / 10.0f;
 }
 
 float CMobEntity::GetRangedAttackRange()
 {
     // Defaulted range is 14 as observed on all retail fomor.
     // In the case this changes for other ranger/ninja types use mobmod
-    const int16 rangedAttackRange = getMobMod(MOBMOD_RANGED_ATTACK_RANGE);
+    const int16 rangedAttackRange = getMobMod(xi::MobMod::RangedAttackRange);
     return rangedAttackRange > 0 ? static_cast<float>(rangedAttackRange) : 14.0f;
 }
 
@@ -638,19 +653,19 @@ bool CMobEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
         return true;
     }
 
-    if (targetFlags & TARGET_PLAYER_DEAD && (m_Behavior & BEHAVIOR_RAISABLE) && isDead())
+    if (targetFlags & TARGET_PLAYER_DEAD && ((m_Behavior & xi::Behavior::Raisable) != xi::Behavior::None) && isDead())
     {
         return true;
     }
 
-    if ((targetFlags & TARGET_PLAYER) && allegiance == PInitiator->allegiance && !(m_Behavior & BEHAVIOR_NO_ASSIST) && !isCharmed)
+    if ((targetFlags & TARGET_PLAYER) && allegiance == PInitiator->allegiance && !((m_Behavior & xi::Behavior::NoAssist) != xi::Behavior::None) && !isCharmed)
     {
         return true;
     }
 
     if (targetFlags & TARGET_NPC)
     {
-        if (allegiance == PInitiator->allegiance && !(m_Behavior & BEHAVIOR_NO_ASSIST) && !isCharmed)
+        if (allegiance == PInitiator->allegiance && !((m_Behavior & xi::Behavior::NoAssist) != xi::Behavior::None) && !isCharmed)
         {
             return true;
         }
@@ -664,7 +679,7 @@ void CMobEntity::Spawn()
     TracyZoneScoped;
 
     // Reset stolen item always for battlefields or only if HP was 0 (mob died)
-    if (this->m_Type & MOBTYPE_BATTLEFIELD || health.hp == 0)
+    if ((this->m_Type & xi::MobType::Battlefield) != xi::MobType::Normal || health.hp == 0)
     {
         m_ItemStolen    = false;
         m_ItemDespoiled = false;
@@ -678,7 +693,7 @@ void CMobEntity::Spawn()
     m_THLvl          = 0;
     m_GilfinderLevel = 0;
     m_DropItemTime   = 1000ms;
-    animationsub     = (uint8)getMobMod(MOBMOD_SPAWN_ANIMATIONSUB);
+    animationsub     = (uint8)getMobMod(xi::MobMod::SpawnAnimationsub);
     SetCallForHelpFlag(false);
 
     PEnmityContainer->Clear();
@@ -698,22 +713,22 @@ void CMobEntity::Spawn()
     // spawn somewhere around my point
     loc.p = m_SpawnPoint;
 
-    if (m_roamFlags & ROAMFLAG_STEALTH)
+    if ((m_roamFlags & xi::RoamFlag::Stealth) != xi::RoamFlag::None)
     {
         HideName(true);
         SetUntargetable(true);
     }
 
     // add people to my posse
-    if (getMobMod(MOBMOD_ASSIST))
+    if (getMobMod(xi::MobMod::Assist))
     {
-        for (int32 i = 1; i < getMobMod(MOBMOD_ASSIST) + 1; i++)
+        for (int32 i = 1; i < getMobMod(xi::MobMod::Assist) + 1; i++)
         {
             CMobEntity* PMob = (CMobEntity*)GetEntity(targid + i, TYPE_MOB);
 
             if (PMob != nullptr)
             {
-                PMob->setMobMod(MOBMOD_SUPERLINK, targid);
+                PMob->setMobMod(xi::MobMod::Superlink, targid);
             }
         }
     }
@@ -723,9 +738,9 @@ void CMobEntity::Spawn()
 
     // Set the despawn time if the mob has a non-zero idle despawn time modifier.
     // This is used to despawn mobs that are not engaged in combat after a certain time.
-    if (getMobMod(MOBMOD_IDLE_DESPAWN) > 0)
+    if (getMobMod(xi::MobMod::IdleDespawn) > 0)
     {
-        SetDespawnTime(std::chrono::seconds(getMobMod(MOBMOD_IDLE_DESPAWN)));
+        SetDespawnTime(std::chrono::seconds(getMobMod(xi::MobMod::IdleDespawn)));
     }
 }
 
@@ -751,9 +766,9 @@ void CMobEntity::DistributeRewards()
 {
     TracyZoneScoped;
 
-    CCharEntity* PChar = (CCharEntity*)GetEntity(m_OwnerID.targid, TYPE_PC);
+    CCharEntity* PChar = m_OwnerID.resolve<CCharEntity>();
 
-    if (PChar != nullptr && PChar->id == m_OwnerID.id)
+    if (PChar != nullptr && PChar->id == m_OwnerID.UniqueNo)
     {
         StatusEffectContainer->KillAllStatusEffect();
         PChar->m_charHistory.enemiesDefeated++;
@@ -789,7 +804,7 @@ void CMobEntity::DistributeRewards()
             // check for gil (beastmen drop gil, some NMs drop gil)
             if ((settings::get<float>("map.MOB_GIL_MULTIPLIER") > 0.0f && CanDropGil()) ||
                 (settings::get<float>("map.ALL_MOBS_GIL_BONUS") > 0 &&
-                 getMobMod(MOBMOD_GIL_MAX) >= 0)) // Negative value of MOBMOD_GIL_MAX is used to prevent gil drops in Dynamis/Limbus.
+                 getMobMod(xi::MobMod::GilMax) >= 0)) // Negative value of xi::MobMod::GilMax is used to prevent gil drops in Dynamis/Limbus.
             {
                 charutils::DistributeGil(PChar, this); // TODO: REALISATION MUST BE IN TREASUREPOOL
             }
@@ -844,7 +859,7 @@ auto CMobEntity::GetEligibleGeodes() const -> std::vector<uint16>
     uint8 element = 0;
 
     // Set element by weather
-    if (const Weather weather = loc.zone->weather().current(); weather >= Weather::HotSpell && weather <= Weather::Darkness)
+    if (const xi::Weather weather = loc.zone->weather().current(); weather >= xi::Weather::HotSpell && weather <= xi::Weather::Darkness)
     {
         /*
         element = zoneutils::GetWeatherElement(weather);
@@ -853,36 +868,36 @@ auto CMobEntity::GetEligibleGeodes() const -> std::vector<uint16>
         */
         switch (weather)
         {
-            case Weather::HotSpell:
-            case Weather::HeatWave:
+            case xi::Weather::HotSpell:
+            case xi::Weather::HeatWave:
                 element = ELEMENT_FIRE;
                 break;
-            case Weather::Rain:
-            case Weather::Squall:
+            case xi::Weather::Rain:
+            case xi::Weather::Squall:
                 element = ELEMENT_WATER;
                 break;
-            case Weather::DustStorm:
-            case Weather::SandStorm:
+            case xi::Weather::DustStorm:
+            case xi::Weather::SandStorm:
                 element = ELEMENT_EARTH;
                 break;
-            case Weather::Wind:
-            case Weather::Gales:
+            case xi::Weather::Wind:
+            case xi::Weather::Gales:
                 element = ELEMENT_WIND;
                 break;
-            case Weather::Snow:
-            case Weather::Blizzards:
+            case xi::Weather::Snow:
+            case xi::Weather::Blizzards:
                 element = ELEMENT_ICE;
                 break;
-            case Weather::Thunder:
-            case Weather::Thunderstorms:
+            case xi::Weather::Thunder:
+            case xi::Weather::Thunderstorms:
                 element = ELEMENT_THUNDER;
                 break;
-            case Weather::Auroras:
-            case Weather::StellarGlare:
+            case xi::Weather::Auroras:
+            case xi::Weather::StellarGlare:
                 element = ELEMENT_LIGHT;
                 break;
-            case Weather::Gloom:
-            case Weather::Darkness:
+            case xi::Weather::Gloom:
+            case xi::Weather::Darkness:
                 element = ELEMENT_DARK;
                 break;
             default:
@@ -970,7 +985,7 @@ void CMobEntity::DropItems(CCharEntity* PChar)
 
     DropList_t* dropList = itemutils::GetDropList(m_DropID);
 
-    if (!getMobMod(MOBMOD_NO_DROPS) && dropList != nullptr && (!dropList->Items.empty() || !dropList->Groups.empty() || PAI->EventHandler.hasListener("ITEM_DROPS")))
+    if (!getMobMod(xi::MobMod::NoDrops) && dropList != nullptr && (!dropList->Items.empty() || !dropList->Groups.empty() || PAI->EventHandler.hasListener("ITEM_DROPS")))
     {
         // THLvl determines the drop rate.
         auto thDropRateFunction = lua["xi"]["combat"]["treasureHunter"]["getDropRate"];
@@ -1033,11 +1048,11 @@ void CMobEntity::DropItems(CCharEntity* PChar)
         // clang-format on
     }
 
-    ZONE_TYPE zoneType  = zoneutils::GetZone(PChar->getZone())->GetTypeMask();
-    bool      validZone = !(this->m_Type & MOBTYPE_BATTLEFIELD) && !(zoneType & ZONE_TYPE::DYNAMIS);
+    xi::ZoneType zoneType  = zoneutils::GetZone(PChar->getZone())->GetTypeMask();
+    bool         validZone = !((this->m_Type & xi::MobType::Battlefield) != xi::MobType::Normal) && !((zoneType & xi::ZoneType::Dynamis) != xi::ZoneType::Unknown);
 
     // Check if mob can drop seals -- mobmod to disable drops, zone type isnt battlefield/dynamis, mob is stronger than Too Weak, or mobmod for EXP bonus is -100 or lower (-100% exp)
-    if (!getMobMod(MOBMOD_NO_DROPS) && validZone && charutils::CheckMob(m_HiPCLvl, this) > EMobDifficulty::TooWeak && getMobMod(MOBMOD_EXP_BONUS) > -100)
+    if (!getMobMod(xi::MobMod::NoDrops) && validZone && charutils::CheckMob(m_HiPCLvl, this) > EMobDifficulty::TooWeak && getMobMod(xi::MobMod::ExpBonus) > -100)
     {
         // Check for seal drops
         // Only one type of seal can drop per mob
@@ -1096,7 +1111,7 @@ void CMobEntity::DropItems(CCharEntity* PChar)
 
                 // Signet Regions
                 default:
-                    if (regionID < REGION_TYPE::TAVNAZIA && conquest::GetRegionOwner(regionID) <= 2)
+                    if (regionID < REGION_TYPE::TAVNAZIA && conquest::GetRegionOwner(regionID) != NATION_BEASTMEN)
                     {
                         requiredEffect = xi::StatusEffect::Signet;
                     }
@@ -1154,7 +1169,7 @@ bool CMobEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>
 {
     TracyZoneScoped;
 
-    auto skill_list_id{ getMobMod(MOBMOD_ATTACK_SKILL_LIST) };
+    auto skill_list_id{ getMobMod(xi::MobMod::AttackSkillList) };
     if (skill_list_id)
     {
         auto attack_range{ GetMeleeRange(PTarget) };
@@ -1186,15 +1201,15 @@ void CMobEntity::OnEngage(CAttackState& state)
     TracyZoneScoped;
 
     CBattleEntity::OnEngage(state);
-    luautils::OnMobEngage(this, state.GetTarget());
-    unsigned int range = this->getMobMod(MOBMOD_ALLI_HATE);
+    luautils::OnMobEngage(this, state.target().resolve());
+    unsigned int range = this->getMobMod(xi::MobMod::AlliHate);
     if (range != 0)
     {
-        CBaseEntity* PTarget = state.GetTarget();
+        CBaseEntity* PTarget = state.target().resolve();
         CBaseEntity* PPet    = nullptr;
         if (PTarget->objtype == TYPE_PET)
         {
-            PPet    = state.GetTarget();
+            PPet    = state.target().resolve();
             PTarget = ((CPetEntity*)PTarget)->PMaster;
         }
 
@@ -1232,7 +1247,7 @@ void CMobEntity::OnDeathTimer()
 {
     TracyZoneScoped;
 
-    if (!(m_Behavior & BEHAVIOR_RAISABLE))
+    if (!((m_Behavior & xi::Behavior::Raisable) != xi::Behavior::None))
     {
         PAI->Despawn();
     }
@@ -1259,7 +1274,7 @@ void CMobEntity::Die()
 
     PEnmityContainer->Clear();
     PAI->ClearStateStack();
-    if (PPet != nullptr && PPet->isAlive() && GetMJob() == JOB_SMN)
+    if (PPet != nullptr && PPet->isAlive() && GetMJob() == xi::Job::SMN)
     {
         PPet->Die();
     }
@@ -1271,7 +1286,7 @@ void CMobEntity::Die()
     {
         if (static_cast<CMobEntity*>(PEntity)->isDead())
         {
-            if (auto* PLastAttacker = GetEntity(lastAttackerId_.targid); PLastAttacker && PLastAttacker->id == lastAttackerId_.id)
+            if (auto* PLastAttacker = lastAttackerId_.resolve())
             {
                 loc.zone->PushPacket(this, CHAR_INRANGE, std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(PLastAttacker, this, 0, 0, MsgBasic::DefeatsTarget));
             }
@@ -1302,9 +1317,9 @@ void CMobEntity::OnDisengage(CAttackState& state)
     PAI->PathFind->Clear();
     PEnmityContainer->Clear();
 
-    if (getMobMod(MOBMOD_IDLE_DESPAWN))
+    if (getMobMod(xi::MobMod::IdleDespawn))
     {
-        SetDespawnTime(std::chrono::seconds(getMobMod(MOBMOD_IDLE_DESPAWN)));
+        SetDespawnTime(std::chrono::seconds(getMobMod(xi::MobMod::IdleDespawn)));
     }
     // this will let me decide to walk home or despawn
     m_neutral = true;
@@ -1350,9 +1365,9 @@ bool CMobEntity::OnAttack(CAttackState& state, action_t& action)
 
     TapDeaggroTime();
 
-    if (getMobMod(MOBMOD_ATTACK_SKILL_LIST))
+    if (getMobMod(xi::MobMod::AttackSkillList))
     {
-        return static_cast<CMobController*>(PAI->GetController())->MobSkill(getMobMod(MOBMOD_ATTACK_SKILL_LIST));
+        return static_cast<CMobController*>(PAI->GetController())->MobSkill(getMobMod(xi::MobMod::AttackSkillList));
     }
     else
     {
@@ -1362,5 +1377,5 @@ bool CMobEntity::OnAttack(CAttackState& state, action_t& action)
 
 bool CMobEntity::isWideScannable()
 {
-    return CBaseEntity::isWideScannable() && !getMobMod(MOBMOD_NO_WIDESCAN);
+    return CBaseEntity::isWideScannable() && !getMobMod(xi::MobMod::NoWidescan);
 }

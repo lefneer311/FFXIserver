@@ -31,7 +31,7 @@
 
 enum class ActionReactKind : uint8_t;
 enum class ActionProcSkillChain : uint8_t;
-enum class Weather : uint16_t;
+#include "data/enums/weather.h"
 class CMobEntity;
 class CAbility;
 class CAttack;
@@ -107,7 +107,6 @@ void LoadSkillTable();
 void LoadWeaponSkillsList();
 void LoadMobSkillsList();
 void LoadPetSkillsList();
-void LoadSkillChainDamageModifiers();
 
 uint8 CheckMultiHits(CBattleEntity* PEntity, CItemWeapon* PWeapon);
 
@@ -117,8 +116,8 @@ int16 GetRangedDelayReduction(CBattleEntity* battleEntity, int16 delay);
 int32 GetRangedAttackBonuses(CBattleEntity* battleEntity);
 int32 GetRangedAccuracyBonuses(CBattleEntity* battleEntity);
 
-uint8  GetSkillRank(SKILLTYPE SkillID, JOBTYPE JobID);
-uint16 GetMaxSkill(SKILLTYPE SkillID, JOBTYPE JobID, uint8 level);
+uint8  GetSkillRank(xi::SkillType SkillID, xi::Job JobID);
+auto   GetMaxSkill(xi::SkillType SkillID, xi::Job JobID, uint8 level) -> uint16;
 uint16 GetMaxSkill(uint8 rank, uint8 level);
 
 CWeaponSkill* GetWeaponSkill(uint16 WSkillID);
@@ -138,7 +137,6 @@ uint8                GetSkillchainTier(SKILLCHAIN_ELEMENT skillchain);
 auto                 GetSkillchainSubeffect(SKILLCHAIN_ELEMENT skillchain) -> ActionProcSkillChain;
 int16                GetSkillchainMinimumResistance(SKILLCHAIN_ELEMENT element, CBattleEntity* PDefender, ELEMENT& appliedEle);
 std::vector<ELEMENT> GetSkillchainMagicElement(SKILLCHAIN_ELEMENT skillchain);
-Mod                  GetResistanceRankModFromElement(ELEMENT& element);
 
 bool IsParalyzed(CBattleEntity* PAttacker);
 bool IsAbsorbByShadow(CBattleEntity* PDefender, CBattleEntity* PAttacker);
@@ -153,13 +151,13 @@ uint8 GetCritHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool ig
 uint8 GetRangedCritHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender);
 int8  GetDexCritBonus(CBattleEntity* PAttacker, CBattleEntity* PDefender);
 int8  GetAGICritBonus(CBattleEntity* PAttacker, CBattleEntity* PDefender);
-float GetDamageRatio(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool isCritical, float bonusAttPercent, SKILLTYPE weaponType, SLOTTYPE weaponSlot, bool isCannonball);
+float GetDamageRatio(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool isCritical, float bonusAttPercent, xi::SkillType weaponType, SLOTTYPE weaponSlot, bool isCannonball);
 
 auto TakePhysicalDamage(CBattleEntity* PAttacker, CBattleEntity* PDefender, PHYSICAL_ATTACK_TYPE physicalAttackType, int32 damage, bool isBlocked, uint8 slot, uint16 tpMultiplier, CBattleEntity* taChar, bool giveTPtoVictim, bool giveTPtoAttacker, bool isCounter = false, bool isCovered = false, CBattleEntity* POriginalTarget = nullptr) -> int32;
-auto TakeWeaponskillDamage(CBattleEntity* PAttacker, CBattleEntity* PDefender, int32 damage, ATTACK_TYPE attackType, xi::DamageType damageType, uint8 slot, bool primary, float tpMultiplier, uint16 bonusTP, float targetTPMultiplier) -> int32;
+auto TakeWeaponskillDamage(CBattleEntity* PAttacker, CBattleEntity* PDefender, int32 damage, xi::AttackType attackType, xi::DamageType damageType, uint8 slot, bool primary, float tpMultiplier, uint16 bonusTP, float targetTPMultiplier) -> int32;
 auto TakeSkillchainDamage(CBattleEntity* PAttacker, CBattleEntity* PDefender, int32 lastSkillDamage, CBattleEntity* taChar) -> int32;
-void TakeSpellDamage(CBattleEntity* PDefender, CBattleEntity* PAttacker, CSpell* PSpell, int32 damage, ATTACK_TYPE attackType, xi::DamageType damageType);
-auto TakeSwipeLungeDamage(CBattleEntity* PDefender, CBattleEntity* PAttacker, int32 damage, ATTACK_TYPE attackType, xi::DamageType damageType) -> int32;
+void TakeSpellDamage(CBattleEntity* PDefender, CBattleEntity* PAttacker, CSpell* PSpell, int32 damage, xi::AttackType attackType, xi::DamageType damageType);
+auto TakeSwipeLungeDamage(CBattleEntity* PDefender, CBattleEntity* PAttacker, int32 damage, xi::AttackType attackType, xi::DamageType damageType) -> int32;
 
 bool  TryInterruptSpell(CBattleEntity* PAttacker, CBattleEntity* PDefender, CSpell* PSpell);
 float GetRangedDamageRatio(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool isCritical, int16 bonusRangedAttack);
@@ -226,7 +224,7 @@ void HandleTacticalGuard(CBattleEntity* PEntity);
 void BindBreakCheck(CBattleEntity* PAttacker, CBattleEntity* PDefender);
 
 // returns damage taken
-int32 HandleStoneskin(CBattleEntity* PDefender, int32 damage);
+int32 HandleStoneskin(CBattleEntity* PDefender, int32 damage, xi::AttackType attackType = xi::AttackType::None);
 int32 HandleOneForAll(CBattleEntity* PDefender, int32 damage);
 int32 HandleFanDance(CBattleEntity* PDefender, int32 damage);
 void  HandleScarletDelirium(CBattleEntity* PDefender, int32 damage);
@@ -242,9 +240,9 @@ float HandleTranquilHeart(CBattleEntity* PEntity);
 void assistTarget(CCharEntity* PChar, uint16 TargID);
 
 ELEMENT GetDayElement();
-auto    GetWeather(CBattleEntity* PEntity, bool ignoreScholar) -> Weather;
-auto    GetWeather(CBattleEntity* PEntity, bool ignoreScholar, Weather zoneWeather) -> Weather;
-bool    WeatherMatchesElement(Weather weather, uint8 element);
+auto    GetWeather(CBattleEntity* PEntity, bool ignoreScholar) -> xi::Weather;
+auto    GetWeather(CBattleEntity* PEntity, bool ignoreScholar, xi::Weather zoneWeather) -> xi::Weather;
+bool    WeatherMatchesElement(xi::Weather weather, uint8 element);
 void    DrawIn(CBattleEntity* PTarget, position_t pos, float offset, float degrees);
 void    DoWildCardToEntity(CCharEntity* PCaster, CCharEntity* PTarget, uint8 roll);
 bool    DoRandomDealToEntity(CCharEntity* PChar, CBattleEntity* PTarget);
@@ -262,7 +260,7 @@ int16           CalculateWeaponSkillTP(CBattleEntity*, CWeaponSkill*, int16);
 bool            RemoveAmmo(CCharEntity*, int quantity = 1);
 int32           GetMeritValue(CBattleEntity*, MERIT_TYPE);
 
-int32 GetScaledItemModifier(CBattleEntity*, CItemEquipment*, Mod);
+int32 GetScaledItemModifier(CBattleEntity*, CItemEquipment*, xi::Mod);
 auto  GetSpikesDamageType(ActionReactKind spikesType) -> xi::DamageType;
 auto  GetEnspellDamageType(ENSPELL enspellType) -> xi::DamageType;
 auto  GetRuneEnhancementDamageType(xi::StatusEffect runeEffect) -> xi::DamageType;
@@ -273,4 +271,5 @@ bool           IsMagicCovered(CCharEntity* PCoverAbilityUser);
 void           ConvertDmgToMP(CBattleEntity* PDefender, int32 damage, bool IsCovered);
 void           addEcosystemKillerEffects(CBattleEntity* PBattleEntity);
 auto           CheckLiementAbsorb(CBattleEntity* PBattleEntity, xi::DamageType DamageType) -> float;
+
 }; // namespace battleutils

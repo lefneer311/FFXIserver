@@ -2,10 +2,8 @@
 -- Rune Fencer Job Utilities
 -----------------------------------
 require('scripts/globals/ability')
-require('scripts/globals/combat/magic_hit_rate')
-require('scripts/globals/weaponskills')
-require('scripts/globals/jobpoints')
 require('scripts/globals/spells/damage_spell')
+require('scripts/globals/weaponskills')
 -----------------------------------
 xi = xi or {}
 xi.job_utils = xi.job_utils or {}
@@ -110,7 +108,7 @@ local function calculateVivaciousPulseHealing(target)
     end
 
     if debuffCount > 0 and target:getMod(xi.mod.AUGMENTS_VIVACIOUS_PULSE) > 0 then -- add random removal of Poison, Paralyze, Blind, Silence, Mute, Curse, Bane, Doom, Virus, Plague, Petrification via AF3 head (source: https://www.bg-wiki.com/ffxi/Erilaz_Galea)
-        target:delStatusEffect(debuffs[math.random(1, debuffCount)])
+        target:delStatusEffect(debuffs[math.randomInt(1, debuffCount)])
     end
 
     hpHealAmount = hpHealAmount * bonusPct
@@ -516,24 +514,23 @@ xi.job_utils.rune_fencer.onBattutaEffectLose = function(target, effect)
 end
 
 local function getSwipeLungeDamageMultipliers(player, target, element, bonusMacc) -- get these multipliers once and store them
-    local multipliers = {}
+    local skillchainCount = xi.combat.magicBurst.getMagicBurstTier(target, element)
+    local multipliers     = {}
 
     multipliers.eleStaffBonus       = xi.spells.damage.calculateElementalStaffBonus(player, element)
     multipliers.eleAffinityBonus    = xi.spells.damage.calculateElementalAffinityBonus(player, element)
     multipliers.SDT                 = xi.combat.damage.magicalElementSDT(target, element)
-    multipliers.resist              = xi.combat.magicHitRate.calculateResistRate(player, target, 0, 0, 0, element, 0, 0, bonusMacc)
+    multipliers.resist              = xi.combat.magicHitRate.calculateResistRate(player, target, { magicalElement = element, magicBurstTier = skillchainCount, bonusMacc = bonusMacc })
     multipliers.dayAndWeather       = xi.spells.damage.calculateDayAndWeather(player, element, false)
     multipliers.magicBonusDiff      = xi.spells.damage.calculateMagicBonusDiff(player, target, 0, 0, element, 0)
     multipliers.TMDA                = xi.combat.damage.calculateDamageAdjustment(target, false, true, false, false)
-    multipliers.absorb              = xi.spells.damage.calculateAbsorption(target, element, true)
-    multipliers.nullify             = xi.spells.damage.calculateNullification(target, element, true, false)
+    multipliers.absorb              = xi.spells.damage.calculateAbsorption(target, element, false, true, false, false)
+    multipliers.nullify             = xi.spells.damage.calculateNullification(target, element, false, true, false, false)
     multipliers.magicBurst          = 1
     multipliers.magicBurstBonus     = 1
 
-    local _, skillchainCount = xi.magicburst.formMagicBurst(target, element)
-
     if skillchainCount > 0 then
-        multipliers.magicBurst      = xi.spells.damage.calculateIfMagicBurst(target, element, skillchainCount)
+        multipliers.magicBurst      = xi.spells.damage.calculateIfMagicBurst(player, target, element, skillchainCount)
         multipliers.magicBurstBonus = xi.spells.damage.calculateIfMagicBurstBonus(player, target, 0, element)
     end
 
@@ -560,7 +557,7 @@ local function calculateSwipeLungeDamage(player, target, skillModifier, gearBonu
     if damage > 0 then
         damage = utils.clamp(utils.handlePhalanx(target, damage), 0, 99999)
         damage = utils.clamp(utils.handleOneForAll(target, damage), 0, 99999)
-        damage = utils.clamp(utils.handleStoneskin(target, damage), -99999, 99999)
+        damage = utils.handleStoneskin(target, damage, xi.attackType.MAGICAL)
     end
 
     return damage

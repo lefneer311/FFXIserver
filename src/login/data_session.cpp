@@ -23,7 +23,10 @@
 
 #include "common/database.h"
 #include "common/ipc.h"
+#include "common/md52.h"
 #include "common/utils.h"
+
+#include <asio/write.hpp>
 
 void data_session::deleteCharFromCharInfo(uint32_t ffxi_id)
 {
@@ -46,6 +49,21 @@ void data_session::addCharIntoCharInfo(const lpkt_chr_info_sub2& charInfo)
         if (existingCharInfo.character_name[0] == 0x20) // empty - name is a space
         {
             existingCharInfo = charInfo;
+            break;
+        }
+    }
+}
+
+// Keep the cached lobby list in sync after a rename.
+void data_session::renameCharInCharInfo(const uint32_t charId, const std::string& newName)
+{
+    for (auto& charInfo : characterInfoResponse.character_info)
+    {
+        if (charInfo.ffxi_id == charId)
+        {
+            std::memset(charInfo.character_name, 0, sizeof(charInfo.character_name));
+            std::memcpy(charInfo.character_name, newName.c_str(), std::min(newName.size(), sizeof(charInfo.character_name) - 1));
+            charInfo.renamef = 0;
             break;
         }
     }
@@ -106,11 +124,15 @@ void data_session::read_func()
                                                     "race, face, head, body, hands, legs, feet, main, sub,"
                                                     "war, mnk, whm, blm, rdm, thf, pld, drk, bst, brd, rng,"
                                                     "sam, nin, drg, smn, blu, cor, pup, dnc, sch, geo, run, "
-                                                    "gmlevel, nation, size, sjob "
+                                                    "gmlevel, nation, size, sjob, COALESCE(char_flags.`rename`, 0) AS `rename`, "
+                                                    "EXISTS(SELECT 1 FROM char_vars "
+                                                    "WHERE char_vars.charid = chars.charid "
+                                                    "AND varname = '[RaceChange]Eligible' AND value > UNIX_TIMESTAMP()) AS race_change "
                                                     "FROM chars "
                                                     "INNER JOIN char_stats USING(charid) "
                                                     "INNER JOIN char_look  USING(charid) "
                                                     "INNER JOIN char_jobs  USING(charid) "
+                                                    "LEFT JOIN  char_flags USING(charid) "
                                                     "WHERE accid = ? "
                                                     "LIMIT ?",
                                                     session.accountID,
@@ -163,9 +185,9 @@ void data_session::read_func()
                             characterInfo.ffxi_id           = contentId;
                             characterInfo.ffxi_id_world     = charIdMain;
                             characterInfo.worldid           = worldId;
-                            characterInfo.status            = 1; // 0 = Invalid/Hidden, 1 = Available, 2 = Disabled (unpaid)
-                            characterInfo.race_change       = 0; // 0 = no race change service, 1 = race change service (gold star icon) (NOT YET SUPPORTED!)
-                            characterInfo.renamef           = 0; // 0 = no rename required, 1 = rename required (NOT YET SUPPORTED!)
+                            characterInfo.status            = 1;                                        // 0 = Invalid/Hidden, 1 = Available, 2 = Disabled (unpaid)
+                            characterInfo.race_change       = rset1->get<uint8>("race_change") ? 1 : 0; // Shows a gold star icon if character eligible for race change
+                            characterInfo.renamef           = rset1->get<uint8>("rename") ? 1 : 0;      // Forces client to input a new name if set
                             characterInfo.ffxi_id_world_tbl = charIdExtra;
 
                             std::memcpy(characterInfo.character_name, &strCharName, 16);
@@ -499,6 +521,19 @@ void data_session::read_func()
                 }
             }
 
+            // Log and return error to client if we're somehow trying to send a char to a disabled zone
+            if (characterSelectionResponse.server_ip == 0)
+            {
+                ShowWarning(fmt::format("data_session: no map address for charid {} (zone {}); check zone_settings", charid, ZoneID));
+                if (auto viewSession = session.view_session.get())
+                {
+                    loginHelpers::generateErrorMessage(viewSession->buffer_.data(), loginErrors::errorCode::UNABLE_TO_CONNECT_TO_WORLD_SERVER);
+                    viewSession->do_write(0x24);
+                }
+
+                return;
+            }
+
             unsigned char Hash[16] = {};
             md5(reinterpret_cast<uint8*>(&characterSelectionResponse), Hash, sizeof(lpkt_next_login));
 
@@ -507,10 +542,21 @@ void data_session::read_func()
             if (auto viewSession = session.view_session.get())
             {
                 std::memcpy(viewSession->buffer_.data(), &characterSelectionResponse, sizeof(characterSelectionResponse));
-                viewSession->do_write(sizeof(characterSelectionResponse));
 
-                viewSession->socket_.lowest_layer().shutdown(asio::socket_base::shutdown_both); // Client waits for us to close the socket
-                viewSession->socket_.lowest_layer().close();
+                // Write synchronously here to ensure the write() completes before the subsequent shutdown
+                std::error_code writeEc;
+                asio::write(viewSession->socket_.next_layer(),
+                            asio::buffer(viewSession->buffer_.data(), sizeof(characterSelectionResponse)),
+                            writeEc);
+                if (writeEc)
+                {
+                    ShowError(fmt::format("data_session: failed to write charselect reply to {}: {}", ipAddress, writeEc.message()));
+                }
+
+                // Client waits for us to close the socket.
+                std::error_code closeEc;
+                viewSession->socket_.lowest_layer().shutdown(asio::socket_base::shutdown_both, closeEc);
+                viewSession->socket_.lowest_layer().close(closeEc);
                 session.view_session = nullptr;
 
                 session.incrementKeyValue = 0;     // Reset incremented key after inserting into db

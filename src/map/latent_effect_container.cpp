@@ -96,12 +96,12 @@ bool CLatentEffectContainer::HasAllLatentsActive(uint8 slot)
     return allActive;
 }
 
-void CLatentEffectContainer::AddLatentEffect(xi::Latent conditionID, uint16 conditionValue, Mod modID, int16 modValue)
+void CLatentEffectContainer::AddLatentEffect(xi::Latent conditionID, uint16 conditionValue, xi::Mod modID, int16 modValue)
 {
     m_LatentEffectList.emplace_back(m_POwner, conditionID, conditionValue, MAX_SLOTTYPE, modID, modValue);
 }
 
-auto CLatentEffectContainer::DelLatentEffect(xi::Latent conditionID, uint16 conditionValue, Mod modID, int16 modValue) -> bool
+auto CLatentEffectContainer::DelLatentEffect(xi::Latent conditionID, uint16 conditionValue, xi::Mod modID, int16 modValue) -> bool
 {
     // Find and remove the first instance of the latent matching the parameters
     for (auto iter = m_LatentEffectList.begin(); iter != m_LatentEffectList.end(); ++iter)
@@ -249,7 +249,7 @@ void CLatentEffectContainer::CheckLatentsEquip(uint8 slot)
  *                                                                       *
  ************************************************************************/
 
-// easy: when animationType changes to ANIMATION_ATTACK or to something else
+// easy: when animationType changes to xi::Animation::Attack or to something else
 void CLatentEffectContainer::CheckLatentsWeaponDraw(bool drawn)
 {
     ProcessLatentEffects(
@@ -327,6 +327,8 @@ void CLatentEffectContainer::CheckLatentsStatusEffect()
                 case xi::Latent::WeatherElement:
                 case xi::Latent::NationControl:
                 case xi::Latent::InGarrison:
+                case xi::Latent::SanctionFoodBonus:
+                case xi::Latent::SigilFoodBonus:
                     return ProcessLatentEffect(latentEffect);
                     break;
                 default:
@@ -677,6 +679,8 @@ void CLatentEffectContainer::CheckLatentsZone()
                 case xi::Latent::NationControl:
                 case xi::Latent::NationCitizen:
                 case xi::Latent::ZoneHomeNation:
+                case xi::Latent::SanctionFoodBonus:
+                case xi::Latent::SigilFoodBonus:
                     return ProcessLatentEffect(latentEffect);
                     break;
                 default:
@@ -705,7 +709,7 @@ void CLatentEffectContainer::CheckLatentsWeather()
     CheckLatentsWeather(PZone->weather().current());
 }
 
-void CLatentEffectContainer::CheckLatentsWeather(Weather weather)
+void CLatentEffectContainer::CheckLatentsWeather(xi::Weather weather)
 {
     ProcessLatentEffects(
         [this, weather](CLatentEffect& latent)
@@ -746,7 +750,7 @@ void CLatentEffectContainer::CheckLatentsTargetChange()
 // Process the latent effects container and apply a logic function responsible for
 // filtering the appropriate latents to be activated/deactivated and finally update
 // health post looping if at least one logic function returned true
-void CLatentEffectContainer::ProcessLatentEffects(const std::function<bool(CLatentEffect&)>& logic)
+void CLatentEffectContainer::ProcessLatentEffects(const Fn<bool(CLatentEffect&) const>& logic)
 {
     auto update = false;
 
@@ -816,17 +820,17 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
             expression = m_POwner->health.tp > latentEffect.GetConditionsValue();
             break;
         case xi::Latent::Subjob:
-            expression = m_POwner->GetSJob() == latentEffect.GetConditionsValue();
+            expression = static_cast<uint8>(m_POwner->GetSJob()) == latentEffect.GetConditionsValue();
             break;
         case xi::Latent::PetId:
             expression =
                 m_POwner->PPet != nullptr && m_POwner->PPet->objtype == TYPE_PET && ((CPetEntity*)m_POwner->PPet)->petID() == latentEffect.GetConditionsValue();
             break;
         case xi::Latent::WeaponDrawn:
-            expression = m_POwner->animation == ANIMATION_ATTACK;
+            expression = m_POwner->animation == xi::Animation::Attack;
             break;
         case xi::Latent::WeaponSheathed:
-            expression = m_POwner->animation != ANIMATION_ATTACK;
+            expression = m_POwner->animation != xi::Animation::Attack;
             break;
         case xi::Latent::SignetBonus:
         {
@@ -860,6 +864,16 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
                          m_POwner->loc.zone->GetRegionID() >= REGION_TYPE::RONFAURE_FRONT &&
                          m_POwner->loc.zone->GetRegionID() <= REGION_TYPE::VALDEAUNIA_FRONT &&
                          ((float)m_POwner->health.mp / m_POwner->health.maxmp) * 100 < latentEffect.GetConditionsValue();
+            break;
+        case xi::Latent::SanctionFoodBonus:
+            expression = m_POwner->loc.zone != nullptr &&
+                         m_POwner->loc.zone->GetRegionID() >= REGION_TYPE::WEST_AHT_URHGAN &&
+                         m_POwner->loc.zone->GetRegionID() <= REGION_TYPE::ALZADAAL;
+            break;
+        case xi::Latent::SigilFoodBonus:
+            expression = m_POwner->loc.zone != nullptr &&
+                         m_POwner->loc.zone->GetRegionID() >= REGION_TYPE::RONFAURE_FRONT &&
+                         m_POwner->loc.zone->GetRegionID() <= REGION_TYPE::VALDEAUNIA_FRONT;
             break;
         case xi::Latent::StatusEffectActive:
             expression = m_POwner->StatusEffectContainer->HasStatusEffect(static_cast<xi::StatusEffect>(latentEffect.GetConditionsValue()));
@@ -941,7 +955,7 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
                 {
                     if (member->id != m_POwner->id)
                     {
-                        if (member->GetMJob() == latentEffect.GetConditionsValue())
+                        if (static_cast<uint8>(member->GetMJob()) == latentEffect.GetConditionsValue())
                         {
                             expression = true;
                             break;
@@ -959,7 +973,7 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
 
                 for (auto* trust : leader->PTrusts)
                 {
-                    if (trust->GetMJob() == latentEffect.GetConditionsValue())
+                    if (static_cast<uint8>(trust->GetMJob()) == latentEffect.GetConditionsValue())
                     {
                         expression = true;
                         break;
@@ -1127,7 +1141,7 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
             }
             break;
         case xi::Latent::WeaponDrawnHpUnder:
-            expression = m_POwner->health.hp < latentEffect.GetConditionsValue() && m_POwner->animation == ANIMATION_ATTACK;
+            expression = m_POwner->health.hp < latentEffect.GetConditionsValue() && m_POwner->animation == xi::Animation::Attack;
             break;
         case xi::Latent::MpUnderVisibleGear:
             // TODO: figure out if this is actually right
@@ -1277,7 +1291,7 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
             expression = m_POwner->health.mp >= latentEffect.GetConditionsValue();
             break;
         case xi::Latent::WeaponDrawnMpOver:
-            expression = m_POwner->health.mp > latentEffect.GetConditionsValue() && m_POwner->animation == ANIMATION_ATTACK;
+            expression = m_POwner->health.mp > latentEffect.GetConditionsValue() && m_POwner->animation == xi::Animation::Attack;
             break;
         case xi::Latent::ElevenRollActive:
             expression = m_POwner->StatusEffectContainer->CheckForElevenRoll();
@@ -1309,7 +1323,7 @@ auto CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect, bo
             }
             break;
         case xi::Latent::Mainjob:
-            expression = m_POwner->GetMJob() == latentEffect.GetConditionsValue();
+            expression = static_cast<uint8>(m_POwner->GetMJob()) == latentEffect.GetConditionsValue();
             break;
         case xi::Latent::EquippedInSlot:
             expression = latentEffect.GetSlot() == latentEffect.GetConditionsValue();

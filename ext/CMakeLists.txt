@@ -1,9 +1,9 @@
 # add_subdirectory(lua) # Handled globally
 # add_subdirectory(mariadb) # Handled globally
-# add_subdirectory(mariadbcpp) # Handled globally
 # add_subdirectory(zmq) # Handled globally
 # add_subdirectory(openssl) # Handled globally
 add_subdirectory(concurrentqueue)
+add_subdirectory(SPSCQueue)
 add_subdirectory(sol)
 
 # CPM Modules
@@ -42,24 +42,48 @@ if(TRACY_ENABLE)
                 tar xvf "${CMAKE_SOURCE_DIR}/tracy.tar.gz"
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/
         )
-    else() # UNIX
-        # TODO: Auto-build Tracy and capture executables on Linux
-        # sudo apt-get -y install libglfw3-dev libdbus-1-dev libcapstone-dev libtbb-dev libdebuginfod-dev libfreetype-dev
+    else() # UNIX (Linux / macOS)
+        include(ExternalProject)
 
-        # execute_process(COMMAND "make"
-        #     WORKING_DIRECTORY ${tracy_SOURCE_DIR}/profiler/build/unix
-        # )
+        # target name:source subdirectory
+        set(TRACY_TOOLS
+            "tracy-capture:capture"
+            "tracy-csvexport:csvexport"
+        )
 
-        # execute_process(COMMAND "make"
-        #     WORKING_DIRECTORY ${tracy_SOURCE_DIR}/capture/build/unix
-        # )
+        foreach(_tracy_tool ${TRACY_TOOLS})
+            string(REPLACE ":" ";" _tracy_tool "${_tracy_tool}")
+            list(GET _tracy_tool 0 _tracy_tool_name)
+            list(GET _tracy_tool 1 _tracy_tool_dir)
+
+            message(STATUS "Configuring Tracy tool: ${_tracy_tool_name}")
+
+            set(_tracy_tool_bindir ${CMAKE_BINARY_DIR}/tracy-tools/${_tracy_tool_name})
+
+            ExternalProject_Add(${_tracy_tool_name}
+                SOURCE_DIR ${TracyClient_SOURCE_DIR}/${_tracy_tool_dir}
+                BINARY_DIR ${_tracy_tool_bindir}
+                CMAKE_ARGS
+                    -DCMAKE_BUILD_TYPE=Release
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}
+                    -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+                    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${_tracy_tool_bindir}
+                BUILD_ALWAYS TRUE
+                INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${_tracy_tool_bindir}/${_tracy_tool_name}
+                    ${CMAKE_SOURCE_DIR}/${_tracy_tool_name}
+            )
+        endforeach()
     endif()
 endif(TRACY_ENABLE)
 
 CPMAddPackage(
     NAME fmt
     GITHUB_REPOSITORY fmtlib/fmt
-    GIT_TAG 12.1.0
+    GIT_TAG 12.2.0
     SYSTEM ON
 ) # defines: fmt::fmt
 
@@ -108,7 +132,7 @@ endif()
 CPMAddPackage(
     NAME rapidyaml
     GITHUB_REPOSITORY biojppm/rapidyaml
-    GIT_TAG v0.12.0
+    GIT_TAG v0.15.2
     SYSTEM ON
     OPTIONS
         "RYML_BUILD_TOOLS OFF"
@@ -147,7 +171,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME cpp-httplib
     GITHUB_REPOSITORY yhirose/cpp-httplib
-    GIT_TAG v0.18.3
+    GIT_TAG v0.49.0
     SYSTEM ON
     OPTIONS
         "HTTPLIB_REQUIRE_ZLIB OFF"
@@ -157,7 +181,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME json
     GITHUB_REPOSITORY nlohmann/json
-    GIT_TAG 9f60e855576bb1e95f39ab23b3821982cccb0bab
+    GIT_TAG v3.12.0
     SYSTEM ON
 ) # defines: nlohmann_json::nlohmann_json
 
@@ -173,9 +197,9 @@ endif()
 
 CPMAddPackage(
     NAME asio
-    VERSION 1.36.0
+    VERSION 1.38.0
     GITHUB_REPOSITORY chriskohlhoff/asio
-    GIT_TAG asio-1-36-0 # asio uses non-standard version tag, we must specify GIT_TAG
+    GIT_TAG asio-1-38-0 # asio uses non-standard version tag, we must specify GIT_TAG
 ) #defines asio
 
 # ASIO doesn't use CMake, we have to configure it manually. Extra notes for using on Windows:
@@ -185,7 +209,7 @@ CPMAddPackage(
 if(asio_ADDED)
     add_library(asio INTERFACE)
 
-    target_include_directories(asio SYSTEM INTERFACE ${asio_SOURCE_DIR}/asio/include)
+    target_include_directories(asio SYSTEM INTERFACE ${asio_SOURCE_DIR}/include)
 
     target_compile_definitions(asio INTERFACE ASIO_STANDALONE ASIO_NO_DEPRECATED)
 
@@ -257,7 +281,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME magic_enum
     GITHUB_REPOSITORY Neargye/magic_enum
-    GIT_TAG 1a1824df7ac798177a521eed952720681b0bf482
+    GIT_TAG v0.9.8
     SYSTEM ON
 ) # defines: magic_enum
 
@@ -271,16 +295,53 @@ CPMAddPackage(
 CPMAddPackage(
     NAME unordered_dense
     GITHUB_REPOSITORY martinus/unordered_dense
-    GIT_TAG v4.4.0
+    GIT_TAG v4.8.1
     SYSTEM ON
 ) # defines: unordered_dense::unordered_dense (aliased to FlatHashMap, see src/common/flat_hash_map.h)
+
+# TODO: std::move_only_function lands in C++23, but libc++ (macOS) has not implemented
+#     : it yet. Remove this once all compilers for all platforms implement.
+CPMAddPackage(
+    NAME function2
+    GITHUB_REPOSITORY Naios/function2
+    GIT_TAG 4.2.4
+    SYSTEM ON
+) # defines: function2 (aliased to Fn, see src/common/types/fn.h)
+
+# How cpptrace turns a crash address into function + file:line, per platform:
+set(CPPTRACE_SYMBOL_OPTIONS "")
+if(APPLE)
+    # macOS binaries carry a "debug map" pointing at the .o files rather than embedded DWARF;
+    # atos resolves against the staged .dSYM (see set_target_output_directory) and is fast.
+    list(APPEND CPPTRACE_SYMBOL_OPTIONS
+        "CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF OFF"
+        "CPPTRACE_GET_SYMBOLS_WITH_ADDR2LINE ON"
+    )
+elseif(UNIX)
+    # Linux: resolve in-process with libdwarf.
+    list(APPEND CPPTRACE_SYMBOL_OPTIONS
+        "CPPTRACE_GET_SYMBOLS_WITH_ADDR2LINE OFF"
+        "CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF ON"
+        "CPPTRACE_USE_EXTERNAL_LIBDWARF ON"
+        "CPPTRACE_FIND_LIBDWARF_WITH_PKGCONFIG ON"
+    )
+endif()
+
+CPMAddPackage(
+    NAME cpptrace
+    GITHUB_REPOSITORY jeremy-rifkin/cpptrace
+    GIT_TAG v1.0.4
+    SYSTEM ON
+    OPTIONS
+        ${CPPTRACE_SYMBOL_OPTIONS}
+) # defines: cpptrace::cpptrace
 
 set(SHARED_EXTERNAL_LIBS
     fmt::fmt
     spdlog
     concurrentqueue
+    spscqueue
     mariadbclient
-    mariadbcpp
     sol2_single
     argparse
     efsw
@@ -291,25 +352,15 @@ set(SHARED_EXTERNAL_LIBS
     magic_enum
     utf8cpp
     unordered_dense::unordered_dense
+    function2
+    cpptrace::cpptrace
 )
 
-if(WIN32)
-    # add wepoll for epoll support on windows
-    add_subdirectory(wepoll)
-
-    list(APPEND SHARED_EXTERNAL_LIBS
-        wepoll
-    )
-
-# backwards needs these to add to linker
-elseif(APPLE)
-    # MacOS has bfd built in clang
+if(APPLE)
     list(APPEND SHARED_EXTERNAL_LIBS
         dl
     )
 elseif(UNIX)
-    # Linux needs bfd as it's not native like MacOS
-    # bfd may link zstd
     list(APPEND SHARED_EXTERNAL_LIBS
         bfd
         dl

@@ -22,8 +22,11 @@
 #ifndef _BATTLEENTITY_H
 #define _BATTLEENTITY_H
 
+#include "common/types/hash_map.h"
+#include "common/types/maybe.h"
+
 #include <set>
-#include <unordered_map>
+#include <type_traits>
 #include <vector>
 
 #include "alliance.h"
@@ -31,8 +34,12 @@
 #include "enums/msg_basic.h"
 #include "modifier.h"
 
+#include "data/enums/attack_type.h"
 #include "data/enums/damage_type.h"
 #include "data/enums/ecosystem.h"
+#include "data/enums/immunity.h"
+#include "data/enums/job.h"
+#include "data/enums/skill_type.h"
 #include "party.h"
 #include "trait.h"
 
@@ -48,92 +55,9 @@ enum class DEATH_TYPE : uint8
 };
 DECLARE_FORMAT_AS_UNDERLYING(DEATH_TYPE);
 
-enum JOBTYPE : uint8
-{
-    JOB_NON = 0,
-    JOB_WAR = 1,
-    JOB_MNK = 2,
-    JOB_WHM = 3,
-    JOB_BLM = 4,
-    JOB_RDM = 5,
-    JOB_THF = 6,
-    JOB_PLD = 7,
-    JOB_DRK = 8,
-    JOB_BST = 9,
-    JOB_BRD = 10,
-    JOB_RNG = 11,
-    JOB_SAM = 12,
-    JOB_NIN = 13,
-    JOB_DRG = 14,
-    JOB_SMN = 15,
-    JOB_BLU = 16,
-    JOB_COR = 17,
-    JOB_PUP = 18,
-    JOB_DNC = 19,
-    JOB_SCH = 20,
-    JOB_GEO = 21,
-    JOB_RUN = 22,
-    JOB_MON = 23, // NOTE: MON is not a full job
-};
 #define MAX_JOBTYPE 24
-DECLARE_FORMAT_AS_UNDERLYING(JOBTYPE);
 
-enum SKILLTYPE : uint8
-{
-    SKILL_NONE         = 0,
-    SKILL_HAND_TO_HAND = 1,
-    SKILL_DAGGER       = 2,
-    SKILL_SWORD        = 3,
-    SKILL_GREAT_SWORD  = 4,
-    SKILL_AXE          = 5,
-    SKILL_GREAT_AXE    = 6,
-    SKILL_SCYTHE       = 7,
-    SKILL_POLEARM      = 8,
-    SKILL_KATANA       = 9,
-    SKILL_GREAT_KATANA = 10,
-    SKILL_CLUB         = 11,
-    SKILL_STAFF        = 12,
-    // 13~21 unused
-    SKILL_AUTOMATON_MELEE   = 22,
-    SKILL_AUTOMATON_RANGED  = 23,
-    SKILL_AUTOMATON_MAGIC   = 24,
-    SKILL_ARCHERY           = 25,
-    SKILL_MARKSMANSHIP      = 26,
-    SKILL_THROWING          = 27,
-    SKILL_GUARD             = 28,
-    SKILL_EVASION           = 29,
-    SKILL_SHIELD            = 30,
-    SKILL_PARRY             = 31,
-    SKILL_DIVINE_MAGIC      = 32,
-    SKILL_HEALING_MAGIC     = 33,
-    SKILL_ENHANCING_MAGIC   = 34,
-    SKILL_ENFEEBLING_MAGIC  = 35,
-    SKILL_ELEMENTAL_MAGIC   = 36,
-    SKILL_DARK_MAGIC        = 37,
-    SKILL_SUMMONING_MAGIC   = 38,
-    SKILL_NINJUTSU          = 39,
-    SKILL_SINGING           = 40,
-    SKILL_STRING_INSTRUMENT = 41,
-    SKILL_WIND_INSTRUMENT   = 42,
-    SKILL_BLUE_MAGIC        = 43,
-    SKILL_GEOMANCY          = 44,
-    SKILL_HANDBELL          = 45,
-    // 46-47 unused
-    SKILL_FISHING      = 48,
-    SKILL_WOODWORKING  = 49,
-    SKILL_SMITHING     = 50,
-    SKILL_GOLDSMITHING = 51,
-    SKILL_CLOTHCRAFT   = 52,
-    SKILL_LEATHERCRAFT = 53,
-    SKILL_BONECRAFT    = 54,
-    SKILL_ALCHEMY      = 55,
-    SKILL_COOKING      = 56,
-    SKILL_SYNERGY      = 57,
-    SKILL_RID          = 58,
-    SKILL_DIG          = 59,
-};
 #define MAX_SKILLTYPE 64
-DECLARE_FORMAT_AS_UNDERLYING(SKILLTYPE);
 
 enum SUBSKILLTYPE : uint8
 {
@@ -148,6 +72,7 @@ enum SUBSKILLTYPE : uint8
 
     // Ammo subskill types can map to jug pets, this is handled completely in lua
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(SUBSKILLTYPE);
 
 enum SLOTTYPE : uint8
@@ -171,19 +96,9 @@ enum SLOTTYPE : uint8
     SLOT_LINK1  = 0x10,
     SLOT_LINK2  = 0x11,
 };
+
 #define MAX_SLOTTYPE 18
 DECLARE_FORMAT_AS_UNDERLYING(SLOTTYPE);
-
-enum class ATTACK_TYPE : uint8
-{
-    NONE     = 0,
-    PHYSICAL = 1,
-    MAGICAL  = 2,
-    RANGED   = 3,
-    BREATH   = 4,
-    SPECIAL  = 5,
-};
-DECLARE_FORMAT_AS_UNDERLYING(ATTACK_TYPE);
 
 enum TARGETTYPE : uint16
 {
@@ -201,6 +116,7 @@ enum TARGETTYPE : uint16
     TARGET_IGNORE_BATTLEID         = 0x0400, // Can hit targets that do not have the same battle ID
     TARGET_ANY_ALLEGIANCE          = 0x0800, // Can hit targets from any allegiance simultaneously. To be used with other flags above and only makes sense for non-single-target skills
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(TARGETTYPE);
 
 enum SKILLCHAIN_ELEMENT : uint8
@@ -226,37 +142,12 @@ enum SKILLCHAIN_ELEMENT : uint8
     SC_LIGHT_II    = 15, // Lv4 Light
     SC_DARKNESS_II = 16, // Lv4 Darkness
 };
-#define MAX_SKILLCHAIN_LEVEL (4)
-#define MAX_SKILLCHAIN_COUNT (5)
-DECLARE_FORMAT_AS_UNDERLYING(SKILLCHAIN_ELEMENT);
 
-enum IMMUNITY : uint32
-{
-    IMMUNITY_NONE        = 0x00000000, //      0
-    IMMUNITY_ADDLE       = 0x00000001, //      1
-    IMMUNITY_GRAVITY     = 0x00000002, //      2
-    IMMUNITY_BIND        = 0x00000004, //      4
-    IMMUNITY_STUN        = 0x00000008, //      8
-    IMMUNITY_SILENCE     = 0x00000010, //     16
-    IMMUNITY_PARALYZE    = 0x00000020, //     32
-    IMMUNITY_BLIND       = 0x00000040, //     64
-    IMMUNITY_SLOW        = 0x00000080, //    128
-    IMMUNITY_POISON      = 0x00000100, //    256
-    IMMUNITY_ELEGY       = 0x00000200, //    512
-    IMMUNITY_REQUIEM     = 0x00000400, //   1024
-    IMMUNITY_LIGHT_SLEEP = 0x00000800, //   2048
-    IMMUNITY_DARK_SLEEP  = 0x00001000, //   4096
-    IMMUNITY_ASPIR       = 0x00002000, //   8192
-    IMMUNITY_TERROR      = 0x00004000, //  16384
-    IMMUNITY_DISPEL      = 0x00008000, //  32768
-    IMMUNITY_PETRIFY     = 0x00010000, //  65536
-    IMMUNITY_PLAGUE      = 0x00020000, // 131064
-};
-DECLARE_FORMAT_AS_UNDERLYING(IMMUNITY);
+DECLARE_FORMAT_AS_UNDERLYING(SKILLCHAIN_ELEMENT);
 
 struct battlehistory_t
 {
-    ATTACK_TYPE lastHitTaken_atkType;
+    xi::AttackType lastHitTaken_atkType;
 };
 
 class CModifier;
@@ -304,15 +195,15 @@ public:
     bool isInDynamis();
     bool isInGarrison();
     bool inMogHouse();
-    bool hasImmunity(uint32 imID);
+    bool hasImmunity(xi::Immunity imID);
     bool isAsleep();
     auto isMounted() const -> bool;
     bool isSitting();
 
-    JOBTYPE GetMJob() const;
-    JOBTYPE GetSJob(bool ignoreRestriction = false) const;
-    uint8   GetMLevel() const;
-    uint8   GetSLevel() const;
+    auto  GetMJob() const -> xi::Job;
+    auto  GetSJob(bool ignoreRestriction = false) const -> xi::Job;
+    uint8 GetMLevel() const;
+    uint8 GetSLevel() const;
 
     void SetMJob(uint8 mjob);
     void SetSJob(uint8 sjob);
@@ -342,24 +233,24 @@ public:
     uint16        GetSubWeaponRank();                               // returns total sub weapon DMG Rank
     uint16        GetRangedWeaponRank();                            // returns total ranged weapon DMG Rank
 
-    uint16 GetSkill(uint16 SkillID); // the current value of the skill (not the maximum, but limited by the level)
+    uint16 GetSkill(xi::SkillType SkillID); // the current value of the skill (not the maximum, but limited by the level)
 
     virtual int16 addTP(int16 tp); // increase/decrease the amount of tp
     virtual int32 addHP(int32 hp); // increase/decrease the amount of hp
     virtual int32 addMP(int32 mp); // increase/decrease the amount of mp
 
     // Deals damage and updates the last attacker which is used when sending a player death message
-    virtual auto takeDamage(int32 amount, CBattleEntity* attacker = nullptr, ATTACK_TYPE attackType = ATTACK_TYPE::NONE, xi::DamageType damageType = xi::DamageType::None, bool isSkillchainDamage = false) -> int32;
+    virtual auto takeDamage(int32 amount, CBattleEntity* attacker = nullptr, xi::AttackType attackType = xi::AttackType::None, xi::DamageType damageType = xi::DamageType::None, bool isSkillchainDamage = false) -> int32;
 
-    int16 getMod(Mod modID);
-    int16 getMaxGearMod(Mod modID);
+    int16 getMod(xi::Mod modID);
+    int16 getMaxGearMod(xi::Mod modID);
 
     bool CanRest();        // checks if able to heal
     bool Rest(float rate); // heal an amount of hp / mp
 
-    void addModifier(Mod type, int16 amount);
-    void setModifier(Mod type, int16 amount);
-    void delModifier(Mod type, int16 amount);
+    void addModifier(xi::Mod type, int16 amount);
+    void setModifier(xi::Mod type, int16 amount);
+    void delModifier(xi::Mod type, int16 amount);
     void addModifiers(std::vector<CModifier>* modList);
     void addEquipModifiers(std::vector<CModifier>* modList, uint8 itemLevel, uint8 slotid);
     void setModifiers(std::vector<CModifier>* modList);
@@ -369,9 +260,9 @@ public:
     void restoreModifiers(); // restore to saved state
     void savePetModifiers(); // saves dynamic pet modifiers
 
-    void addPetModifier(Mod type, PetModType, int16 amount);
-    void setPetModifier(Mod type, PetModType, int16 amount);
-    void delPetModifier(Mod type, PetModType, int16 amount);
+    void addPetModifier(xi::Mod type, PetModType, int16 amount);
+    void setPetModifier(xi::Mod type, PetModType, int16 amount);
+    void delPetModifier(xi::Mod type, PetModType, int16 amount);
     void addPetModifiers(std::vector<CPetModifier>* modList);
     void delPetModifiers(std::vector<CPetModifier>* modList);
     void applyPetModifiers(CPetEntity* PPet);
@@ -431,27 +322,30 @@ public:
 
     virtual void Spawn() override;
     virtual void Die();
-    uint16       GetBattleTargetID() const;
-    void         SetBattleTargetID(uint16 id)
-    {
-        m_battleTarget = id;
-    }
-    CBattleEntity* GetBattleTarget();
+
+    auto battleTarget() const -> EntityId;
+    void setBattleTarget(const Maybe<EntityId>& target);
+    auto GetBattleTarget() const -> CBattleEntity*;
 
     bool hasEnmityEXPENSIVE() const; // Returns true if own notoriety container is not empty or mob in zone has entity listed as battle target
 
     /* State callbacks */
     /* Auto attack */
     virtual bool OnAttack(CAttackState&, action_t&);
+
     virtual bool OnAttackError(CAttackState&)
     {
         return false;
     }
+
     /* Returns whether to call Attack or not (which includes error messages) */
-    virtual bool           CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg);
-    virtual CBattleEntity* IsValidTarget(uint16 targid, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg);
-    virtual void           OnEngage(CAttackState&);
-    virtual void           OnDisengage(CAttackState&);
+    virtual bool CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg);
+
+    virtual auto IsValidTarget(uint16 targid, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*;
+    virtual auto IsValidTarget(EntityId target, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*;
+
+    virtual void OnEngage(CAttackState&);
+    virtual void OnDisengage(CAttackState&);
     /* Casting */
     virtual void OnCastFinished(CMagicState&, action_t&);
     virtual void OnCastInterrupted(CMagicState&, action_t&, MsgBasic msg, bool blockedCast);
@@ -464,9 +358,11 @@ public:
     virtual void OnRangedAttack(CRangeState&, action_t&);
     void         processActionEffectFlags(const action_t& action) const; // Drops status effects whose flags are tied to action emit/receive.
     virtual void OnDeathTimer();
+
     virtual void OnRaise()
     {
     }
+
     virtual void TryHitInterrupt(CBattleEntity* PAttacker);
     virtual void OnDespawn(CDespawnState&);
 
@@ -479,12 +375,12 @@ public:
     virtual auto Tick(timer::time_point) -> Task<void> override;
     virtual void PostTick() override;
 
-    Health   health{}; // hp, mp, tp, etc.
-    stats_t  stats{};
-    skills_t WorkingSkills{};
-    uint32   m_Immunity;     // Mob immunity
-    uint16   m_magicEvasion; // store this so it can be removed easily
-    bool     m_unkillable;   // entity is not able to die (probably until some action removes this flag)
+    Health       health{}; // hp, mp, tp, etc.
+    stats_t      stats{};
+    skills_t     WorkingSkills{};
+    xi::Immunity m_Immunity;     // Mob immunity
+    uint16       m_magicEvasion; // store this so it can be removed easily
+    bool         m_unkillable;   // entity is not able to die (probably until some action removes this flag)
 
     timer::time_point charmTime; // to hold the time entity is charmed
     bool              isCharmed; // is the battle entity charmed?
@@ -496,12 +392,12 @@ public:
 
     TraitList_t TraitList;
 
-    EntityID_t m_OwnerID{}; // ID of the attacking entity (after death will store the ID of the entity that dealt the final blow)
+    EntityId m_OwnerID{}; // ID of the attacking entity (after death will store the ID of the entity that dealt the final blow)
 
     CParty*           PParty;
     CBattleEntity*    PPet;
     CBattleEntity*    PMaster; // Owner/owner of the entity (applies to all combat entities)
-    EntityID_t        lastAttackerId_{};
+    EntityId          lastAttackerId_{};
     timer::time_point LastAttacked;
     timer::time_point m_LastRangedAttackTime{}; // Used to track ranged attack delay and prevent attacks that are too close together
     battlehistory_t   BattleHistory{};          // Stores info related to most recent combat actions taken towards this entity.
@@ -511,17 +407,23 @@ public:
     std::unique_ptr<CNotorietyContainer>    PNotorietyContainer;
 
 private:
-    JOBTYPE           m_mjob;
-    JOBTYPE           m_sjob;
+    xi::Job           m_mjob;
+    xi::Job           m_sjob;
     uint8             m_mlvl; // CURRENT level of the main job
     uint8             m_slvl; // CURRENT level of the sub job
-    uint16            m_battleTarget{ 0 };
+    EntityId          battleTarget_{};
     timer::time_point m_battleStartTime;
     uint16            m_battleID = 0; // Current battle the entity is participating in. Battle ID must match in order for entities to interact with each other.
 
-    std::unordered_map<Mod, int16, EnumClassHash>                                                m_modStat;     // array of modifiers
-    std::unordered_map<Mod, int16, EnumClassHash>                                                m_modStatSave; // saved state
-    std::unordered_map<PetModType, std::unordered_map<Mod, int16, EnumClassHash>, EnumClassHash> m_petMod;
+    HashMap<xi::Mod, int16, EnumClassHash>                                     m_modStat;     // array of modifiers
+    HashMap<xi::Mod, int16, EnumClassHash>                                     m_modStatSave; // saved state
+    HashMap<PetModType, HashMap<xi::Mod, int16, EnumClassHash>, EnumClassHash> m_petMod;
+
+    // The mod maps MUST be node-based (HashMap): references into them are held while
+    // other entries are inserted, and a flat/dense map relocates its storage on growth.
+    static_assert(std::is_same_v<decltype(m_modStat), HashMap<xi::Mod, int16, EnumClassHash>>);
+    static_assert(std::is_same_v<decltype(m_modStatSave), HashMap<xi::Mod, int16, EnumClassHash>>);
+    static_assert(std::is_same_v<decltype(m_petMod), HashMap<PetModType, HashMap<xi::Mod, int16, EnumClassHash>, EnumClassHash>>);
 };
 
 #endif

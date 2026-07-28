@@ -21,6 +21,8 @@
 
 #include "luautils.h"
 
+#include "common/logging_context.h"
+
 #include <common/application.h>
 #include <common/filewatcher.h>
 #include <common/ipc.h>
@@ -44,6 +46,7 @@
 #include <map/lua/lua_spell.h>
 #include <map/lua/lua_statuseffect.h>
 #include <map/lua/lua_trade_container.h>
+#include <map/lua/lua_trait.h>
 #include <map/lua/lua_treasure_pool.h>
 #include <map/lua/lua_trigger_area.h>
 #include <map/lua/lua_weaponskill.h>
@@ -77,13 +80,13 @@
 #include "battlefield.h"
 #include "conquest_system.h"
 #include "daily_system.h"
+#include "data/enums/mob_mod.h"
 #include "fishingcontest.h"
 #include "instance.h"
 #include "ipc_client.h"
 #include "items/item_furnishing.h"
 #include "map/navmesh/navmesh.h"
 #include "map_engine.h"
-#include "mob_modifier.h"
 #include "mobskill.h"
 #include "monstrosity.h"
 #include "packets/s2c/0x039_mapschedulor.h"
@@ -98,13 +101,18 @@
 #include "zone.h"
 #include "zone_entities.h"
 
+#include <common/types/hash_map.h>
+
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
+#include <limits>
 #include <numeric>
 #include <ranges>
 #include <string>
-#include <unordered_map>
+
+#include <fmt/ranges.h>
 
 void ReportErrorToPlayer(CBaseEntity* PEntity, const std::string& message = "") noexcept
 {
@@ -142,8 +150,8 @@ namespace luautils
 namespace
 {
 
-std::unique_ptr<Filewatcher>           filewatcher;
-std::unordered_map<uint32, sol::table> customMenuContext;
+std::unique_ptr<Filewatcher> filewatcher;
+HashMap<uint32, sol::table>  customMenuContext;
 
 LuaCache luaCache;
 
@@ -178,125 +186,6 @@ auto findGlobalLuaFunction(const std::string& funcName) -> sol::function
     return sol::lua_nil;
 }
 
-// Use LuaJIT's debug modules to look at the bytecode representation of a function. If it's a single
-// RET0 then it's a stub/empty handler. We can use this information to cache more aggressively.
-// TODO: We could also use this information to Warn on startup, or silently strip these functions
-// to streamline the Lua state size.
-bool isEmptyLuaFunction(const sol::function& fn)
-{
-    if (!fn.valid())
-    {
-        return false;
-    }
-
-    // Compile the checker once and cache it inside the Lua state itself (in the registry),
-    // rather than in a C++ static. A function-local static sol::function would be destroyed
-    // during static destruction at process exit - after lua_cleanup() has already closed the
-    // Lua state - causing luaL_unref to run against a freed lua_State (crash). Caching in the
-    // registry ties the checker's lifetime to the state, so it is torn down cleanly with it.
-    static constexpr auto checkerKey = "isEmptyLuaFunctionChecker";
-
-    const sol::function checker = [&]() -> sol::function
-    {
-        if (const sol::function cached = lua.registry()[checkerKey]; cached.valid())
-        {
-            return cached;
-        }
-
-        const auto result = lua.safe_script(
-            R"Lua(
-            local ok1, util  = pcall(require, "jit.util")
-            local ok2, vmdef = pcall(require, "jit.vmdef")
-            if not (ok1 and ok2 and util and vmdef) then
-                return function() return false end
-            end
-            local bcnames = vmdef.bcnames
-            local band    = bit.band
-            local function opname(ins)
-                local op = band(ins, 0xff)
-                return (bcnames:sub(op * 6 + 1, op * 6 + 6):gsub("%s+$", ""))
-            end
-            return function(f)
-                if type(f) ~= "function" then
-                    return false
-                end
-                local bodyCount, lastOp = 0, nil
-                for pc = 0, 4 do
-                    local ins = util.funcbc(f, pc)
-                    if not ins then
-                        break
-                    end
-                    local name = opname(ins)
-                    if name:sub(1, 4) ~= "FUNC" then -- skip the FUNCF/FUNCV/FUNCC header
-                        bodyCount = bodyCount + 1
-                        lastOp    = name
-                        if bodyCount > 1 then
-                            return false
-                        end
-                    end
-                end
-                return bodyCount == 1 and lastOp == "RET0"
-            end
-            )Lua",
-            sol::script_pass_on_error);
-
-        if (!result.valid())
-        {
-            const sol::error err = result;
-            ShowErrorFmt("Failed to create nil function checker: {}", err.what());
-            return sol::function(sol::lua_nil);
-        }
-
-        const sol::function created = result;
-        lua.registry()[checkerKey]  = created;
-        return created;
-    }();
-
-    if (!checker.valid())
-    {
-        return false;
-    }
-
-    const auto res = checker(fn);
-    return res.valid() && res.get<bool>();
-}
-
-sol::function nonEmptyOrNil(const std::string& funcName, sol::function fn)
-{
-    // NOTE: Interaction Framework relies on these functions existing and being valid for them to
-    // hook, so we can't mark them for replacement!
-    static constexpr std::string_view frameworkFallbacks[] = {
-        "onTrigger",
-        "onTrade",
-        "onSteal",
-        "onZoneIn",
-        "onZoneOut",
-        "afterZoneIn",
-        "onEventFinish",
-        "onEventUpdate",
-        "onTriggerAreaEnter",
-        "onTriggerAreaLeave",
-    };
-
-    for (const auto fallback : frameworkFallbacks)
-    {
-        if (funcName == fallback)
-        {
-            return fn;
-        }
-    }
-
-    return [&]()
-    {
-        if (!isEmptyLuaFunction(fn))
-        {
-            return fn;
-        }
-
-        return sol::function(sol::lua_nil);
-    }();
-}
-
 } // namespace detail
 
 //
@@ -308,29 +197,57 @@ void init(IPP mapIPP, bool isRunningInCI)
 
     ShowInfo("luautils: Lua initializing");
 
-    // Bind math.randon(...) globally
+    //
+    // Lua docs for math.random():
+    // https://www.luadocs.com/docs/functions/math/random
+    //
+
     lua["math"]["random"] =
         sol::overload(
             []()
             {
-                return xirand::GetRandomNumber(1.0f);
+                // Lua stock:
+                // When called without arguments: a pseudo-random float in the range ([0, 1) (half-open)).
+                return xirand::GetRandomNumber(1.0);
             },
-            [](int n)
+            [](lua_Number upper) -> lua_Number
             {
-                return xirand::GetRandomNumber<int>(1, n + 1);
+                // Lua stock:
+                // When called with a single argument: a pseudo-random integer in the range ([1, upper], (closed)).
+                return static_cast<lua_Number>(xirand::GetRandomNumber<int64>(1, std::llround(upper) + 1));
             },
-            [](float n)
+            [](lua_Number lower, lua_Number upper) -> lua_Number
             {
-                return xirand::GetRandomNumber<float>(0.0f, n);
-            },
-            [](int n, int m)
-            {
-                return xirand::GetRandomNumber<int>(n, m + 1);
-            },
-            [](float n, float m)
-            {
-                return xirand::GetRandomNumber<float>(n, m);
+                // Lua stock:
+                // When called with two integers: a pseudo-random integer in the range ([lower, upper] (closed)).
+                // Fractional bounds are rounded to the nearest integer; use math.randomFloat for float ranges.
+                return static_cast<lua_Number>(xirand::GetRandomNumber<int64>(std::llround(lower), std::llround(upper) + 1));
             });
+
+    // Custom extension: a pseudo-random integer in the range [lower, upper] (closed).
+    // Identical to math.random(lower, upper), but explicit about its semantics at the
+    // call site. Fractional bounds are rounded to the nearest integer.
+    lua["math"]["randomInt"] =
+        [](lua_Number lower, lua_Number upper) -> lua_Number
+    {
+        return static_cast<lua_Number>(xirand::GetRandomNumber<int64>(std::llround(lower), std::llround(upper) + 1));
+    };
+
+    // Custom extension: a pseudo-random double in the range [lower, upper) (half-open),
+    // regardless of whether the bounds are integral-valued. LuaJIT cannot tell 7.0
+    // from 7, so this is the only way to request a float range with whole-number bounds.
+    lua["math"]["randomFloat"] =
+        [](lua_Number lower, lua_Number upper)
+    {
+        return xirand::GetRandomNumber<lua_Number>(lower, upper);
+    };
+
+    lua["math"]["randomNormal"] =
+        [](lua_Number mean, lua_Number stddev, sol::optional<lua_Number> lower, sol::optional<lua_Number> upper)
+    {
+        constexpr double inf = std::numeric_limits<double>::infinity();
+        return xirand::GetNormalNumber(mean, stddev, lower.value_or(-inf), upper.value_or(inf));
+    };
 
     lua.set_function("GarbageCollectStep", &luautils::garbageCollectStep);
     lua.set_function("GarbageCollectFull", &luautils::garbageCollectFull);
@@ -461,58 +378,36 @@ void init(IPP mapIPP, bool isRunningInCI)
     CLuaSpell::Register();
     CLuaStatusEffect::Register();
     CLuaTradeContainer::Register();
+    CLuaTrait::Register();
     CLuaTreasurePool::Register();
     CLuaZone::Register();
     CLuaItem::Register();
     CLuaItemPuppet::Register();
 
-    // Load global enums
-    for (const auto& entry : sorted_directory_iterator<std::filesystem::directory_iterator>("./scripts/enum"))
+    // Load global scripts in the defined order. Directories are walked recursively.
+    // Already loaded files are skipped therefore it is safe to load childrens first (i.e. combat/basic/ before combat/)
+    const std::vector<std::string> globalScriptDirs{
+        "./scripts/enum",
+        "./scripts/utils",
+        "./scripts/data",
+        "./scripts/combat/basic",
+        "./scripts/combat",
+    };
+
+    std::set<std::filesystem::path> loadedScripts;
+    for (const auto& dir : globalScriptDirs)
     {
-        if (entry.extension() == ".lua")
+        for (const auto& entry : sorted_directory_iterator<std::filesystem::recursive_directory_iterator>(dir))
         {
-            const auto relative_path_string = entry.relative_path().generic_string();
-
-            ShowTrace("Loading enum script %s", relative_path_string);
-
-            const auto result = lua.safe_script_file(relative_path_string);
-            if (!result.valid())
+            if (entry.extension() != ".lua" || !loadedScripts.insert(entry).second)
             {
-                const sol::error err = result;
-                ShowError(err.what());
+                continue;
             }
-        }
-    }
 
-    // Load global utilities
-    for (const auto& entry : sorted_directory_iterator<std::filesystem::directory_iterator>("./scripts/utils"))
-    {
-        if (entry.extension() == ".lua")
-        {
             const auto relative_path_string = entry.relative_path().generic_string();
 
-            ShowTrace("Loading utility script %s", relative_path_string);
-
-            const auto result = lua.safe_script_file(relative_path_string);
-            if (!result.valid())
-            {
-                const sol::error err = result;
-                ShowError(err.what());
-            }
-        }
-    }
-
-    // Load global data
-    for (const auto& entry : sorted_directory_iterator<std::filesystem::directory_iterator>("./scripts/data"))
-    {
-        if (entry.extension() == ".lua")
-        {
-            const auto relative_path_string = entry.relative_path().generic_string();
-
-            ShowTrace("Loading data script %s", relative_path_string);
-
-            const auto result = lua.safe_script_file(relative_path_string);
-            if (!result.valid())
+            ShowTrace("Loading global script %s", relative_path_string);
+            if (const auto result = lua.safe_script_file(relative_path_string); !result.valid())
             {
                 const sol::error err = result;
                 ShowError(err.what());
@@ -766,25 +661,25 @@ sol::function getEntityCachedFunction(CBaseEntity* PEntity, const std::string& f
                 case TYPE_NPC:
                     if (auto f = lua["xi"]["zones"][PEntity->loc.zone->getName()]["npcs"][PEntity->getName()][funcName]; f.valid())
                     {
-                        return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                        return f.get<sol::function>();
                     }
                     break;
                 case TYPE_MOB:
                     if (auto f = lua["xi"]["zones"][PEntity->loc.zone->getName()]["mobs"][PEntity->getName()][funcName]; f.valid())
                     {
-                        return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                        return f.get<sol::function>();
                     }
                     break;
                 case TYPE_PET:
                     if (auto f = lua["xi"]["pets"][static_cast<CPetEntity*>(PEntity)->GetScriptName()][funcName]; f.valid())
                     {
-                        return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                        return f.get<sol::function>();
                     }
                     break;
                 case TYPE_TRUST:
                     if (auto f = lua["xi"]["actions"]["spells"]["trust"][PEntity->getName()][funcName]; f.valid())
                     {
-                        return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                        return f.get<sol::function>();
                     }
                     break;
                 default:
@@ -867,7 +762,7 @@ sol::function getSpellCachedFunction(CSpell* PSpell, std::string funcName)
         {
             if (auto f = lua["xi"]["actions"]["spells"][switchKey][name][funcName]; f.valid())
             {
-                return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                return f.get<sol::function>();
             }
             return sol::lua_nil;
         });
@@ -891,7 +786,7 @@ auto getEffectCachedFunction(const std::string& effectName, const std::string& f
             {
                 if (auto f = effectTable[funcName]; f.valid())
                 {
-                    return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                    return f.get<sol::function>();
                 }
             }
             return sol::lua_nil;
@@ -1168,7 +1063,7 @@ sol::function getCachedFileFunction(const std::string& filename, const std::stri
             {
                 if (auto f = table[funcName]; f.valid())
                 {
-                    return detail::nonEmptyOrNil(funcName, f.get<sol::function>());
+                    return f.get<sol::function>();
                 }
             }
             return sol::lua_nil;
@@ -1262,7 +1157,7 @@ void PopulateIDLookups(uint16 zoneId, const std::string& zoneName)
     }
 
     // Load all Name/ID pairs from mobs and npcs
-    std::unordered_map<std::string, std::vector<uint32>> lookup;
+    HashMap<std::string, std::vector<uint32>> lookup;
 
     std::vector<uint16> effectiveZones;
     effectiveZones.push_back(static_cast<uint16>(zoneId));
@@ -1334,7 +1229,7 @@ void PopulateIDLookups(uint16 zoneId, const std::string& zoneName)
             }
         });
 
-    std::unordered_map<std::string, sol::table> idLuaTables;
+    HashMap<std::string, sol::table> idLuaTables;
 
     lua.set_function(
         "GetTableOfIDs",
@@ -1681,22 +1576,35 @@ uint8 GetNationRank(uint8 nation)
 {
     TracyZoneScoped;
 
-    uint8 balance = conquest::GetBalance();
+    const uint8 balance  = conquest::GetBalance();
+    const uint8 sandoria = balance & 0x3U;
+    const uint8 bastok   = (balance >> 2) & 0x3U;
+    const uint8 windurst = (balance >> 4) & 0x3U;
+
+    uint8 rank = 0;
     switch (nation)
     {
         case NATION_SANDORIA:
-            balance &= 0x3U;
-            return balance;
+            rank = sandoria;
+            break;
         case NATION_BASTOK:
-            balance &= 0xCU;
-            balance >>= 2;
-            return balance;
+            rank = bastok;
+            break;
         case NATION_WINDURST:
-            balance >>= 4;
-            return balance;
+            rank = windurst;
+            break;
         default:
             return 0;
     }
+
+    // If two nations are tied for first, they are both read as second.
+    // If all three nations are tied for first, they all register as third.
+    if (rank == 1)
+    {
+        rank = static_cast<uint8>((sandoria == 1) + (bastok == 1) + (windurst == 1));
+    }
+
+    return rank;
 }
 
 uint8 GetConquestBalance()
@@ -2384,7 +2292,7 @@ void OnZoneIn(CCharEntity* PChar)
         return;
     }
 
-    PChar->m_zoneInCutscene = false;
+    PChar->m_isPCHidden = false;
 
     CZone*      prevZone    = zoneutils::GetZone(PChar->loc.prevzone);
     std::string prevZoneStr = "Unknown";
@@ -2427,7 +2335,7 @@ void OnZoneIn(CCharEntity* PChar)
     if (PChar->currentEvent->eventId >= 0)
     {
         PChar->currentEvent->type = CUTSCENE;
-        PChar->m_zoneInCutscene   = true;
+        PChar->m_isPCHidden       = true;
         PChar->setLocked(true);
     }
 }
@@ -2572,7 +2480,7 @@ int32 OnTrigger(CCharEntity* PChar, CBaseEntity* PNpc)
     LogWith({ "npc", { { "name", PNpc->getName() }, { "id", PNpc->id } } });
 
     // Clicking objects does nothing if the player is mid synthesis
-    if (PChar->animation == ANIMATION_SYNTH)
+    if (PChar->animation == xi::Animation::Synth)
     {
         return 0;
     }
@@ -4163,7 +4071,7 @@ void OnGameHour(CZone* PZone)
     }
 }
 
-void OnZoneWeatherChange(const uint16 zoneId, Weather weather)
+void OnZoneWeatherChange(const uint16 zoneId, xi::Weather weather)
 {
     TracyZoneScoped;
 
@@ -4740,9 +4648,9 @@ int32 OnPetAbility(CBaseEntity* PTarget, CBaseEntity* PMob, CMobSkill* PMobSkill
         if (PPet->getPetType() == PET_TYPE::AVATAR && PPet->PMaster->objtype == TYPE_PC)
         {
             CCharEntity* PMaster = (CCharEntity*)PPet->PMaster;
-            if (PMaster->GetMJob() == JOB_SMN)
+            if (PMaster->GetMJob() == xi::Job::SMN)
             {
-                charutils::TrySkillUP(PMaster, SKILL_SUMMONING_MAGIC, PMaster->GetMLevel());
+                charutils::TrySkillUP(PMaster, xi::SkillType::SummoningMagic, PMaster->GetMLevel());
             }
         }
     }
@@ -4773,9 +4681,9 @@ int32 OnPetAbility(CBaseEntity* PTarget, CPetEntity* PPet, CPetSkill* PPetSkill,
     if (PPet->getPetType() == PET_TYPE::AVATAR && PPet->PMaster->objtype == TYPE_PC)
     {
         CCharEntity* PMaster = (CCharEntity*)PPet->PMaster;
-        if (PMaster->GetMJob() == JOB_SMN)
+        if (PMaster->GetMJob() == xi::Job::SMN)
         {
-            charutils::TrySkillUP(PMaster, SKILL_SUMMONING_MAGIC, PMaster->GetMLevel());
+            charutils::TrySkillUP(PMaster, xi::SkillType::SummoningMagic, PMaster->GetMLevel());
         }
     }
 
@@ -5958,7 +5866,7 @@ CBaseEntity* GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::tabl
     }
 
     // NOTE: Mob allegiance is the default for NPCs
-    PEntity->allegiance = static_cast<ALLEGIANCE_TYPE>(table.get_or<uint8>("allegiance", ALLEGIANCE_TYPE::MOB));
+    PEntity->allegiance = static_cast<xi::Allegiance>(table.get_or<uint8>("allegiance", xi::Allegiance::Mob));
 
     if (PInstance)
     {
@@ -6022,15 +5930,15 @@ CBaseEntity* GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::tabl
 
     if (auto* PNpc = dynamic_cast<CNpcEntity*>(PEntity))
     {
-        PNpc->namevis     = table.get_or<uint8>("namevis", 0);
-        PNpc->status      = STATUS_TYPE::NORMAL;
+        PNpc->namevis     = static_cast<xi::NameVis>(table.get_or<uint8>("namevis", 0));
+        PNpc->status      = xi::Status::Normal;
         PNpc->name_prefix = 32;
 
         // TODO: Does this even work?
         PNpc->setWidescan(table.get_or<uint8>("widescan", 1));
 
-        uint32 flags  = table.get_or<uint32>("entityFlags", 0);
-        PNpc->m_flags = flags == 0 ? PNpc->m_flags : flags;
+        auto flags    = static_cast<xi::EntityFlags>(table.get_or<uint32>("entityFlags", 0));
+        PNpc->m_flags = flags == xi::EntityFlags::None ? PNpc->m_flags : flags;
 
         // Ensure that the npc is triggerable if onTrigger is passed in
         auto onTrigger = table["onTrigger"].get_or<sol::function>(sol::lua_nil);
@@ -6091,7 +5999,7 @@ CBaseEntity* GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::tabl
         if (skillList > 0)
         {
             PMob->m_MobSkillList = skillList;
-            PMob->setMobMod(MOBMOD_SKILL_LIST, skillList);
+            PMob->setMobMod(xi::MobMod::SkillList, skillList);
         }
 
         const auto spellList = table["spellList"].get_or<uint16>(0);
@@ -6114,7 +6022,7 @@ CBaseEntity* GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::tabl
         const auto spawnType = table["spawnType"].get_or<uint16>(0);
         if (spawnType > 0)
         {
-            PMob->m_SpawnType = (SPAWNTYPE)spawnType;
+            PMob->m_SpawnType = static_cast<xi::SpawnType>(spawnType);
         }
 
         const auto modelSize = table["modelSize"].get_or<uint8>(0);
@@ -6148,10 +6056,10 @@ CBaseEntity* GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::tabl
 
         PMob->m_isAggroable = table["isAggroable"].get_or(false);
 
-        PMob->spawnAnimation = static_cast<SPAWN_ANIMATION>(table["specialSpawnAnimation"].get_or(false) ? 1 : 0);
+        PMob->spawnAnimation = table["specialSpawnAnimation"].get_or(false) ? xi::SpawnAnimation::Special : xi::SpawnAnimation::Normal;
 
-        uint32 flags  = table.get_or<uint32>("entityFlags", 0);
-        PMob->m_flags = flags == 0 ? PMob->m_flags : flags;
+        auto flags    = static_cast<xi::EntityFlags>(table.get_or<uint32>("entityFlags", 0));
+        PMob->m_flags = flags == xi::EntityFlags::None ? PMob->m_flags : flags;
 
         // Ensure mobs get a function for onMobDeath
         auto onMobDeath = table["onMobDeath"].get<sol::function>();

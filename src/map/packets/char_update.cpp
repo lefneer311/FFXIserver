@@ -26,7 +26,6 @@
 #include "entities/char_entity.h"
 #include "items/item_linkshell.h"
 #include "status_effect_container.h"
-#include "utils/itemutils.h"
 #include "utils/mountutils.h"
 
 namespace
@@ -281,13 +280,13 @@ void CCharUpdatePacket::updateWith(CCharEntity* PChar, ENTITYUPDATE type, uint8 
         const auto [ChocoboIndex, CustomProperties] = mountutils::packetDefinition(PChar);
 
         packet->Hpp             = PChar->GetHPP();
-        packet->server_status   = PChar->animation;
+        packet->server_status   = static_cast<uint8_t>(PChar->animation);
         packet->ModelHitboxSize = static_cast<uint8_t>(PChar->modelHitboxSize * 10); // TODO: verify this value and if it changes (Monstrosity?)
 
         packet->Flags1.MonsterFlag = false; // TODO: Is this ever set for Monstrosity PVP?
-        packet->Flags1.HideFlag    = PChar->m_zoneInCutscene;
-        packet->Flags1.SleepFlag   = 0;                                                                // Something to do with events. // TODO: figure out when/if this is set. Probably when you're in a cutscene?
-        packet->Flags1.unknown_0_3 = PChar->loc.zone ? PChar->loc.zone->CanUseMisc(MISC_TREASURE) : 0; // Set global treasure pool
+        packet->Flags1.HideFlag    = PChar->m_isPCHidden;
+        packet->Flags1.SleepFlag   = 0;                                                                         // Something to do with events. // TODO: figure out when/if this is set. Probably when you're in a cutscene?
+        packet->Flags1.unknown_0_3 = PChar->loc.zone ? PChar->loc.zone->CanUseMisc(xi::ZoneMisc::Treasure) : 0; // Set global treasure pool
         packet->Flags1.unknown_0_4 = 0;
 
         // All mounts need a valid ChocoboIndex
@@ -365,7 +364,7 @@ void CCharUpdatePacket::updateWith(CCharEntity* PChar, ENTITYUPDATE type, uint8 
             packet->Flags5.GeoIndiSize = 2;
         }
 
-        packet->Flags6.GateId = 0; // Set as "Confrontation" sub power? This will make other players invisible that dont also have this status.
+        packet->Flags6.GateId = PChar->StatusEffectContainer->GetConfrontationSubPower() & 0x0F;
         packet->size          = roundUpToNearestFour(general_size) / 4;
     }
 
@@ -438,6 +437,6 @@ void CCharUpdatePacket::updateWith(CCharEntity* PChar, ENTITYUPDATE type, uint8 
         }
 
         packet->Flags4.TrialFlag     = 0; // Trial accounts not implemented.
-        packet->Flags4.JobMasterFlag = PChar->getMod(Mod::SUPERIOR_LEVEL) == 5 && PChar->m_jobMasterDisplay;
+        packet->Flags4.JobMasterFlag = PChar->getMod(xi::Mod::SUPERIOR_LEVEL) == 5 && PChar->m_jobMasterDisplay;
     }
 }

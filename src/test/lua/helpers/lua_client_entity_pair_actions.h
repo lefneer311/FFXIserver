@@ -29,6 +29,7 @@
 enum class SpellID : uint16;
 class CLuaClientEntityPair;
 class CLuaBaseEntity;
+
 class CLuaClientEntityPairActions
 {
 public:
@@ -67,7 +68,16 @@ public:
     void sortContainer(uint8 container) const;
     void dropItem(uint8 container, uint8 slot, uint32 quantity) const;
     void setLockstyle(uint8 mode, sol::optional<sol::table> items) const;
+    void equipSet(const sol::table& entries) const;
     void craft(uint16 crystalItemId, const sol::table& ingredients) const;
+
+    void plantAdd(uint8 potContainer, uint8 potSlot, uint8 addContainer, uint8 addSlot) const;
+    void plantCheck(uint8 potContainer, uint8 potSlot) const;
+    void plantHarvest(uint8 potContainer, uint8 potSlot, sol::optional<bool> uproot) const;
+    void plantDry(uint8 potContainer, uint8 potSlot) const;
+
+    void placeFurniture(uint8 container, uint8 slot, uint8 x, uint8 z) const;
+    void finishFurnishing() const;
 
     static void Register();
 

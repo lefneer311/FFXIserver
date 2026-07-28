@@ -15,7 +15,6 @@ if not xi.module.isContentEnabled('ROV') then
         local defense     = player:getMainLvl() == 75 and 23 or 21
 
         -- Apply STONESKIN effect but display as RAMPART icon
-        -- TODO: subType 2 not yet implemented for magical only stoneskin
         target:addStatusEffect(xi.effect.STONESKIN, { power = defense, duration = duration, origin   = player, icon = xi.effect.RAMPART, subType  = 2, subPower = stoneskinHP })
 
         return xi.effect.RAMPART
@@ -24,10 +23,7 @@ if not xi.module.isContentEnabled('ROV') then
     -- Stoneskin onEffectGain: Add defense buff when displayed as RAMPART
     m:addOverride('xi.effects.stoneskin.onEffectGain', function(target, effect)
         if effect:getIcon() == xi.effect.RAMPART then
-            effect:addMod(xi.mod.STONESKIN, effect:getSubPower())
             effect:addMod(xi.mod.DEF, effect:getPower())
-        else
-            effect:addMod(xi.mod.STONESKIN, effect:getPower())
         end
     end)
 end
@@ -71,7 +67,8 @@ if not xi.module.isContentEnabled('ABYSSEA') then
         local recastReduction = player:getMerit(xi.merit.FEALTY) - 150
         action:setRecast(action:getRecast() - recastReduction)
 
-        local enhFealty = (player:getMerit(xi.merit.FEALTY) / 5) * player:getMod(xi.mod.ENHANCES_FEALTY)
+        -- Divide by merit value (150s in pre-Abyssea) to recover merit rank count for gear scaling
+        local enhFealty = (player:getMerit(xi.merit.FEALTY) / 150) * player:getMod(xi.mod.ENHANCES_FEALTY)
         local duration  = 60 + enhFealty
 
         player:addStatusEffect(xi.effect.FEALTY, { power = 1, duration = duration, origin = player })
@@ -100,12 +97,12 @@ if not xi.module.isContentEnabled('ABYSSEA') then
         then
             local resistanceRate = xi.combat.magicHitRate.calculateResistRate(player, target, 0, 0, xi.skillRank.A_PLUS, xi.element.THUNDER, xi.mod.INT, xi.effect.STUN, 0)
             if xi.data.statusEffect.isResistRateSuccessfull(xi.effect.STUN, resistanceRate, 0) then
-                target:addStatusEffect(xi.effect.STUN, { power = 1, duration = math.random(2, 8) * resistanceRate, origin = player })
+                target:addStatusEffect(xi.effect.STUN, { power = 1, duration = math.randomInt(2, 8) * resistanceRate, origin = player })
             end
         end
 
         -- Randomize damage
-        local randomizer = 1 + (math.random(1, 5) / 100)
+        local randomizer = 1 + (math.randomInt(1, 5) / 100)
 
         damage = damage * randomizer
         damage = utils.handleStoneskin(target, damage)

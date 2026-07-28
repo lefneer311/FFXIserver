@@ -25,10 +25,13 @@
 #include <common/ipp.h>
 #include <common/types/flag.h>
 
+#include <queue>
+
 #include "zone.h"
 
 class CBaseEntity;
 class CCharEntity;
+class CInstance;
 class CNpcEntity;
 
 namespace zoneutils
@@ -67,9 +70,10 @@ void SavePlayTime();
 auto GetCurrentRegion(uint16 zoneId) -> REGION_TYPE;
 auto GetCurrentContinent(uint16 zoneId) -> CONTINENT_TYPE;
 
-auto GetWeatherElement(Weather weather) -> int;
+auto GetWeatherElement(xi::Weather weather) -> int;
 
 auto GetZone(uint16 zoneId) -> CZone*;
+auto GetInstanceByRunId(uint16 zoneId, uint32 runId) -> CInstance*; // the live instance of a run, or nullptr if that run has ended
 auto GetEntity(uint32 id, uint8 filter = -1) -> CBaseEntity*;
 auto GetCharByName(const std::string& name) -> CCharEntity*;
 auto GetCharFromWorld(uint32 charId, uint16 targId) -> CCharEntity*;  // returns pointer to character by id and target id
@@ -77,12 +81,13 @@ auto GetChar(uint32 charId) -> CCharEntity*;                          // returns
 auto GetCharToUpdate(uint32 primary, uint32 ternary) -> CCharEntity*; // returns pointer to preferred char to update for party changes
 auto GetZonesAssignedToThisProcess(IPP mapIPP) -> std::vector<uint16>;
 auto IsZoneAssignedToThisProcess(IPP mapIPP, ZONEID zoneId) -> bool;
-void ForEachZone(const std::function<void(CZone*)>& func);
-void ForEachZone(const std::vector<uint16>& zoneIds, const std::function<void(CZone*)>& func);
-auto GetZoneIPP(uint16 zoneId) -> uint64;                    // returns IPP for zone ID
-auto IsZoneAtPlayerCap(uint16 zoneId, bool isGM) -> bool;    // returns true if the zone is at capacity and the entry should be denied
-auto IsResidentialArea(const CCharEntity* PChar) -> bool;    // returns whether or not the area is a residential zone
-auto IsAlwaysOutOfNationControl(REGION_TYPE region) -> bool; // returns true if a region should never trigger "in areas outside own nation's control" latent effect; false otherwise.
+void ForEachZone(FnRef<void(CZone*)> func);
+void ForEachZone(const std::vector<uint16>& zoneIds, FnRef<void(CZone*)> func);
+auto GetZoneIPP(uint16 zoneId) -> uint64;                      // returns IPP for zone ID
+auto CanZoneUseMisc(uint16 zoneId, xi::ZoneMisc misc) -> bool; // DB-backed misc check; works for zones on other processes
+auto IsZoneAtPlayerCap(uint16 zoneId, bool isGM) -> bool;      // returns true if the zone is at capacity and the entry should be denied
+auto IsResidentialArea(const CCharEntity* PChar) -> bool;      // returns whether or not the area is a residential zone
+auto IsAlwaysOutOfNationControl(REGION_TYPE region) -> bool;   // returns true if a region should never trigger "in areas outside own nation's control" latent effect; false otherwise.
 
 void AfterZoneIn(CBaseEntity* PEntity); // triggers after a player has finished zoning in
 

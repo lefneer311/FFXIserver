@@ -21,14 +21,17 @@
 
 #pragma once
 
-#include "common/cbasetypes.h"
-#include "common/database.h"
-#include "common/ipp.h"
-#include "common/logging.h"
+#include <common/cbasetypes.h>
+
+#include "data/enums/zone_misc.h"
+#include <common/database.h>
+#include <common/ipp.h>
+#include <common/logging.h>
+
+#include <common/types/hash_map.h>
 
 #include <ranges>
 #include <set>
-#include <unordered_map>
 #include <vector>
 
 class ZoneSettings final
@@ -68,12 +71,12 @@ public:
 
             mapEndpointSet.insert(zone_settings.ipp);
 
-            if (zone_settings.misc & ZONEMISC::MISC_YELL)
+            if (zone_settings.misc & static_cast<uint32>(xi::ZoneMisc::Yell))
             {
                 yellMapEndpointSet.insert(zone_settings.ipp);
             }
 
-            if (zone_settings.misc & ZONEMISC::MISC_ASSIST)
+            if (zone_settings.misc & static_cast<uint32>(xi::ZoneMisc::Assist))
             {
                 assistMapEndpointSet.insert(zone_settings.ipp);
             }
@@ -88,8 +91,8 @@ public:
 
     // TODO: Properly encapsulate this
     // private:
-    std::unordered_map<uint16, ZoneSettingsEntry> zoneSettingsMap_;
-    std::vector<IPP>                              mapEndpoints_;
-    std::vector<IPP>                              yellMapEndpoints_;
-    std::vector<IPP>                              assistMapEndpoints_;
+    HashMap<uint16, ZoneSettingsEntry> zoneSettingsMap_;
+    std::vector<IPP>                   mapEndpoints_;
+    std::vector<IPP>                   yellMapEndpoints_;
+    std::vector<IPP>                   assistMapEndpoints_;
 };

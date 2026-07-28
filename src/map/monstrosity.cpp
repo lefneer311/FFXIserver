@@ -19,16 +19,17 @@
 ===========================================================================
 */
 
-// ===
+//
 // See scripts/globals/monstrosity.lua for a general overview of how Monstrosity works and is designed.
-// ===
+//
 
 #include "monstrosity.h"
 
 #include "ai/ai_container.h"
 
-#include "common/database.h"
 #include "common/logging.h"
+
+#include <common/types/hash_map.h>
 
 #include "entities/char_entity.h"
 
@@ -40,12 +41,10 @@
 #include "packets/s2c/0x0ac_command_data.h"
 
 #include "utils/charutils.h"
-#include "utils/zoneutils.h"
 
 #include "packets/c2s/0x01a_action.h"
 #include "packets/c2s/0x102_extended_job.h"
 #include "packets/s2c/0x063_miscdata_monstrosity.h"
-#include "status_effect.h"
 #include "status_effect_container.h"
 
 struct MonstrositySpeciesRow
@@ -53,8 +52,8 @@ struct MonstrositySpeciesRow
     uint8       monstrosityId{};
     uint16      monstrositySpeciesCode{};
     std::string name{};
-    JOBTYPE     mjob{};
-    JOBTYPE     sjob{};
+    xi::Job     mjob{};
+    xi::Job     sjob{};
     uint8       size{};
     uint16      look{};
 };
@@ -70,26 +69,26 @@ struct MonstrosityInstinctRow
 namespace
 {
 
-std::unordered_map<uint16, MonstrositySpeciesRow>  gMonstrositySpeciesMap{};
-std::unordered_map<uint16, MonstrosityInstinctRow> gMonstrosityInstinctMap{};
+HashMap<uint16, MonstrositySpeciesRow>  gMonstrositySpeciesMap{};
+HashMap<uint16, MonstrosityInstinctRow> gMonstrosityInstinctMap{};
 
 } // namespace
 
 monstrosity::MonstrosityData_t::MonstrosityData_t()
-: MonstrosityId(0x01) // Rabbit
-, Species(0x0001)     // Rabbit
-, Flags(0x0B44)       // ?
-, Look(0x010C)        // Rabbit
-, Size(0x00)          // Size (0: Small, 1: Medium, 2: Large)
-, NamePrefix1(0x00)   // Nothing
-, NamePrefix2(0x00)   // Nothing
-, MainJob(JOB_WAR)    //
-, SubJob(JOB_WAR)     //
-, CurrentExp(0)       // No exp
-, Belligerency(false) //
-, EntryZoneId(0)      //
-, EntryMainJob(0)     //
-, EntrySubJob(0)      //
+: MonstrosityId(0x01)   // Rabbit
+, Species(0x0001)       // Rabbit
+, Flags(0x0B44)         // ?
+, Look(0x010C)          // Rabbit
+, Size(0x00)            // Size (0: Small, 1: Medium, 2: Large)
+, NamePrefix1(0x00)     // Nothing
+, NamePrefix2(0x00)     // Nothing
+, MainJob(xi::Job::WAR) //
+, SubJob(xi::Job::WAR)  //
+, CurrentExp(0)         // No exp
+, Belligerency(false)   //
+, EntryZoneId(0)        //
+, EntryMainJob(0)       //
+, EntrySubJob(0)        //
 {
     levels[1]  = 1; // Rabbit
     levels[18] = 1; // Mandragora
@@ -113,8 +112,8 @@ void monstrosity::LoadStaticData()
                     .monstrosityId          = rset->get<uint8>("monstrosity_id"),
                     .monstrositySpeciesCode = monstrositySpeciesCode,
                     .name                   = rset->get<std::string>("name"),
-                    .mjob                   = rset->get<JOBTYPE>("mjob"),
-                    .sjob                   = rset->get<JOBTYPE>("sjob"),
+                    .mjob                   = rset->get<xi::Job>("mjob"),
+                    .sjob                   = rset->get<xi::Job>("sjob"),
                     .size                   = rset->get<uint8>("size"),
                     .look                   = rset->get<uint16>("look"),
                 };
@@ -145,7 +144,7 @@ void monstrosity::LoadStaticData()
         {
             while (rset->next())
             {
-                const auto mod = rset->get<Mod>("modId");
+                const auto mod = rset->get<xi::Mod>("modId");
                 const auto val = rset->get<int16>("value");
                 entry.mods.emplace_back(mod, val);
             }
@@ -289,7 +288,7 @@ void monstrosity::TryPopulateMonstrosityData(CCharEntity* PChar)
 {
     TracyZoneScoped;
 
-    if (settings::get<bool>("main.ENABLE_MONSTROSITY") && PChar->GetMJob() == JOB_MON)
+    if (settings::get<bool>("main.ENABLE_MONSTROSITY") && PChar->GetMJob() == xi::Job::MON)
     {
         // Populates PChar->m_PMonstrosity
         ReadMonstrosityData(PChar);
@@ -409,7 +408,7 @@ void monstrosity::SendFullMonstrosityUpdate(CCharEntity* PChar)
 
 void monstrosity::HandleMonsterSkillActionPacket(const CCharEntity* PChar, const GP_CLI_COMMAND_ACTION& data)
 {
-    if (PChar->GetMJob() != JOB_MON)
+    if (PChar->GetMJob() != xi::Job::MON)
     {
         return;
     }
@@ -422,7 +421,7 @@ void monstrosity::HandleMonsterSkillActionPacket(const CCharEntity* PChar, const
     // TODO: Validate that this move is available at this level, for this species, and that
     // we're capable of using it (state, TP, etc.).
 
-    PChar->PAI->Internal_MobSkill(data.ActIndex, data.MonsterSkill.SkillId, std::nullopt);
+    PChar->PAI->Internal_MobSkill(EntityId(PChar->GetEntity(data.ActIndex)), data.MonsterSkill.SkillId, std::nullopt);
 }
 
 void monstrosity::HandleEquipChangePacket(CCharEntity* PChar, const mon_data_t& data)
@@ -435,7 +434,7 @@ void monstrosity::HandleEquipChangePacket(CCharEntity* PChar, const mon_data_t& 
     {
         uint8 total = 0;
 
-        for (auto const& idx : input)
+        for (const auto& idx : input)
         {
             total += gMonstrosityInstinctMap[idx].cost;
         }
@@ -446,7 +445,7 @@ void monstrosity::HandleEquipChangePacket(CCharEntity* PChar, const mon_data_t& 
     auto instinctsContainDuplicates = [&](const std::array<uint16, 12>& input) -> bool
     {
         std::unordered_set<uint16> set;
-        for (auto const& idx : input)
+        for (const auto& idx : input)
         {
             if (idx == 0)
             {
@@ -599,7 +598,7 @@ void monstrosity::HandleDeathMenu(CCharEntity* PChar, const GP_CLI_COMMAND_ACTIO
 
     PChar->health.hp = PChar->GetMaxHP();
     PChar->health.mp = PChar->GetMaxMP();
-    PChar->animation = ANIMATION_NONE;
+    PChar->animation = xi::Animation::None;
 
     PChar->updatemask |= UPDATE_HP;
 
@@ -617,7 +616,7 @@ void monstrosity::HandleDeathMenu(CCharEntity* PChar, const GP_CLI_COMMAND_ACTIO
 
         PChar->SetDeathTime(timer::time_point::min());
 
-        PChar->status = STATUS_TYPE::DISAPPEAR;
+        PChar->status = xi::Status::Disappear;
 
         PChar->clearPacketList();
 

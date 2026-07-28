@@ -417,11 +417,11 @@ function CBaseEntity:resetAI()
 end
 
 ---@nodiscard
----@return integer
+---@return xi.status
 function CBaseEntity:getStatus()
 end
 
----@param status integer
+---@param status xi.status
 ---@return nil
 function CBaseEntity:setStatus(status)
 end
@@ -630,20 +630,12 @@ function CBaseEntity:sendMenu(menu)
 end
 
 ---@nodiscard
----@param guildID integer
----@param open integer
----@param close integer
----@param holiday integer
----@return boolean
-function CBaseEntity:sendGuild(guildID, open, close, holiday)
-end
-
----@nodiscard
 ---@param npc CBaseEntity
 ---@param open integer
 ---@param close integer
+---@param holiday? integer Weekday the shop is closed (0-7); omit for none
 ---@return boolean
-function CBaseEntity:openGuildShop(npc, open, close)
+function CBaseEntity:openGuildShop(npc, open, close, holiday)
 end
 
 ---@return nil
@@ -652,8 +644,9 @@ end
 
 ---@param open integer
 ---@param close integer
+---@param passive boolean?
 ---@return nil
-function CBaseEntity:sendGuildClose(open, close)
+function CBaseEntity:sendGuildClose(open, close, passive)
 end
 
 ---@return nil
@@ -791,7 +784,7 @@ end
 function CBaseEntity:clearPlayerTriggerAreas()
 end
 
----@param statusID integer
+---@param statusID xi.status
 ---@param animation integer
 ---@param matchTime boolean?
 ---@return nil
@@ -1122,6 +1115,47 @@ end
 function CBaseEntity:sendLinkshellConcierge(data)
 end
 
+---@class ChocoboRaceStats
+---@field str xi.chocoboRaising.statRank?
+---@field ["end"] xi.chocoboRaising.statRank?
+---@field dsc xi.chocoboRaising.statRank?
+---@field rcp xi.chocoboRaising.statRank?
+
+---@class ChocoboRaceEntry
+---@field item xi.chocoboRacing.sectionEvent?
+---@field orders xi.chocoboRacing.order?
+---@field size xi.chocoboRacing.jockeySize?
+---@field color xi.chocoboRaising.color?
+---@field gender xi.chocoboRaising.gender?
+---@field weather xi.chocoboRaising.weather?
+---@field temperament xi.chocoboRaising.temperament?
+---@field ability1 xi.chocoboRaising.ability?
+---@field ability2 xi.chocoboRaising.ability?
+---@field stats ChocoboRaceStats?
+
+---@class ChocoboRaceTrigger
+---@field type xi.chocoboRacing.sectionEvent?
+---@field user integer? Bitmask: the acting chocobo
+---@field targets integer? Bitmask: affected chocobos
+---@field param integer? Bitmask: extra affected / type param
+
+---@class ChocoboRaceSection
+---@field from integer[] Per-chocobo positions at section start
+---@field to integer[] Per-chocobo positions at section end
+---@field trigger ChocoboRaceTrigger? Optional per-section event
+
+---@class ChocoboRace
+---@field counter integer? Race counter (rolling 0-3)
+---@field weather xi.weather? Race weather
+---@field chocobos ChocoboRaceEntry[]? The racers (up to 8)
+---@field sections ChocoboRaceSection[]? The race sections
+---@field places integer[]? Finishing place per chocobo (0 = 1st)
+
+---@param race ChocoboRace
+---@return nil
+function CBaseEntity:sendChocoboRace(race)
+end
+
 ---@nodiscard
 ---@param locationID integer
 ---@return integer
@@ -1334,11 +1368,11 @@ function CBaseEntity:setCostume2(costume)
 end
 
 ---@nodiscard
----@return integer
+---@return xi.animation
 function CBaseEntity:getAnimation()
 end
 
----@param animation integer
+---@param animation xi.animation
 ---@return nil
 function CBaseEntity:setAnimation(animation)
 end
@@ -1354,7 +1388,7 @@ end
 function CBaseEntity:setAnimationSub(animationsub, sendUpdate)
 end
 
----@param spawnAnimation integer
+---@param spawnAnimation xi.spawnAnimation
 ---@return nil
 function CBaseEntity:setSpawnAnimation(spawnAnimation)
 end
@@ -1390,11 +1424,11 @@ function CBaseEntity:setNation(nation)
 end
 
 ---@nodiscard
----@return integer
+---@return xi.allegiance
 function CBaseEntity:getAllegiance()
 end
 
----@param allegiance integer
+---@param allegiance xi.allegiance
 ---@return nil
 function CBaseEntity:setAllegiance(allegiance)
 end
@@ -1489,7 +1523,7 @@ function CBaseEntity:jail()
 end
 
 ---@nodiscard
----@param misc integer
+---@param misc xi.zoneMisc
 ---@return boolean
 function CBaseEntity:canUseMisc(misc)
 end
@@ -1526,12 +1560,12 @@ function CBaseEntity:getTimeCreated()
 end
 
 ---@nodiscard
----@return integer
+---@return xi.job
 function CBaseEntity:getMainJob()
 end
 
 ---@nodiscard
----@return integer
+---@return xi.job
 function CBaseEntity:getSubJob()
 end
 
@@ -3176,7 +3210,6 @@ end
 function CBaseEntity:isTandemActive()
 end
 
----@nodiscard
 ---@param element integer
 ---@param burden integer
 ---@return integer
@@ -3707,7 +3740,7 @@ function CBaseEntity:getSpecies()
 end
 
 ---@nodiscard
----@param mobType integer
+---@param mobType xi.mobType
 ---@return boolean
 function CBaseEntity:isMobType(mobType)
 end
@@ -3815,17 +3848,17 @@ function CBaseEntity:hasTrait(traitID)
 end
 
 ---@nodiscard
----@param immunityID integer
+---@param immunityID xi.immunity
 ---@return boolean
 function CBaseEntity:hasImmunity(immunityID)
 end
 
----@param immunityID integer
+---@param immunityID xi.immunity
 ---@return nil
 function CBaseEntity:addImmunity(immunityID)
 end
 
----@param immunityID integer
+---@param immunityID xi.immunity
 ---@return nil
 function CBaseEntity:delImmunity(immunityID)
 end
@@ -3843,6 +3876,16 @@ end
 ---@param unkillable boolean
 ---@return nil
 function CBaseEntity:setUnkillable(unkillable)
+end
+
+---@param enabled boolean
+---@return nil
+function CBaseEntity:setPriorityRender(enabled)
+end
+
+---@nodiscard
+---@return boolean
+function CBaseEntity:getUnkillable()
 end
 
 ---@param untargetable boolean
@@ -3922,27 +3965,41 @@ function CBaseEntity:setMobSkillAttack(listId)
 end
 
 ---@nodiscard
----@param mobModID integer
+---@param mobModID xi.mobMod
 ---@return integer
 function CBaseEntity:getMobMod(mobModID)
 end
 
----@param mobModID integer
+---@param mobModID xi.mobMod
 ---@param value integer
 ---@return nil
 function CBaseEntity:setMobMod(mobModID, value)
 end
 
----@param mobModID integer
+---@param mobModID xi.mobMod
 ---@param value integer
 ---@return nil
 function CBaseEntity:addMobMod(mobModID, value)
 end
 
----@param mobModID integer
+---@param mobModID xi.mobMod
 ---@param value integer
 ---@return nil
 function CBaseEntity:delMobMod(mobModID, value)
+end
+
+---@nodiscard
+---@param skillId integer
+---@return number[]|nil
+function CBaseEntity:getfTPModifierOverride(skillId)
+end
+
+---@param skillId integer
+---@param ftp1 number
+---@param ftp2 number
+---@param ftp3 number
+---@return nil
+function CBaseEntity:setfTPModifierOverride(skillId, ftp1, ftp2, ftp3)
 end
 
 ---@nodiscard
@@ -3961,21 +4018,21 @@ function CBaseEntity:setCrystalElement(element)
 end
 
 ---@nodiscard
----@return integer
+---@return xi.behavior
 function CBaseEntity:getBehavior()
 end
 
----@param behavior integer
+---@param behavior xi.behavior
 ---@return nil
 function CBaseEntity:setBehavior(behavior)
 end
 
 ---@nodiscard
----@return integer
+---@return xi.roamFlag
 function CBaseEntity:getRoamFlags()
 end
 
----@param newRoamFlags integer
+---@param newRoamFlags xi.roamFlag
 ---@return nil
 function CBaseEntity:setRoamFlags(newRoamFlags)
 end

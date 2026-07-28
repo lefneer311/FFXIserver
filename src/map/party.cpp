@@ -34,8 +34,6 @@
 #include "utils/charutils.h"
 #include "utils/jailutils.h"
 #include "utils/zoneutils.h"
-#include <cstring>
-#include <vector>
 
 #include "packets/c2s/0x077_group_change2.h"
 #include "packets/char_status.h"
@@ -329,7 +327,7 @@ void CParty::RemoveMember(CBattleEntity* PEntity)
                 }
                 if (m_PSyncTarget != nullptr && m_PSyncTarget != PChar)
                 {
-                    if (PChar->status != STATUS_TYPE::DISAPPEAR)
+                    if (PChar->status != xi::Status::Disappear)
                     {
                         CStatusEffect* sync = PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::LevelSync);
                         if (sync && sync->GetDuration() == 0s)
@@ -426,7 +424,7 @@ void CParty::DelMember(CBattleEntity* PEntity)
                 }
                 if (m_PSyncTarget != nullptr && m_PSyncTarget != PChar)
                 {
-                    if (PChar->status != STATUS_TYPE::DISAPPEAR)
+                    if (PChar->status != xi::Status::Disappear)
                     {
                         CStatusEffect* sync = PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::LevelSync);
                         if (sync && sync->GetDuration() == 0s)
@@ -1156,7 +1154,7 @@ void CParty::SetSyncTarget(const std::string& MemberName, MsgStd message)
 
                     CCharEntity* member = (CCharEntity*)i;
 
-                    if (member->status != STATUS_TYPE::DISAPPEAR && member->getZone() == PChar->getZone())
+                    if (member->status != xi::Status::Disappear && member->getZone() == PChar->getZone())
                     {
                         member->pushPacket<GP_SERV_COMMAND_MESSAGE>(PChar->GetMLevel(), 0, 0, 0, message);
                         member->StatusEffectContainer->DelStatusEffectsByFlag(xi::StatusEffectFlag::Dispelable | xi::StatusEffectFlag::OnZone);
@@ -1188,7 +1186,7 @@ void CParty::SetSyncTarget(const std::string& MemberName, MsgStd message)
 
                     CCharEntity* member = (CCharEntity*)i;
 
-                    if (member->status != STATUS_TYPE::DISAPPEAR)
+                    if (member->status != xi::Status::Disappear)
                     {
                         CStatusEffect* sync = member->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::LevelSync);
                         if (sync && sync->GetDuration() == 0s)
@@ -1241,7 +1239,7 @@ void CParty::PushPacket(uint32 senderID, uint16 ZoneID, const std::unique_ptr<CB
 
         CCharEntity* member = (CCharEntity*)i;
 
-        if (member->id != senderID && member->status != STATUS_TYPE::DISAPPEAR && !jailutils::InPrison(member))
+        if (member->id != senderID && member->status != xi::Status::Disappear && !jailutils::InPrison(member))
         {
             if (ZoneID == 0 || member->getZone() == ZoneID)
             {
@@ -1295,7 +1293,7 @@ void CParty::DisableSync()
 void CParty::RefreshSync()
 {
     CCharEntity* sync      = (CCharEntity*)m_PSyncTarget;
-    uint8        syncLevel = sync->jobs.job[sync->GetMJob()];
+    uint8        syncLevel = sync->jobs.job[static_cast<uint8>(sync->GetMJob())];
     if (syncLevel < 10)
     {
         SetSyncTarget("", MsgStd::LevelSyncRemoveLowLevel);
@@ -1311,13 +1309,13 @@ void CParty::RefreshSync()
 
         uint8 NewMLevel = 0;
 
-        if (syncLevel < member->jobs.job[member->GetMJob()])
+        if (syncLevel < member->jobs.job[static_cast<uint8>(member->GetMJob())])
         {
             NewMLevel = syncLevel;
         }
         else
         {
-            NewMLevel = member->jobs.job[member->GetMJob()];
+            NewMLevel = member->jobs.job[static_cast<uint8>(member->GetMJob())];
         }
 
         CStatusEffect* syncEffect = member->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::LevelSync);
@@ -1331,7 +1329,7 @@ void CParty::RefreshSync()
             charutils::RemoveAllEquipMods(member);
             member->m_LevelRestriction = NewMLevel;
             member->SetMLevel(NewMLevel);
-            member->SetSLevel(member->jobs.job[member->GetSJob()]);
+            member->SetSLevel(member->jobs.job[static_cast<uint8>(member->GetSJob())]);
             charutils::ApplyAllEquipMods(member);
 
             blueutils::ValidateBlueSpells(member);
