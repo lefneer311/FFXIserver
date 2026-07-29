@@ -11,7 +11,26 @@ local augmentData = {}
 
 local MAX_AUGMENTS_PER_ITEM = 4
 
--- Define equipment tiers (assigning equipment to specific tiers)
+-- Review notes for the 10-tier custom augment update:
+-- * augment_enum_spec.md requires a 0-9 tier structure using only sql/augments.sql IDs.
+-- * sql/augments.sql was inventoried for IDs, comments, multipliers, and packet-safe power storage.
+-- * Material IDs/names were checked against sql/item_basic.sql and assigned by the spec tier themes.
+-- * Power values below are stored values: normal +N effects use power = N - 1, TP Bonus uses 50-step
+--   storage, and pet TP Bonus uses augment 122's +20 base/step semantics.
+-- * Families intentionally covered: melee/ranged/magic offense, defenses, TP, DA/TA/QA, job-flavored
+--   augments, avatar/automaton/pet augments, cures/regen/refresh, songs, and utility augments.
+-- * Job hand seals will increase the combat skill associated with that job's favored weapon type
+--   e.g. BLU = +Sword, COR = +Marksmanship, PLD = +Shield, THF = +Throwing, DNC = +Parry,
+--   NIN = +Katana, DRK = +G.Sword, WAR = +G.Axe, BST = +Axe, DRG = +Polearm, WHM = +Club,
+--   MNK = +H2H, PUP = +Melee (Automaton), BLM = +Scythe, RNG = +Archery, SAM = +G.Katana, RDM = +Dagger,
+--   SMN = +Staff, SCH = +Ranged (Automaton), BRD = +W.Instrument
+-- * Job head seals will increase the magic skill associated with that job's favored function
+--   e.g. BLU = blue magic, BLM = elemental magic, PLD = divine magic, WHM = healing magic,
+--   PUP = magic (automaton), RDM = enfeebling magic, DRK = dark magic, BRD = singing,
+--   SCH = enhancing magic, SMN = summoning magic, SAM = third eye, DRG = pet breath,
+
+-- Define equipment tiers (assigning equipment to specific tiers).
+-- Placeholder IDs remain until Hogwarts-specific item progression IDs are provided.
 augmentData.equipmentTier = {
     [0] = {0234, 0235, 0236, 0237}, -- PLACEHOLDER Tier 0 Weapons
     [1] = {1234, 1235, 1236, 1237}, -- PLACEHOLDER Tier 1 Weapons
@@ -26,175 +45,429 @@ augmentData.equipmentTier = {
 }
 
 -- Define materials and their corresponding augment for each tier.
--- Augment table format: [materialItemID] = { augmentID, requiredQty, power, materialName, tier }
--- Augment values can be identified in the server/source/sql/augments.sql file
+-- Augment table format: [materialItemID] = { augmentID, requiredQty, power, materialName, tier, description }
+-- Augment values are sourced from sql/augments.sql; item IDs are sourced from sql/item_basic.sql.
 --
 augmentData.augmentTable = {
     -- Tier 0 Augments
-    [0] = {
-        [ 4096] = { augmentID = 68,      requiredQty = 3,    power = 1,   materialName = "Fire Crystal",            tier = 0, desc = "Accuracy/Attack +2" },
-        [ 4098] = { augmentID = 69,      requiredQty = 3,    power = 1,   materialName = "Wind Crystal",            tier = 0, desc = "Ranged Accuracy/Ranged Attack +2" },
-        [ 4100] = { augmentID = 41,      requiredQty = 3,    power = 1,   materialName = "Lightning Crystal",       tier = 0, desc = "Critical Hit Rate +2%" },
-        [ 4101] = { augmentID = 81,      requiredQty = 3,    power = 3,   materialName = "Water Crystal",           tier = 0, desc = "Evasion/Magic Evasion +4" },
-        [ 4097] = { augmentID = 131,     requiredQty = 3,    power = 1,   materialName = "Ice Crystal",             tier = 0, desc = "Magic Accuracy/Magic Attack Bonus +2" },
-        [ 4099] = { augmentID = 33,      requiredQty = 3,    power = 5,   materialName = "Earth Crystal",           tier = 0, desc = "Defense +6" },
-        [ 4102] = { augmentID = 134,     requiredQty = 3,    power = 1,   materialName = "Light Crystal",           tier = 0, desc = "Magic Defense Bonus +2" },
-        [ 4103] = { augmentID = 142,     requiredQty = 3,    power = 2,   materialName = "Dark Crystal",            tier = 0, desc = "Store TP +3" },
-        [  627] = { augmentID = 362,     requiredQty = 3,    power = 1,   materialName = "Maple Sugar",             tier = 0, desc = "Magic Damage +2" },
-        [  859] = { augmentID = 137,     requiredQty = 1,    power = 2,   materialName = "Ram Skin",                tier = 0, desc = "Regen +1" },
-        [  895] = { augmentID = 53,      requiredQty = 1,    power = 2,   materialName = "Ram Horn",                tier = 0, desc = "Spell Interrupt Rate Down +4%" },
+    [0] = { -- Augment table format: [materialItemID] = { augmentID, requiredQty, power, materialName, tier, description }
+        [  856] = { 68  , 2 , 0 , "Rabbit Hide",                0, "Accuracy/Attack +1" },
+        [  922] = { 69  , 2 , 0 , "Bat Wing",                   0, "Ranged Accuracy/Ranged Attack +1" },
+        [  912] = { 134 , 2 , 0 , "Beehive Chip",               0, "Magic Defense Bonus +1" },
+        [  768] = { 131 , 2 , 0 , "Flint Stone",                0, "Magic Accuracy/Magic Attack Bonus +1" },
+        [  839] = { 33  , 2 , 2 , "Crawler Cocoon",             0, "Defense +3" },
+        [  846] = { 142 , 2 , 0 , "Insect Wing",                0, "Store TP +1" },
+        [  847] = { 195 , 2 , 0 , "Bird Feather",               0, "Subtle Blow +1" },
+        [  852] = { 140 , 2 , 0 , "Lizard Skin",                0, "Fast Cast +1%" },
+        [  889] = { 31  , 2 , 0 , "Beetle Shell",               0, "Evasion +1" },
+        [ 4096] = { 512 , 1 , 0 , "Fire Crystal",               0, "STR +1" },
+        [ 4097] = { 516 , 1 , 0 , "Ice Crystal",                0, "INT +1" },
+        [ 4098] = { 515 , 1 , 0 , "Wind Crystal",               0, "AGI +1" },
+        [ 4099] = { 514 , 1 , 0 , "Earth Crystal",              0, "VIT +1" },
+        [ 4100] = { 513 , 1 , 0 , "Lightning Crystal",          0, "DEX +1" },
+        [ 4101] = { 517 , 1 , 0 , "Water Crystal",              0, "MND +1" },
+        [ 4102] = { 518 , 1 , 0 , "Light Crystal",              0, "CHR +1" },
+        [ 4103] = { 17  , 1 , 3 , "Dark Crystal",               0, "HP/MP +4" },
+        [  895] = { 796 , 1 , 0 , "Ram Horn",                   0, "All Elemental Resist +1" },
+        [  859] = { 137 , 1 , 0 , "Ram Skin",                   0, "Regen +1" },
+        [  627] = { 362 , 2 , 0 , "Maple Sugar",                0, "Magic Damage +1" },
     },
     -- Tier 1 Augments
     [1] = {
-        [  859] = { augmentID = 137,    requiredQty = 1,    power = 0,   materialName = "Ram Skin",                 tier = 1, desc = "Regen +1" },                                      -- Regen +1
-        [  895] = { augmentID = 138,    requiredQty = 1,    power = 0,   materialName = "Ram Horn",                 tier = 1, desc = "Refresh +1" },                                    -- Refresh +1
-        [  744] = { augmentID = 68,     requiredQty = 3,    power = 2,   materialName = "Silver Ingot",             tier = 1, desc = "Accuracy/Attack +3" },                            -- Accuracy/Attack +3
-        [  826] = { augmentID = 69,     requiredQty = 3,    power = 2,   materialName = "Linen Cloth",              tier = 1, desc = "Ranged Accuracy/Ranged Attack +3" },              -- Ranged Accuracy/Ranged Attack +3
-        [  711] = { augmentID = 131,    requiredQty = 3,    power = 1,   materialName = "Walnut Lumber",            tier = 1, desc = "Magic Accuracy/Magic Attack Bonus +2" },          -- Magic Accuracy/Magic Attack Bonus +2
-        [  615] = { augmentID = 134,    requiredQty = 3,    power = 2,   materialName = "Selbina Butter",           tier = 1, desc = "Magic Defense Bonus +3" },                        -- Magic Defense Bonus +3
-        [ 2011] = { augmentID = 142,    requiredQty = 3,    power = 5,   materialName = "Wolf Fur",                 tier = 1, desc = "Store TP +6" },                                   -- Store TP +6
-        [  662] = { augmentID = 143,    requiredQty = 3,    power = 2,   materialName = "Iron Sheet",               tier = 1, desc = "Double Attack +3%" },                             -- Double Attack +3%
-        [ 1111] = { augmentID = 145,    requiredQty = 3,    power = 2,   materialName = "Gelatin",                  tier = 1, desc = "Counter +3%" },                                   -- Counter +3%
-        [ 2113] = { augmentID = 146,    requiredQty = 6,    power = 2,   materialName = "Baking Soda",              tier = 1, desc = "Dual Wield +3" },                                 -- Dual Wield +3
-        [ 1882] = { augmentID = 176,    requiredQty = 3,    power = 2,   materialName = "Flaxseed Oil",             tier = 1, desc = "Resist Sleep +3" },                               -- Resist Sleep +3
-        [  764] = { augmentID = 178,    requiredQty = 3,    power = 2,   materialName = "Brass Chain",              tier = 1, desc = "Resist Paralyze +3" },                            -- Resist Paralyze +3
-        [  848] = { augmentID = 180,    requiredQty = 3,    power = 2,   materialName = "Dhalmel Leather",          tier = 1, desc = "Resist Silence +3" },                             -- Resist Silence +3
-        [ 2109] = { augmentID = 182,    requiredQty = 3,    power = 2,   materialName = "Bittern",                  tier = 1, desc = "Resist Petrify +3" },                             -- Resist Petrify +3
-        [ 1635] = { augmentID = 188,    requiredQty = 3,    power = 2,   materialName = "Paktong Ingot",            tier = 1, desc = "Resist Charm +3" },                               -- Resist Charm +3
-        [  627] = { augmentID = 362,    requiredQty = 3,    power = 2,   materialName = "Maple Sugar",              tier = 1, desc = "Magic Damage +3" },                               -- Magic Damage +3
+        [  856] = { 68  , 7 , 2 , "Rabbit Hide",                1, "Accuracy/Attack +3" },
+        [  922] = { 69  , 7 , 2 , "Bat Wing",                   1, "Ranged Accuracy/Ranged Attack +3" },
+        [  912] = { 134 , 7 , 1 , "Beehive Chip",               1, "Magic Defense Bonus +2" },
+        [  768] = { 131 , 7 , 2 , "Flint Stone",                1, "Magic Accuracy/Magic Attack Bonus +3" },
+        [  839] = { 33  , 7 , 8 , "Crawler Cocoon",             1, "Defense +9" },
+        [  846] = { 142 , 7 , 2 , "Insect Wing",                1, "Store TP +3" },
+        [  847] = { 195 , 7 , 2 , "Bird Feather",               1, "Subtle Blow +3" },
+        [  852] = { 140 , 7 , 2 , "Lizard Skin",                1, "Fast Cast +3%" },
+        [  889] = { 31  , 7 , 2 , "Beetle Shell",               1, "Evasion +3" },
+        [ 4096] = { 512 , 7 , 1 , "Fire Crystal",               1, "STR +2" },
+        [ 4097] = { 516 , 7 , 1 , "Ice Crystal",                1, "INT +2" },
+        [ 4098] = { 515 , 7 , 1 , "Wind Crystal",               1, "AGI +2" },
+        [ 4099] = { 514 , 7 , 1 , "Earth Crystal",              1, "VIT +2" },
+        [ 4100] = { 513 , 7 , 1 , "Lightning Crystal",          1, "DEX +2" },
+        [ 4101] = { 517 , 7 , 1 , "Water Crystal",              1, "MND +2" },
+        [ 4102] = { 518 , 7 , 1 , "Light Crystal",              1, "CHR +2" },
+        [ 4103] = { 17  , 7 , 7 , "Dark Crystal",               1, "HP/MP +8" },
+        [  895] = { 796 , 7 , 2 , "Ram Horn",                   1, "All Elemental Resist +3" },
+        [  859] = { 137 , 7 , 1 , "Ram Skin",                   1, "Regen +2" },
+        [  841] = { 41  , 7 , 1 , "Yagudo Feather",             1, "Critical Hit Chance +1%" },
+        [  505] = { 40  , 7 , 2 , "Sheepskin",                  1, "Enmity -3" },
+        [  560] = { 143 , 7 , 1 , "Zeruhn Soot",                1, "Double Attack +2%" },
+        [ 4370] = { 362 , 2 , 2 , "Honey",                      1, "Magic Damage +3" },
+        [ 4374] = { 329 , 2 , 2 , "Sleepshroom",                1, "Cure Potency +2%" },
+        [  884] = { 194 , 2 , 0 , "Black Tiger Fang",           1, "Kick Attacks +1" },
+        [  501] = { 151 , 2 , 0 , "Quadav Helm",                1, "Martial Arts +1" },
+        [  953] = { 146 , 2 , 0 , "Treant Bulb",                1, "Dual Wield +1" },
+        [  858] = { 39  , 2 , 0 , "Wolf Hide",                  1, "Enmity +3" },
+        [ 4373] = { 145 , 2 , 0 , "Woozyshroom",                1, "Counter +1" },
+        [ 1016] = { 139 , 2 , 2 , "Remi Shell",                 1, "Rapid Shot +3%" },
+        [  498] = { 363 , 2 , 0 , "Yagudo Bead Necklace",       1, "Block Rate +1" },
+        [ 4387] = { 1472, 2 , 0 , "Wild Onion",                 1, "Parry Rate +1" },
     },
-    -- Tier 2 Augments
+    -- Tier 2 Augments (clusters)
     [2] = {
-        [ 1691] = { augmentID = 33,     requiredQty = 3,    power = 23,  materialName = "Giant Scale",              tier = 2, desc = "Defense +24" },                                   -- Defense +24
-        [ 3541] = { augmentID = 39,     requiredQty = 3,    power = 4,   materialName = "Seasoning Stone",          tier = 2, desc = "Enmity +5" },                                     -- Enmity +5
-        [ 2953] = { augmentID = 41,     requiredQty = 3,    power = 2,   materialName = "Viscous Spittle",          tier = 2, desc = "Critical Hit Rate +3%" },                         -- Critical Hit Rate +3%
-        [ 4368] = { augmentID = 44,     requiredQty = 3,    power = 5,   materialName = "2-Leaf Mandragora Bud",    tier = 2, desc = "Store TP/Subtle Blow +6" },                       -- Store TP/Subtle Blow +6
-        [ 1619] = { augmentID = 53,     requiredQty = 3,    power = 5,   materialName = "Hippogryph Feather",       tier = 2, desc = "Spell Interruption Rate -6%" },                   -- Spell Interruption Rate -6%
-        [ 5113] = { augmentID = 57,     requiredQty = 3,    power = 2,   materialName = "Cracked Nut",              tier = 2, desc = "Magical Critical Hit Rate +3%" },                 -- Magical Critical Hit Rate +3%
-        [ 4526] = { augmentID = 61,     requiredQty = 3,    power = 0,   materialName = "Silkworm Egg",             tier = 2, desc = "Occ. Resist Status Effects +1%" },                -- Occ. Resist Status Effects +1%
-        [  554] = { augmentID = 68,     requiredQty = 3,    power = 5,   materialName = "Gold Orcmask",             tier = 2, desc = "Accuracy/Attack +6" },                            -- Accuracy/Attack +6
-        [ 4508] = { augmentID = 69,     requiredQty = 6,    power = 5,   materialName = "Royal Jelly",              tier = 2, desc = "Ranged Accuracy/Ranged Attack +6" },              -- Ranged Accuracy/Ranged Attack +6
-        [ 1685] = { augmentID = 81,     requiredQty = 3,    power = 5,   materialName = "Warding Oil",              tier = 2, desc = "Evasion/Magic Evasion +6" },                      -- Evasion/Magic Evasion +6
-        [ 1980] = { augmentID = 112,    requiredQty = 3,    power = 1,   materialName = "Antican Acid",             tier = 2, desc = "Pet: Damage Taken -2%" },                         -- Pet: Damage Taken -2%
-        [17397] = { augmentID = 108,    requiredQty = 3,    power = 3,   materialName = "Shell Bug",                tier = 2, desc = "Pet: Magic Accuracy/Magic Attack Bonus +4" },     -- Pet: Magic Accuracy/Magic Attack Bonus +4
-        [  842] = { augmentID = 124,    requiredQty = 3,    power = 5,   materialName = "Giant Bird Feather",       tier = 2, desc = "Pet: Att/RAtt/Acc/RAcc +6" },                     -- Pet: Att/RAtt/Acc/RAcc +6
-        [  557] = { augmentID = 131,    requiredQty = 3,    power = 3,   materialName = "Ahriman Lens",             tier = 2, desc = "Magic Accuracy/Magic Attack Bonus +4" },          -- Magic Accuracy/Magic Attack Bonus +4
-        [ 1666] = { augmentID = 134,    requiredQty = 3,    power = 5,   materialName = "Chameleon Diamond",        tier = 2, desc = "Magic Defense Bonus +6" },                        -- Magic Defense Bonus +6
-        [ 1114] = { augmentID = 139,    requiredQty = 12,   power = 7,   materialName = "Qdv. Mage Blood",          tier = 2, desc = "Rapid Shot +8" },                                 -- Rapid Shot +8
-        [ 5115] = { augmentID = 140,    requiredQty = 3,    power = 7,   materialName = "R. Moko Grass",            tier = 2, desc = "Fast Cast +8%" },                                 -- Fast Cast +8%
-		[ 2640] = { augmentID = 896,    requiredQty = 3,    power = 3,   materialName = "Murex Spicule",            tier = 3, desc = "Enspell Damage +4" },                             -- Enspell Damage +4
-        [ 1612] = { augmentID = 288,    requiredQty = 3,    power = 7,   materialName = "Radiant Memory",           tier = 2, desc = "Divine Magic Skill +8" },                         -- Divine Magic Skill +8
-        [ 1608] = { augmentID = 290,    requiredQty = 3,    power = 7,   materialName = "Fleeting Memory",          tier = 2, desc = "Enhancing Magic Skill +8" },                      -- Enhancing Magic Skill +8
-        [ 1611] = { augmentID = 291,    requiredQty = 3,    power = 7,   materialName = "Somber Memory",            tier = 2, desc = "Enfeebling Magic Skill +8" },                     -- Enfeebling Magic Skill +8
-        [ 1606] = { augmentID = 292,    requiredQty = 3,    power = 7,   materialName = "Burning Memory",           tier = 2, desc = "Elemental Magic Skill +8" },                      -- Elemental Magic Skill +8
-        [ 1613] = { augmentID = 293,    requiredQty = 3,    power = 7,   materialName = "Malevolent Memory",        tier = 2, desc = "Dark Magic Skill +8" },                           -- Dark Magic Skill +8
-        [ 1609] = { augmentID = 294,    requiredQty = 3,    power = 7,   materialName = "Profane Memory",           tier = 2, desc = "Summoning Magic Skill +8" },                      -- Summoning Magic Skill +8
-        [ 1610] = { augmentID = 296,    requiredQty = 3,    power = 7,   materialName = "Startling Memory",         tier = 2, desc = "Singing Skill +8" },                              -- Singing Skill +8
-        [ 1607] = { augmentID = 299,    requiredQty = 6,    power = 7,   materialName = "Bitter Memory",            tier = 2, desc = "Blue Magic Skill +8" },                           -- Blue Magic Skill +8
-        [ 1772] = { augmentID = 299,    requiredQty = 3,    power = 7,   materialName = "Super Cermet",             tier = 2, desc = "Shield Skill +8" },                               -- Shield Skill +8
-        [ 5154] = { augmentID = 329,    requiredQty = 3,    power = 5,   materialName = "Tavnazian Liver",          tier = 2, desc = "Cure Potency +6%" },                              -- Cure Potency +6%
-        [ 2524] = { augmentID = 330,    requiredQty = 3,    power = 5,   materialName = "Peiste Stinger",           tier = 2, desc = "Waltz Potency +6%" },                             -- Waltz Potency +6%
-        [ 5116] = { augmentID = 334,    requiredQty = 3,    power = 7,   materialName = "Cavorting Worm",           tier = 2, desc = "Magic Burst Bonus +8%" },                         -- Magic Burst Bonus +8%
-        [  906] = { augmentID = 740,    requiredQty = 3,    power = 3,   materialName = "Starmite Shell",           tier = 2, desc = "Main Hand Damage +4" },                           -- Main Hand Damage +4
+        [  856] = { 68  , 12, 4 , "Rabbit Hide",                2, "Accuracy/Attack +5" },
+        [  922] = { 69  , 12, 4 , "Bat Wing",                   2, "Ranged Accuracy/Ranged Attack +5" },
+        [  912] = { 134 , 12, 2 , "Beehive Chip",               2, "Magic Defense Bonus +3" },
+        [  768] = { 131 , 12, 4 , "Flint Stone",                2, "Magic Accuracy/Magic Attack Bonus +5" },
+        [  839] = { 33  , 12, 14, "Crawler Cocoon",             2, "Defense +15" },
+        [  846] = { 142 , 12, 4 , "Insect Wing",                2, "Store TP +5" },
+        [  847] = { 195 , 12, 4 , "Bird Feather",               2, "Subtle Blow +5" },
+        [  852] = { 140 , 12, 4 , "Lizard Skin",                2, "Fast Cast +5%" },
+        [  889] = { 31  , 12, 4 , "Beetle Shell",               2, "Evasion +5" },
+        [ 4104] = { 512 , 1 , 2 , "Fire Cluster",               2, "STR +3" },
+        [ 4105] = { 516 , 1 , 2 , "Ice Cluster",                2, "INT +3" },
+        [ 4106] = { 515 , 1 , 2 , "Wind Cluster",               2, "AGI +3" },
+        [ 4107] = { 514 , 1 , 2 , "Earth Cluster",              2, "VIT +3" },
+        [ 4108] = { 513 , 1 , 2 , "Lightning Cluster",          2, "DEX +3" },
+        [ 4109] = { 517 , 1 , 2 , "Water Cluster",              2, "MND +3" },
+        [ 4110] = { 518 , 1 , 2 , "Light Cluster",              2, "CHR +3" },
+        [ 4111] = { 17  , 1 , 11, "Dark Cluster",               2, "HP/MP +12" },
+        [  895] = { 796 , 12, 4 , "Ram Horn",                   2, "All Elemental Resist +5" },
+        [  859] = { 137 , 12, 2 , "Ram Skin",                   2, "Regen +3" },
+        [  841] = { 41  , 12, 1 , "Yagudo Feather",             2, "Critical Hit Chance +2%" },
+        [  505] = { 40  , 12, 4 , "Sheepskin",                  2, "Enmity -5" },
+        [  560] = { 143 , 12, 2 , "Zeruhn Soot",                2, "Double Attack +3%" },
+        [ 4370] = { 362 , 12, 4 , "Honey",                      2, "Magic Damage +5" },
+        [ 4374] = { 329 , 12, 3 , "Sleepshroom",                2, "Cure Potency +4%" },
+        [  884] = { 194 , 12, 2 , "Black Tiger Fang",           2, "Kick Attacks +3" },
+        [  501] = { 151 , 12, 2 , "Quadav Helm",                2, "Martial Arts +3" },
+        [  953] = { 146 , 12, 2 , "Treant Bulb",                2, "Dual Wield +3" },
+        [  858] = { 39  , 12, 4 , "Wolf Hide",                  2, "Enmity +5" },
+        [ 4373] = { 145 , 12, 1 , "Woozyshroom",                2, "Counter +2" },
+        [ 1016] = { 139 , 12, 5 , "Remi Shell",                 2, "Rapid Shot +6%" },
+        [  498] = { 363 , 12, 2 , "Yagudo Bead Necklace",       2, "Block Rate +3" },
+        [ 4387] = { 1472, 12, 2 , "Wild Onion",                 2, "Parry Rate +3" },
+        [ 4368] = { 138 , 12, 0 , "Two-Leaf Mandragora Bud",    2, "Refresh +1" },
+        [ 1126] = { 353 , 3 , 0 , "Beastmen Seal",              2, "Critical Damage +1%" },
     },
-    -- Tier 3 Augments
+    -- Tier 3 Augments (chips, rocks)
     [3] = {
-        [ 3300] = { augmentID = 33,     requiredQty = 3,    power = 31,  materialName = "Soil Geode",               tier = 3, desc = "Defense +32" },                                   -- Defense +32
-        [ 3304] = { augmentID = 80,     requiredQty = 3,    power = 8,   materialName = "Shadow Geode",             tier = 3, desc = "Magic Accuracy/Magic Damage +9" },                -- Magic Accuracy/Magic Damage +9
-        [ 1785] = { augmentID = 144,    requiredQty = 3,    power = 1,   materialName = "Xzomit Organ",             tier = 3, desc = "Triple Attack +2%" },                             -- Triple Attack +2%
-		[  666] = { augmentID = 143,    requiredQty = 3,    power = 5,   materialName = "Steel Sheet",              tier = 1, desc = "Double Attack +6%" },                             -- Double Attack +6%
-        [ 2187] = { augmentID = 148,    requiredQty = 10,   power = 0,   materialName = "Imperial Gold Piece",      tier = 3, desc = "Gilfinder +1" },                                  -- Gilfinder +1
-        [ 1818] = { augmentID = 153,    requiredQty = 3,    power = 5,   materialName = "Euvhi Organ",              tier = 3, desc = "Shield Master +6" },                              -- Shield Master +6
-        [ 1787] = { augmentID = 211,    requiredQty = 3,    power = 11,  materialName = "Hpemde Organ",             tier = 3, desc = "Snapshot +12" },                                  -- Snapshot +12
-        [ 2890] = { augmentID = 212,    requiredQty = 3,    power = 11,  materialName = "Clionid Wing",             tier = 3, desc = "Recycle +12" },                                   -- Recycle +12
-        [ 1784] = { augmentID = 328,    requiredQty = 3,    power = 1,   materialName = "Yovra Organ",              tier = 3, desc = "Critical Hit Damage +2%" },                       -- Critical Hit Damage +2%
-        [ 1788] = { augmentID = 335,    requiredQty = 3,    power = 1,   materialName = "Phuabo Organ",             tier = 3, desc = "Magic Critical Hit Damage +2%" },                 -- Magic Critical Hit Damage +2%
-        [ 2889] = { augmentID = 341,    requiredQty = 8,    power = 4,   materialName = "Limule Pincer",            tier = 3, desc = "Automaton Repair Potency +5%" },                  -- Automaton Repair Potency +9%
-        [ 2641] = { augmentID = 343,    requiredQty = 3,    power = 9,   materialName = "Amoeban Pseudopod",        tier = 3, desc = "Drain and Aspir Potency +10" },                   -- Drain and Aspir Potency +10
-        [ 1783] = { augmentID = 1248,   requiredQty = 3,    power = 11,  materialName = "Luminian Tissue",          tier = 3, desc = "Enhancing Magic Duration +12%" },                 -- Enhancing Magic Duration +12%
-        [ 3297] = { augmentID = 512,    requiredQty = 3,    power = 5,   materialName = "Flame Geode",              tier = 3, desc = "STR +6" },                                        -- STR +6
-        [ 3301] = { augmentID = 513,    requiredQty = 3,    power = 5,   materialName = "Thunder Geode",            tier = 3, desc = "DEX +6" },                                        -- DEX +6
-        [ 3299] = { augmentID = 515,    requiredQty = 3,    power = 5,   materialName = "Breeze Geode",             tier = 3, desc = "AGI +6" },                                        -- AGI +6
-        [ 3298] = { augmentID = 516,    requiredQty = 3,    power = 5,   materialName = "Snow Geode",               tier = 3, desc = "INT +6" },                                        -- INT +6
-        [ 3302] = { augmentID = 517,    requiredQty = 3,    power = 5,   materialName = "Aqua Geode",               tier = 3, desc = "MND +6" },                                        -- MND +6
-        [ 3303] = { augmentID = 518,    requiredQty = 3,    power = 5,   materialName = "Light Geode",              tier = 3, desc = "CHR +6" },                                        -- CHR +6
-        [ 1819] = { augmentID = 1251,   requiredQty = 3,    power = 11,  materialName = "Luminion Chip",            tier = 3, desc = "Enfeebling Magic Duration +12%" },                -- Enfeebling Magic Duration +12%
-        [ 1786] = { augmentID = 1472,   requiredQty = 3,    power = 5,   materialName = "Aern Organ",               tier = 3, desc = "Parry Rate (Inquartata) +6%" },                   -- Parry Rate (Inquartata) +6%
-		[  951] = { augmentID = 215,    requiredQty = 12,   power = 11,  materialName = "Wijnruit",                 tier = 3, desc = "Ninja tool expertise +12" },                      -- Ninja tool expertise +12
-		[ 1630] = { augmentID = 251,    requiredQty = 3,    power = 5,   materialName = "Pinch of Cluster Ash",     tier = 3, desc = "Daken +6" },                                      -- Daken +6
-		[  911] = { augmentID = 194,    requiredQty = 1,    power = 8,   materialName = "Rampaging Horn",           tier = 3, desc = "Kick Attacks +9" },                               -- Kick Attacks +9
-		[  910] = { augmentID = 194,    requiredQty = 1,    power = 8,   materialName = "Lumbering Horn",           tier = 3, desc = "Kick Attacks +9" },                               -- Kick Attacks +9
-
+        [  940] = { 68  , 3 , 6 , "Revival Root",               3, "Accuracy/Attack +7" },
+        [  955] = { 69  , 3 , 6 , "Golem Shard",                3, "Ranged Accuracy/Ranged Attack +7" },
+        [ 1165] = { 134 , 3 , 3 , "Doll Shard",                 3, "Magic Defense Bonus +4" },
+        [  954] = { 131 , 3 , 6 , "Magic Pot Shard",            3, "Magic Accuracy/Magic Attack Bonus +7" },
+        [  857] = { 33  , 3 , 20, "Dhalmel Hide",               3, "Defense +21" },
+        [  928] = { 143 , 3 , 4 , "Bomb Ash",                   3, "Double Attack +5%" },
+        [  920] = { 362 , 3 , 6 , "Malboro Vine",               3, "Magic Damage +7" },
+        [  894] = { 140 , 3 , 7 , "Beetle Jaw",                 3, "Fast Cast +8%" },
+        [ 1118] = { 31  , 3 , 6 , "Antican Pauldron",           3, "Evasion +7" },
+        [ 1121] = { 896 , 3 , 1 , "Antican Robe",               3, "Enspell Damage +2" },
+        [  938] = { 53  , 3 , 7 , "Papaka Grass",               3, "Spell Interruption Rate -8%" },
+        [  893] = { 54  , 3 , 1 , "Giant Femur",                3, "Physical Damage Taken -2%" },
+        [ 1985] = { 55  , 3 , 1 , "Helmet Mole",                3, "Magic Damage Taken -2%" },
+        [ 1836] = { 37  , 1 , 4 , "Marble",                     3, "Magic Evasion +5" },
+        [ 2539] = { 198 , 3 , 1 , "Dhalmel Hair",               3, "Zanshin +2%" },
+        [  838] = { 49  , 3 , 0 , "Spider Web",                 3, "Haste +1%" },
+        [ 1154] = { 144 , 3 , 0 , "Three-Leaf Mandragora Bud",  3, "Triple Attack +1%" },
+        [  568] = { 148 , 1 , 0 , "Goblin Die",                 3, "Gilfinder +1" },
+        [ 4104] = { 512 , 3 , 3 , "Fire Cluster",               3, "STR +4" },
+        [ 4105] = { 516 , 3 , 3 , "Ice Cluster",                3, "INT +4" },
+        [ 4106] = { 515 , 3 , 3 , "Wind Cluster",               3, "AGI +4" },
+        [ 4107] = { 514 , 3 , 3 , "Earth Cluster",              3, "VIT +4" },
+        [ 4108] = { 513 , 3 , 3 , "Lightning Cluster",          3, "DEX +4" },
+        [ 4109] = { 517 , 3 , 3 , "Water Cluster",              3, "MND +4" },
+        [ 4110] = { 518 , 3 , 3 , "Light Cluster",              3, "CHR +4" },
+        [ 4111] = { 17  , 3 , 15, "Dark Cluster",               3, "HP/MP +16" },
+        [  873] = { 928 , 1 , 0 , "Red Chip",                   3, "Fire Affinity +1" },
+        [  475] = { 933 , 1 , 0 , "Blue Chip",                  3, "Water Affinity +1" },
+        [  476] = { 931 , 1 , 0 , "Yellow Chip",                3, "Earth Affinity +1" },
+        [  477] = { 930 , 1 , 0 , "Green Chip",                 3, "Wind Affinity +1" },
+        [  478] = { 929 , 1 , 0 , "Clear Chip",                 3, "Ice Affinity +1" },
+        [  479] = { 932 , 1 , 0 , "Purple Chip",                3, "Lightning Affinity +1" },
+        [  480] = { 934 , 1 , 0 , "White Chip",                 3, "Light Affinity +1" },
+        [  481] = { 935 , 1 , 0 , "Black Chip",                 3, "Dark Affinity +1" },
+        [  772] = { 294 , 3 , 3 , "Green Rock",                 3, "Summoning Magic Skill +4" },
+        [  769] = { 291 , 3 , 3 , "Red Rock",                   3, "Enfeebling Magic Skill +4" },
+        [  770] = { 299 , 3 , 3 , "Blue Rock",                  3, "Blue Magic Skill +4" }, 
+        [  774] = { 290 , 3 , 3 , "Purple Rock",                3, "Enhancing Magic Skill +4" },
+        [  771] = { 289 , 3 , 3 , "Yellow Rock",                3, "Healing Magic Skill +4" },
+        [  773] = { 292 , 3 , 3 , "Translucent Rock",           3, "Elemental Magic Skill +4" },
+        [  775] = { 293 , 3 , 3 , "Black Rock",                 3, "Dark Magic Skill +4" },
+        [  776] = { 288 , 3 , 3 , "White Rock",                 3, "Divine Magic Skill +4" },
     },
-    -- Tier 4 Augments
+    -- Tier 4 Augments (geodes)
     [4] = {
-        [ 3300] = { augmentID = 1152,   requiredQty = 3,    power = 3,   materialName = "Soil Geode",               tier = 4, desc = "Defense +40" },                                   -- Defense +40
-        [ 8960] = { augmentID = 39,     requiredQty = 1,    power = 9,   materialName = "Leaforb Stone",            tier = 4, desc = "Enmity +10" },                                    -- Enmity +10
-        [ 8942] = { augmentID = 44,     requiredQty = 1,    power = 9,   materialName = "Leaftip Stone",            tier = 4, desc = "Store TP/Subtle Blow +10" },                      -- Store TP/Subtle Blow +10
-        [ 8957] = { augmentID = 81,     requiredQty = 1,    power = 11,  materialName = "Snoworb Stone",            tier = 4, desc = "Evasion/Magic Evasion +12" },                     -- Evasion/Magic Evasion +12
-        [ 3951] = { augmentID = 29,     requiredQty = 1,    power = 4,   materialName = "Wailing Stone",            tier = 4, desc = "Pet: Enmity +5" },                                -- Pet: Enmity +5
-        [ 3954] = { augmentID = 137,    requiredQty = 1,    power = 11,  materialName = "Ghastly Stone",            tier = 4, desc = "Pet: Regen +25" },                                -- Pet: Regen +12
-        [ 4033] = { augmentID = 134,    requiredQty = 1,    power = 4,   materialName = "Verdigris Stone",          tier = 4, desc = "Pet: Magic Defense Bonus +5" },                   -- Pet: Magic Defense Bonus +5
-        [ 8933] = { augmentID = 134,    requiredQty = 1,    power = 11,  materialName = "Leafslit Stone",           tier = 4, desc = "Magic Defense Bonus +12" },                       -- Magic Defense Bonus +12
-        [ 3974] = { augmentID = 137,    requiredQty = 1,    power = 3,   materialName = "Airlixir",                 tier = 4, desc = "Regen +4" },                                      -- Regen +4
-        [ 3895] = { augmentID = 138,    requiredQty = 1,    power = 3,   materialName = "Rala Visage I",            tier = 4, desc = "Refresh +4" },                                    -- Refresh +4
-        [ 8939] = { augmentID = 144,    requiredQty = 1,    power = 2,   materialName = "Snowtip Stone",            tier = 4, desc = "Triple Attack +3%" },                             -- Triple Attack +3%
-        [ 8954] = { augmentID = 145,    requiredQty = 1,    power = 9,   materialName = "Duskdim Stone",            tier = 4, desc = "Counter +10%" },                                  -- Counter +10%
-        [ 3910] = { augmentID = 146,    requiredQty = 1,    power = 7,   materialName = "Cirdas Visage I",          tier = 4, desc = "Dual Wield +8" },                                 -- Dual Wield +8
-        [ 8956] = { augmentID = 325,    requiredQty = 1,    power = 2,   materialName = "Duskorb Stone",            tier = 4, desc = "Quick Draw Ability Delay -2" },                   -- Quick Draw Ability Delay -2
-        [ 8741] = { augmentID = 329,    requiredQty = 1,    power = 3,   materialName = "Rakaznar Visage I",        tier = 4, desc = "Cure Potency +4%" },                              -- Cure Potency +4%
-        [ 4037] = { augmentID = 332,    requiredQty = 1,    power = 1,   materialName = "Yorcia Visage I",          tier = 4, desc = "Skillchain Damage +2%" },                         -- Skillchain Damage +2%
-        [ 8930] = { augmentID = 334,    requiredQty = 1,    power = 9,   materialName = "Snowslit Stone",           tier = 4, desc = "Magic Burst Bonus +10%" },                        -- Magic Burst Bonus +10%
-        [ 8936] = { augmentID = 353,    requiredQty = 1,    power = 1,   materialName = "Duskslit Stone",           tier = 4, desc = "TP Bonus +100" },                                 -- TP Bonus +100
-        [ 8945] = { augmentID = 371,    requiredQty = 1,    power = 4,   materialName = "Dusktip Stone",            tier = 4, desc = "Regen Potency +5%" },                             -- Regen Potency +5%
-        [ 8951] = { augmentID = 740,    requiredQty = 1,    power = 7,   materialName = "Leafdim Stone",            tier = 4, desc = "Main Hand Damage +8" },                           -- Main Hand Damage +8
-        [ 8948] = { augmentID = 1249,   requiredQty = 1,    power = 7,   materialName = "Snowdim Stone",            tier = 4, desc = "Helix Effect Duration +8" },                      -- Helix Effect Duration +8
+        [  838] = { 49  , 7 , 1 , "Spider Web",                 4, "Haste +2%" },
+        [ 4104] = { 512 , 7 , 4 , "Fire Cluster",               4, "STR +5" },
+        [ 4105] = { 516 , 7 , 4 , "Ice Cluster",                4, "INT +5" },
+        [ 4106] = { 515 , 7 , 4 , "Wind Cluster",               4, "AGI +5" },
+        [ 4107] = { 514 , 7 , 4 , "Earth Cluster",              4, "VIT +5" },
+        [ 4108] = { 513 , 7 , 4 , "Lightning Cluster",          4, "DEX +5" },
+        [ 4109] = { 517 , 7 , 4 , "Water Cluster",              4, "MND +5" },
+        [ 4110] = { 518 , 7 , 4 , "Light Cluster",              4, "CHR +5" },
+        [ 4111] = { 17  , 7 , 19, "Dark Cluster",               4, "HP/MP +20" },
+        [ 4508] = { 138 , 12, 1 , "Royal Jelly",                4, "Refresh +2" },
+        [ 1154] = { 144 , 7 , 2 , "Three-Leaf Mandragora Bud",  4, "Triple Attack +3%" },
+        [ 4369] = { 354 , 3 , 0 , "Four-Leaf Mandragora Bud",   4, "Quadruple Attack +1%" },
+        [ 1126] = { 147 , 9 , 0 , "Beastmen's Seal",            4, "Treasure Hunter +1" },
+        [ 3297] = { 740 , 30, 11, "Flame Geode",                4, "Melee Weapon Damage +12" },
+        [ 3298] = { 139 , 10, 9 , "Snow Geode",                 4, "Rapid Shot +10%" },
+        [ 3299] = { 746 , 30, 11, "Breeze Geode",               4, "Ranged Weapon Damage +12" },
+        [ 3300] = { 368 , 10, 0 , "Soil Geode",                 4, "Phalanx Received +1" },
+        [ 3301] = { 41  , 10, 2 , "Thunder Geode",              4, "Critical Hit Chance +3%" },
+        [ 3302] = { 371 , 10, 1 , "Aqua Geode",                 4, "Regen Potency +2" },
+        [ 3303] = { 1248, 10, 9 , "Light Geode",                4, "Enhancing Magic Duration +10%" },
+        [ 3304] = { 1158, 10, 1 , "Shadow Geode",               4, "Occ. Resist Status Ailments +2" },
+        [ 1114] = { 899 , 3 , 0 , "Qdv. Mage Blood",            4, "Enspell Damage +1%" },
+        [ 1150] = { 756 , 1 , 31, "Snobby Letter",              4, "Melee Weapon Delay -32" },
+        [ 1619] = { 764 , 3 , 31, "Hippogryph Feather",         4, "Ranged Weapon Delay -32" },
+        [  554] = { 153 , 3 , 2 , "Gold Orcmask",               4, "Shield Mastery +3" },
+        [ 1649] = { 251 , 3 , 2 , "Scarlet Stone",              4, "Daken +3" },
+        [ 5154] = { 145 , 3 , 2 , "Tavnazian Liver",            4, "Counter +3" },
     },
-    -- Tier 5 Augments
+    -- Tier 5 Augments (memories)
     [5] = {
-        [ 8946] = { augmentID = 41,     requiredQty = 1,    power = 7,   materialName = "Dusktip Stone +1",         tier = 5, desc = "Critical Hit Rate +8%" },                         -- Critical Hit Rate +8%
-        [ 8940] = { augmentID = 40,     requiredQty = 1,    power = 9,   materialName = "Snowtip Stone +1",         tier = 5, desc = "Magic Critical Hit Rate +10%" },                  -- Magic Critical Hit Rate +10%
-        [ 8948] = { augmentID = 50,     requiredQty = 1,    power = 2,   materialName = "Snowdim Stone +1",         tier = 5, desc = "Occ. Resist Status Effects +3" },                 -- Occ. Resist Status Effects +3
-        [ 8931] = { augmentID = 132,    requiredQty = 1,    power = 4,   materialName = "Snowslit Stone +1",        tier = 5, desc = "Pet: Double Attack/Critical Hit Rate +5%" },      -- Pet: Double Attack/Critical Hit Rate +5%
-        [ 3896] = { augmentID = 142,    requiredQty = 1,    power = 9,   materialName = "Rala Visage II",           tier = 5, desc = "Pet: Store TP +10" },                             -- Pet: Store TP +10
-        [ 3911] = { augmentID = 25,     requiredQty = 1,    power = 9,   materialName = "Cirdas Visage II",         tier = 5, desc = "Pet: Magic Evasion +10" },                        -- Pet: Magic Evasion +10
-        [ 8742] = { augmentID = 52,     requiredQty = 1,    power = 9,   materialName = "Rakaznar Visage II",       tier = 5, desc = "Pet: Breath +10" },                               -- Pet: Breath +10
-        [ 3975] = { augmentID = 53,     requiredQty = 1,    power = 3,   materialName = "Airlixir +1",              tier = 5, desc = "Pet: TP Bonus +40" },                             -- Pet: TP Bonus +40
-        [ 4034] = { augmentID = 131,    requiredQty = 1,    power = 9,   materialName = "Verdigris Stone +1",       tier = 5, desc = "Magic Accuracy/Magic Attack Bonus +10" },         -- Magic Accuracy/Magic Attack Bonus +10
-        [ 8937] = { augmentID = 140,    requiredQty = 1,    power = 15,  materialName = "Duskslit Stone +1",        tier = 5, desc = "Fast Cast +16%" },                                -- Fast Cast +16%
-        [ 3952] = { augmentID = 194,    requiredQty = 1,    power = 14,  materialName = "Wailing Stone +1",         tier = 5, desc = "Kick Attacks +15" },                              -- Kick Attacks +15
-        [ 4038] = { augmentID = 335,    requiredQty = 1,    power = 3,   materialName = "Yorcia Visage II",         tier = 5, desc = "Magic Critical Hit Damage +4%" },                 -- Magic Critical Hit Damage +4%
-        [ 8943] = { augmentID = 351,    requiredQty = 1,    power = 4,   materialName = "Leaftip Stone +1",         tier = 5, desc = "Occ. Quickens Spellcasting +5%" },                -- Occ. Quickens Spellcasting +5%
-        [ 8934] = { augmentID = 360,    requiredQty = 1,    power = 4,   materialName = "Leafslit Stone +1",        tier = 5, desc = "Save TP +50" },                                   -- Save TP +50
-        [ 8952] = { augmentID = 512,    requiredQty = 1,    power = 7,   materialName = "Leafdim Stone +1",         tier = 5, desc = "STR +8" },                                        -- STR +8
-        [ 8955] = { augmentID = 513,    requiredQty = 1,    power = 7,   materialName = "Duskdim Stone +1",         tier = 5, desc = "DEX +8" },                                        -- DEX +8
-        [ 8958] = { augmentID = 515,    requiredQty = 1,    power = 7,   materialName = "Snoworb Stone +1",         tier = 5, desc = "AGI +8" },                                        -- AGI +8
-        [ 8964] = { augmentID = 516,    requiredQty = 1,    power = 7,   materialName = "Duskorb Stone +1",         tier = 5, desc = "INT +8" },                                        -- INT +8
-        [ 8961] = { augmentID = 517,    requiredQty = 1,    power = 7,   materialName = "Leaforb Stone +1",         tier = 5, desc = "MND +8" },                                        -- MND +8
-        [ 3955] = { augmentID = 518,    requiredQty = 1,    power = 7,   materialName = "Ghastly Stone +1",         tier = 5, desc = "CHR +8" },                                        -- CHR +8
+        [ 4104] = { 512 , 12, 5 , "Fire Cluster",               5, "STR +6" },
+        [ 4105] = { 516 , 12, 5 , "Ice Cluster",                5, "INT +6" },
+        [ 4106] = { 515 , 12, 5 , "Wind Cluster",               5, "AGI +6" },
+        [ 4107] = { 514 , 12, 5 , "Earth Cluster",              5, "VIT +6" },
+        [ 4108] = { 513 , 12, 5 , "Lightning Cluster",          5, "DEX +6" },
+        [ 4109] = { 517 , 12, 5 , "Water Cluster",              5, "MND +6" },
+        [ 4110] = { 518 , 12, 5 , "Light Cluster",              5, "CHR +6" },
+        [ 4111] = { 17  , 12, 23, "Dark Cluster",               5, "HP/MP +24" },
+        [ 1691] = { 33  , 3 , 29, "Giant Scale",                5, "Defense +30" },
+        [ 3541] = { 39  , 3 , 7 , "Seasoning Stone",            5, "Enmity +8" },
+        [ 2151] = { 40  , 3 , 7 , "Marid Hide",                 5, "Enmity -8" },
+        [ 1619] = { 37  , 3 , 7 , "Hippogryph Feather",         5, "Magic Evasion +8" },
+        [ 4526] = { 362 , 1 , 9 , "Silkworm Egg",               5, "Magic Damage +10" },
+        [ 1980] = { 1158, 3 , 2 , "Antican Acid",               5, "Occ. Resist Status Ailments +3" },
+        [  842] = { 69  , 3 , 9 , "Giant Bird Feather",         5, "Ranged Accuracy/Ranged Attack +10" },
+        [  557] = { 131 , 3 , 9 , "Ahriman Lens",               5, "Magic Accuracy/Magic Attack Bonus +10" },
+        [ 1666] = { 896 , 3 , 3 , "Chameleon Diamond",          5, "Enspell Damage +4" },
+        [ 5115] = { 68  , 3 , 9 , "R. Moko Grass",              5, "Accuracy/Attack +10" },
+        [ 1612] = { 212 , 3 , 7 , "Radiant Memory",             5, "Recycle +8" },
+        [ 1608] = { 215 , 3 , 7 , "Fleeting Memory",            5, "Ninja Tool Expertise +8" },
+        [ 1611] = { 899 , 3 , 1 , "Shimmering Memory",          5, "Enspell Damage +2%" },
+        [ 1609] = { 140 , 3 , 9 , "Profane Memory",             5, "Fast Cast +10%" },
+        [ 1610] = { 42  , 3 , 0 , "Startling Memory",           5, "Enemy Critical Hit Rate -1%" },
+        [ 1607] = { 338 , 3 , 0 , "Bitter Memory",              5, "Barrage +1" },
+        [ 1772] = { 286 , 3 , 7 , "Super Cermet",               5, "Shield Skill +8" },
+        [ 5116] = { 31  , 3 , 9 , "Cavorting Worm",             5, "Evasion +10" },
+        [  906] = { 287 , 3 , 7 , "Starmite Shell",             5, "Parry Skill +8" },
+        [  896] = { 71  , 3 , 0 , "Scorpion Shell",             5, "Damage Taken -1%" },
+        [  886] = { 137 , 3 , 3 , "Demon Skull",                5, "Regen +4" },
+        [ 2150] = { 232 , 3 , 0 , "Colibri Feather",            5, "True Shot +1" },
+        [ 2157] = { 251 , 3 , 2 , "Imp Horn",                   5, "Daken +3" },
+        [ 2171] = { 211 , 3 , 4 , "Colibri Beak",               5, "Snapshot +4" },
+        [  924] = { 796 , 3 , 7 , "Fiend Blood",                5, "All Elemental Resist +8" },
+        [  897] = { 124 , 3 , 9 , "Scorpion Claw",              5, "Pet: Acc+10 R.Acc+10 Atk.+10 R.Atk.+10" },
+        [ 2524] = { 330 , 3 , 9 , "Peiste Stinger",             5, "Pet: Magic Accuracy/Magic Attack Bonus +10" },
+        [ 1685] = { 112 , 3 , 1 , "Warding Oil",                5, "Pet: Damage Taken -2%" },
+        [ 1116] = { 110 , 3 , 3 , "Manticore Hide",             5, "Pet: Regen +4" },
+        [ 1123] = { 123 , 3 , 7 , "Manticore Fang",             5, "Pet: Double Attack +8%" },
+        [ 1117] = { 104 , 3 , 7 , "Manticore Leather",          5, "Pet: Enmity +8" },
+        [ 2371] = { 105 , 3 , 7 , "Manticore Hair",             5, "Pet: Enmity -8" },
+        [  902] = { 321 , 3 , 1 , "Demon Horn",                 5, "Avatar Perpetuation Cost -2" },
+        [ 2147] = { 126 , 3 , 9 , "Marid Tusk",                 5, "Pet: Magic Damage +10" },  
+        [ 2835] = { 334 , 1 , 7 , "Dahu Hair",                  5, "Magic Defense Bonus +8" },
+        [ 1127] = { 132 , 3 , 2 , "Kindred Seal",               5, "Dbl.Atk. +3% / Crit.hit rate +3%" },
     },
-    -- Tier 6 Augments
+    -- Tier 6 Augments (testimonies, anima, sky/sea drops)
     [6] = {
-    -- Heroics (Nocturnal Souls) (all quantities = 1)
-        [ 1945] = { augmentID = 44,     requiredQty = 1,    power = 14,  materialName = "Black Rivet",              tier = 6, desc = "Store TP/Subtle Blow +15" },                      -- Store TP/Subtle Blow +15
-        [ 1933] = { augmentID = 50,     requiredQty = 1,    power = 3,   materialName = "Ancient Brass",            tier = 6, desc = "Occ. Resist Status Effects +4" },                 -- Occ. Resist Status Effects +4
-        [ 3451] = { augmentID = 68,     requiredQty = 1,    power = 19,  materialName = "Comet Fragment",           tier = 6, desc = "Accuracy/Attack +20" },                           -- Accuracy/Attack +20
-        [ 1937] = { augmentID = 69,     requiredQty = 1,    power = 19,  materialName = "Diabolic Yarn",            tier = 6, desc = "Ranged Accuracy/Ranged Attack +20" },             -- Ranged Accuracy/Ranged Attack +20
-        [ 4029] = { augmentID = 98,     requiredQty = 1,    power = 23,  materialName = "Runeweave",                tier = 6, desc = "Magic Accuracy/Magic Damage +24" },               -- Magic Accuracy/Magic Damage +24
-        [ 1932] = { augmentID = 81,     requiredQty = 1,    power = 17,  materialName = "Ut. Gold Thread",          tier = 6, desc = "Evasion/Magic Evasion +18" },                     -- Evasion/Magic Evasion +18
-        [ 1947] = { augmentID = 131,    requiredQty = 1,    power = 5,   materialName = "Fetid Lanolin",            tier = 6, desc = "Pet: Magic Accuracy/Magic Attack Bonus +6" },     -- Pet: Magic Accuracy/Magic Attack Bonus +6
-        [ 1955] = { augmentID = 53,     requiredQty = 1,    power = 79,  materialName = "Ebony Lacquer",            tier = 6, desc = "Pet: TP Bonus +80" },                             -- Pet: TP Bonus +80
-        [ 1938] = { augmentID = 131,    requiredQty = 1,    power = 11,  materialName = "Ruby Silk Thread",         tier = 6, desc = "Magic Accuracy/Magic Attack Bonus +12" },         -- Magic Accuracy/Magic Attack Bonus +12
-        [ 1939] = { augmentID = 134,    requiredQty = 1,    power = 14,  materialName = "Cardinal Cloth",           tier = 6, desc = "Magic Defense Bonus +15" },                       -- Magic Defense Bonus +15
-        [ 1935] = { augmentID = 144,    requiredQty = 1,    power = 3,   materialName = "Benedict Yarn",            tier = 6, desc = "Triple Attack +4%" },                             -- Triple Attack +4%
-        [ 1957] = { augmentID = 328,    requiredQty = 1,    power = 3,   materialName = "Blue Rivet",               tier = 6, desc = "Critical Hit Damage +4%" },                       -- Critical Hit Damage +4%
-        [ 1944] = { augmentID = 332,    requiredQty = 1,    power = 2,   materialName = "Dark Orichalcum",          tier = 6, desc = "Skillchain Damage +3%" },                         -- Skillchain Damage +3%
-        [ 1931] = { augmentID = 335,    requiredQty = 1,    power = 5,   materialName = "Argyro Rivet",             tier = 6, desc = "Magic Critical Hit Damage +6%" },                 -- Magic Critical Hit Damage +6%
-        [ 1946] = { augmentID = 350,    requiredQty = 1,    power = 3,   materialName = "Smalt Leather",            tier = 6, desc = "Occ. Maximize Magic Accuracy +4%" },              -- Occ. Maximize Magic Accuracy +4%
-        [ 1943] = { augmentID = 53,     requiredQty = 1,    power = 4,   materialName = "White Rivet",              tier = 6, desc = "TP Bonus +250" },                                 -- TP Bonus +250
-        [ 1942] = { augmentID = 740,    requiredQty = 1,    power = 15,  materialName = "Snowy Cermet",             tier = 6, desc = "Main Hand Damage +16" },                          -- Main Hand Damage +16
+        [ 1255] = { 143 , 1 , 6 , "Fire Ore",                   6 }, -- STR +7
+        [ 1256] = { 334 , 1 , 6 , "Ice Ore",                    6 }, -- INT +7
+        [ 1257] = { 140 , 1 , 6 , "Wind Ore",                   6 }, -- AGI +7
+        [ 1258] = { 99  , 1 , 6 , "Earth Ore",                  6 }, -- VIT +7
+        [ 1259] = { 146 , 1 , 6 , "Lightning Ore",              6 }, -- DEX +7
+        [ 1260] = { 371 , 1 , 6 , "Water Ore",                  6 }, -- MND +7
+        [ 1261] = { 369 , 1 , 6 , "Light Ore",                  6 }, -- CHR +7
+        [ 1262] = { 321 , 1 , 27, "Dark Ore",                   6 }, -- HP/MP +28
+        [ 1426] = { 132 , 1 , 5 , "Warrior Testimony",          6 }, -- Dbl.Atk. +6% / Crit.hit rate +6%
+        [ 1427] = { 194 , 1 , 5 , "Monk Testimony",             6 }, -- Kick Attacks +6
+        [ 1428] = { 371 , 1 , 5 , "White Mage Testimony",       6 }, -- Cure Potency +6%
+        [ 1429] = { 334 , 1 , 5 , "Black Mage Testimony",       6 }, -- Magic Burst Damage +6%
+        [ 1430] = { 140 , 1 , 5 , "Red Mage Testimony",         6 }, -- Enfeebling Magic Duration +20%
+        [ 1431] = { 147 , 1 , 0 , "Thief Testimony",            6 }, -- Treasure Hunter +1
+        [ 1432] = { 71  , 1 , 5 , "Paladin Testimony",          6 }, -- Damage Taken -2%
+        [ 1433] = { 327 , 1 , 5 , "Dark Knight Testimony",      6 }, -- Weapon Skill Damage +6%
+        [ 1434] = { 124 , 1 , 15, "Beastmaster Testimony",      6 }, -- Pet: Acc/R.Acc/Atk/R.Atk +16
+        [ 1435] = { 322 , 1 , 5 , "Bard Testimony",             6 }, -- Song Spellcasting Time -6%
+        [ 1436] = { 211 , 1 , 5 , "Ranger Testimony",           6 }, -- Ranged Weapon Delay -64
+        [ 1437] = { 1264, 1 , 5 , "Samurai Testimony",          6 }, -- Meditate Duration +6
+        [ 1438] = { 215 , 1 , 5 , "Ninja Testimony",            6 }, -- Melee Weapon Delay -64
+        [ 1439] = { 122 , 1 , 29, "Dragoon Testimony",          6 }, -- Pet: TP Bonus +50
+        [ 1440] = { 369 , 1 , 5 , "Summoner Testimony",         6 }, -- Avatar: Blood Pact Damage +6%
+        [ 2331] = { 334 , 1 , 6 , "Blue Mage Testimony",        6 }, -- Skillchain Damage +6%
+        [ 2333] = { 278 , 1 , 6 , "Puppetmaster Testimony",     6 }, -- Pet: Haste +4%
+        [ 2332] = { 211 , 1 , 6 , "Corsair Testimony",          6 }, -- Snapshot +6
+        [ 2556] = { 330 , 1 , 6 , "Dancer Testimony",           6 }, -- 
+        [ 2557] = { 334 , 1 , 7 , "Scholar Testimony",          6 }, -- Magic Burst Damage +8%
+        [  495] = { 334 , 1 , 7 , "Quadav Charm",               6 }, -- 
+        [ 1101] = { 334 , 1 , 7 , "Mottled Quadav Egg",         6 }, -- 
+        [ 2557] = { 334 , 1 , 7 , "Scholar Testimony",          6 }, -- 
+        [ 2166] = { 334 , 1 , 4 , "Marid Hair",                 6 }, -- 
+        [ 2463] = { 334 , 1 , 4 , "Colorful Hair",              6 }, -- 
+        [ 2337] = { 334 , 1 , 4 , "Wamoura Hair",               6 }, -- 
+        [ 2953] = { 41  , 3 , 2 , "Viscous Spittle",            6 }, -- 
+        [  772] = { 294 , 12, 7 , "Green Rock",                 6 }, -- Summoning Magic Skill +8
+        [  769] = { 291 , 12, 7 , "Red Rock",                   6 }, -- Enfeebling Magic Skill +8
+        [  770] = { 299 , 12, 7 , "Blue Rock",                  6 }, -- Blue Magic Skill +8
+        [  774] = { 290 , 12, 7 , "Purple Rock",                6 }, -- Enhancing Magic Skill +8
+        [  771] = { 289 , 12, 7 , "Yellow Rock",                6 }, -- Healing Magic Skill +8
+        [  773] = { 292 , 12, 7 , "Translucent Rock",           6 }, -- Elemental Magic Skill +8
+        [  775] = { 293 , 12, 7 , "Black Rock",                 6 }, -- Dark Magic Skill +8
+        [  776] = { 288 , 12, 7 , "White Rock",                 6 }, -- Divine Magic Skill +8
+        [ 3297] = { 740 , 60, 15, "Flame Geode",                6 }, -- Melee Weapon Damage +16
+        [ 3298] = { 139 , 30, 15, "Snow Geode",                 6 }, -- Rapid Shot +16%
+        [ 3299] = { 746 , 60, 15, "Breeze Geode",               6 }, -- Ranged Weapon Damage +16
+        [ 3300] = { 368 , 30, 1 , "Soil Geode",                 6 }, -- Phalanx Received +2
+        [ 3301] = { 41  , 30, 3 , "Thunder Geode",              6 }, -- Critical Hit Chance +4%
+        [ 3302] = { 371 , 30, 3 , "Aqua Geode",                 6 }, -- Regen Potency +4
+        [ 3303] = { 1248, 30, 19, "Light Geode",                6 }, -- Enhancing Magic Duration +20%
+        [ 3304] = { 1158, 30, 3 , "Shadow Geode",               6 }, -- Occ. Resist Status Ailments +4
     },
-    -- Continue adding materials for other tiers...
+    -- Tier 7 Augments (NM/HNM Drops) (job seals: head / hands)
+    [7] = {
+        [ 1784] = { 108 , 1 , 24, "Phuabo Organ",               7 }, -- Pet: Magic Accuracy/Magic Attack Bonus +25
+        [ 1785] = { 131 , 1 , 24, "Xzomit Organ",               7 }, -- Magic Accuracy/Magic Attack Bonus +25
+        [ 1786] = { 68  , 1 , 27, "Aern Organ",                 7 }, -- Accuracy/Attack +28
+        [ 1787] = { 69  , 1 , 27, "Hpemde Organ",               7 }, -- Ranged Accuracy/Ranged Attack +28
+        [ 1788] = { 353 , 1 , 8 , "Yovra Organ",                7 }, -- TP Bonus +450
+        [ 1818] = { 144 , 1 , 3 , "Euvhi Organ",                7 }, -- Triple Attack +4%
+        [ 1819] = { 354 , 1 , 2 , "Luminion Chip",              7 }, -- Quadruple Attack +3%
+        [ 1404] = { 68  , 1 , 19, "Seal of Genbu",              7 }, -- Damage Taken -2%
+        [ 1405] = { 69  , 1 , 19, "Seal of Seiryu",             7 }, -- Ranged Accuracy/Ranged Attack +20
+        [ 1406] = { 131 , 1 , 19, "Seal of Byakko",             7 }, -- Magic Accuracy/Magic Attack Bonus +20
+        [ 1407] = { 134 , 1 , 19, "Seal of Suzaku",             7 }, -- Magic Defense Bonus +20
+        [ 1419] = { 143 , 1 , 6 , "Springstone",                7 }, -- Double Attack +7%
+        [ 1421] = { 144 , 1 , 2 , "Summerstone",                7 }, -- Triple Attack +3%
+        [ 1423] = { 354 , 1 , 1 , "Autumnstone",                7 }, -- Quadruple Attack +2%
+        [ 1425] = { 327 , 1 , 6 , "Winterstone",                7 }, -- Weapon Skill Damage +7%
+        [ 2929] = { 353 , 1 , 6 , "Helm of Briareus",           7 }, -- TP Bonus +350
+        [ 2930] = { 334 , 1 , 7 , "Carabosses Gem",             7 }, -- Magic Burst Damage +8%
+        [ 2932] = { 140 , 1 , 7 , "Kukulkans Fang",             7 }, -- Fast Cast +8%
+        [ 2927] = { 112 , 1 , 3 , "Glavoid Shell",              7 }, -- Pet: Damage Taken -4%
+        [ 2928] = { 371 , 1 , 7 , "Two-Leaf Chloris Bud",       7 }, -- Regen Potency +8
+        [ 2963] = { 251 , 1 , 7 , "Ulhuadshis Fang",            7 }, -- Daken +8
+        [ 2964] = { 215 , 1 , 7 , "Sobeks Skin",                7 }, -- Ninja Tool Expertise +8
+        [ 1313] = { 1798, 1 , 13, "Siren's Hair",               7 }, -- Pet: CHR +14
+        [ 2158] = { 327 , 1 , 4 , "Hydra Fang",                 7 }, -- 
+        [ 2168] = { 369 , 1 , 4 , "Cerberus Claw",              7 }, -- 
+        [ 2371] = { 334 , 1 , 4 , "Khimaira Horn",              7 }, -- 
+        [ 5113] = { 57  , 3 , 2 , "Cracked Nut",                7 }, -- 
+        [ 3316] = { 512 , 1 , 13, "Flame Gem",                  7 }, -- STR +8
+        [ 3317] = { 516 , 1 , 13, "Snow Gem",                   7 }, -- INT +8
+        [ 3318] = { 515 , 1 , 13, "Breeze Gem",                 7 }, -- AGI +8
+        [ 3319] = { 514 , 1 , 13, "Soil Gem",                   7 }, -- VIT +8
+        [ 3320] = { 513 , 1 , 13, "Thunder Gem",                7 }, -- DEX +8
+        [ 3321] = { 517 , 1 , 13, "Aqua Gem",                   7 }, -- MND +8
+        [ 3322] = { 518 , 1 , 13, "Light Gem",                  7 }, -- CHR +8
+        [ 3323] = { 1798, 1 , 13, "Shadow Gem",                 7 }, -- HP/MP +32
+        -- Siren's Hair 1313
+    },
+    -- Tier 8 Augments (job seals: legs / feet)
+    [8] = {
+        [ 3110] = { 68  , 2 , 24, "Ravagers Seal: Head",        8 }, -- Accuracy/Attack +25
+        [ 3111] = { 194 , 2 , 8 , "Tantra Seal: Head",          8 }, -- Kick Attacks +9
+        [ 3112] = { 329 , 2 , 8 , "Orison Seal: Head",          8 }, -- Cure Potency +9%
+        [ 3113] = { 334 , 2 , 8 , "Goetia Seal: Head",          8 }, -- Magic Burst Damage +9%
+        [ 3114] = { 140 , 2 , 8 , "Estoqueurs Seal: Head",      8 }, -- Fast Cast +9%
+        [ 3115] = { 147 , 2 , 2 , "Raiders Seal: Head",         8 }, -- Treasure Hunter +3
+        [ 3118] = { 124 , 2 , 24, "Ferine Seal: Head",          8 }, -- Pet: Acc/R.Acc/Atk/R.Atk +25
+        [ 3119] = { 67  , 2 , 0 , "Aoidos Seal: Head",          8 }, -- All Songs +1
+        [ 3120] = { 211 , 2 , 8 , "Sylvan Seal: Head",          8 }, -- Snapshot +9
+        [ 3121] = { 327 , 2 , 8 , "Unkai Seal: Head",           8 }, -- Weapon Skill Damage +9%
+        [ 3122] = { 251 , 2 , 8 , "Iga Seal: Head",             8 }, -- Daken +9
+        [ 3123] = { 122 , 2 , 24, "Lancers Seal: Head",         8 }, -- Pet: TP Bonus +500
+        [ 3124] = { 120 , 2 , 8 , "Callers Seal: Head",         8 }, -- Avatar: Magic Attack Bonus +9
+        [ 3125] = { 334 , 2 , 9 , "Mavi Seal: Head",            8 }, -- Magic Burst Damage +10%
+        [ 3127] = { 280 , 2 , 8 , "Cirque Seal: Head",          8 }, -- Automaton Magic Skill +9
+        [ 3130] = { 68  , 2 , 10, "Ravagers Seal: Body",        8 }, -- Accuracy/Attack +11
+        [ 3131] = { 194 , 2 , 10, "Tantra Seal: Body",          8 }, -- Kick Attacks +11
+        [ 3132] = { 371 , 2 , 10, "Orison Seal: Body",          8 }, -- Regen Potency +11
+        [ 3133] = { 334 , 2 , 10, "Goetia Seal: Body",          8 }, -- Magic Burst Damage +11%
+        [ 3134] = { 140 , 2 , 10, "Estoqueurs Seal: Body",      8 }, -- Fast Cast +11%
+        [ 3135] = { 147 , 2 , 3 , "Raiders Seal: Body",         8 }, -- Treasure Hunter +4
+        [ 3136] = { 49  , 2 , 10, "Creed Seal: Body",           8 }, -- Haste +11%
+        [ 3137] = { 327 , 2 , 10, "Bale Seal: Body",            8 }, -- Weapon Skill Damage +11%
+        [ 3138] = { 124 , 2 , 10, "Ferine Seal: Body",          8 }, -- Pet: Acc/R.Acc/Atk/R.Atk +11
+        [ 3139] = { 322 , 2 , 10, "Aoidos Seal: Body",          8 }, -- Song Spellcasting Time -11%
+        [ 3140] = { 211 , 2 , 10, "Sylvan Seal: Body",          8 }, -- Snapshot +11
+        [ 3141] = { 327 , 2 , 10, "Unkai Seal: Body",           8 }, -- Weapon Skill Damage +11%
+        [ 3142] = { 215 , 2 , 10, "Iga Seal: Body",             8 }, -- Ninja Tool Expertise +11
+        [ 3143] = { 122 , 2 , 25, "Lancers Seal: Body",         8 }, -- Pet: TP Bonus +520
+        [ 3144] = { 369 , 2 , 10, "Callers Seal: Body",         8 }, -- Avatar: Blood Pact Damage +11
+        [ 3145] = { 334 , 2 , 10, "Mavi Seal: Body",            8 }, -- Magic Burst Damage +11%
+        [ 3146] = { 211 , 2 , 10, "Navarchs Seal: Body",        8 }, -- Snapshot +11
+        [ 3147] = { 279 , 2 , 10, "Cirque Seal: Body",          8 }, -- Automaton Ranged Skill +11
+        [ 3148] = { 330 , 2 , 10, "Charis Seal: Body",          8 }, -- Waltz Potency +11%
+        [ 3149] = { 334 , 2 , 10, "Savant Seal: Body",          8 }, -- Magic Burst Damage +11%
+        [ 3150] = { 68  , 2 , 11, "Ravagers Seal: Hands",       8 }, -- Accuracy/Attack +12
+        [ 3151] = { 194 , 2 , 11, "Tantra Seal: Hands",         8 }, -- Kick Attacks +12
+        [ 3152] = { 371 , 2 , 11, "Orison Seal: Hands",         8 }, -- Regen Potency +12
+        [ 3153] = { 334 , 2 , 11, "Goetia Seal: Hands",         8 }, -- Magic Burst Damage +12%
+        [ 3154] = { 140 , 2 , 11, "Estoqueurs Seal: Hands",     8 }, -- Fast Cast +12%
+        [ 3155] = { 147 , 2 , 4 , "Raiders Seal: Hands",        8 }, -- Treasure Hunter +5
+        [ 3156] = { 49  , 2 , 11, "Creed Seal: Hands",          8 }, -- Haste +12%
+        [ 3157] = { 327 , 2 , 11, "Bale Seal: Hands",           8 }, -- Weapon Skill Damage +12%
+        [ 3158] = { 124 , 2 , 11, "Ferine Seal: Hands",         8 }, -- Pet: Acc/R.Acc/Atk/R.Atk +12
+        [ 3159] = { 322 , 2 , 11, "Aoidos Seal: Hands",         8 }, -- Song Spellcasting Time -12%
+        [ 3160] = { 211 , 2 , 11, "Sylvan Seal: Hands",         8 }, -- Snapshot +12
+        [ 3161] = { 327 , 2 , 11, "Unkai Seal: Hands",          8 }, -- Weapon Skill Damage +12%
+        [ 3162] = { 215 , 2 , 11, "Iga Seal: Hands",            8 }, -- Ninja Tool Expertise +12
+        [ 3163] = { 122 , 2 , 26, "Lancers Seal: Hands",        8 }, -- Pet: TP Bonus +540
+        [ 3164] = { 369 , 2 , 11, "Callers Seal: Hands",        8 }, -- Avatar: Blood Pact Damage +12
+        [ 3165] = { 334 , 2 , 11, "Mavi Seal: Hands",           8 }, -- Magic Burst Damage +12%
+        [ 3166] = { 211 , 2 , 11, "Navarchs Seal: Hands",       8 }, -- Snapshot +12
+        [ 3167] = { 279 , 2 , 11, "Cirque Seal: Hands",         8 }, -- Automaton Ranged Skill +12
+        [ 3168] = { 330 , 2 , 11, "Charis Seal: Hands",         8 }, -- Waltz Potency +12%
+        [ 3169] = { 334 , 2 , 11, "Savant Seal: Hands",         8 }, -- Magic Burst Damage +12%
+        [ 3520] = { 952 , 1 , 0 , "Ifritite",                   8 }, -- Fire Affinity: Avatar Perp Cost -1
+        [ 3521] = { 953 , 1 , 0 , "Shivite",                    8 }, -- Ice Affinity: Avatar Perp Cost -1
+        [ 3522] = { 954 , 1 , 0 , "Garudite",                   8 }, -- Wind Affinity: Avatar Perp Cost -1
+        [ 3523] = { 955 , 1 , 0 , "Titanite",                   8 }, -- Earth Affinity: Avatar Perp Cost -1
+        [ 3524] = { 956 , 1 , 0 , "Ramuite",                    8 }, -- Thunder Affinity: Avatar Perp Cost -1
+        [ 3525] = { 957 , 1 , 0 , "Leviatite",                  8 }, -- Water Affinity: Avatar Perp Cost -1
+        [ 3526] = { 958 , 1 , 0 , "Carbite",                    8 }, -- Light Affinity: Avatar Perp Cost -1
+        [ 3527] = { 959 , 1 , 0 , "Fenrite",                    8 }, -- Dark Affinity: Avatar Perp Cost -1
+    },
+    -- Tier 9 Augments (job seals: body) (curio moogle craft materials) (high quality craft crystals)
+    [9] = {
+        [  873] = { 928 , 7 , 2 , "Red Chip",                   9 }, -- Fire Affinity +3
+        [  475] = { 933 , 7 , 2 , "Blue Chip",                  9 }, -- Water Affinity +3
+        [  476] = { 931 , 7 , 2 , "Yellow Chip",                9 }, -- Earth Affinity +3
+        [  477] = { 930 , 7 , 2 , "Green Chip",                 9 }, -- Wind Affinity +3
+        [  478] = { 929 , 7 , 2 , "Clear Chip",                 9 }, -- Ice Affinity +3
+        [  479] = { 932 , 7 , 2 , "Purple Chip",                9 }, -- Lightning Affinity +3
+        [  480] = { 934 , 7 , 2 , "White Chip",                 9 }, -- Light Affinity +3
+        [  481] = { 935 , 7 , 2 , "Black Chip",                 9 }, -- Dark Affinity +3
+        [ 1299] = { 512 , 1 , 15, "Fire Bead",                  9 }, -- STR +10
+        [ 1300] = { 516 , 1 , 15, "Ice Bead",                   9 }, -- INT +10
+        [ 1301] = { 515 , 1 , 15, "Wind Bead",                  9 }, -- AGI +10
+        [ 1302] = { 514 , 1 , 15, "Earth Bead",                 9 }, -- VIT +10
+        [ 1303] = { 513 , 1 , 15, "Lightning Bead",             9 }, -- DEX +10
+        [ 1304] = { 517 , 1 , 15, "Water Bead",                 9 }, -- MND +10
+        [ 1305] = { 518 , 1 , 15, "Light Bead",                 9 }, -- CHR +10
+        [ 1306] = { 1796, 1 , 15, "Dark Bead",                  9 }, -- HP/MP +40
+        [ 4238] = { 68  , 1 , 30, "Inferno Crystal",            9 }, -- Accuracy/Attack +31
+        [ 4239] = { 131 , 1 , 30, "Glacier Crystal",            9 }, -- Magic Accuracy/Magic Attack Bonus +31
+        [ 4240] = { 69  , 1 , 30, "Cyclone Crystal",            9 }, -- Ranged Accuracy/Ranged Attack +31
+        [ 4241] = { 99  , 1 , 30, "Terra Crystal",              9 }, -- Pet: Defense +31
+        [ 4242] = { 143 , 1 , 9 , "Plasma Crystal",             9 }, -- Double Attack +10%
+        [ 4243] = { 371 , 1 , 9 , "Torrent Crystal",            9 }, -- Regen Potency +10
+        [ 4244] = { 369 , 1 , 9 , "Aurora Crystal",             9 }, -- Avatar: Blood Pact Damage +10
+        [ 4245] = { 138 , 1 , 9 , "Twilight Crystal",           9 }, -- Refresh +10
+        [ 3494] = { 144 , 1 , 4 , "Forgotten Hope",             9 }, -- Triple Attack +5%
+        [ 3495] = { 354 , 1 , 3 , "Forgotten Touch",            9 }, -- Quadruple Attack +4%
+        [ 3497] = { 327 , 1 , 9 , "Forgotten Step",             9 }, -- Weapon Skill Damage +10%
+        [ 1452] = { 353 , 25, 9 , "Ordelle Bronzepiece",        9 }, -- TP Bonus +500
+        [ 1455] = { 146 , 25, 9 , "One Byne Bill",              9 }, -- Dual Wield +10
+        [ 3290] = { 334 , 1 , 9 , "Isgebinds Heart",            9 }, -- Magic Burst Damage +10%
+        [ 3287] = { 143 , 1 , 11, "Orthrus Claw",               9 }, -- Double Attack +12%
+        [ 3288] = { 112 , 1 , 4 , "Draguas Scale",              9 }, -- Pet: Damage Taken -5%
+        [ 3289] = { 122 , 1 , 29, "Apademak Horn",              9 }, -- Pet: TP Bonus +600
+        [ 3291] = { 211 , 1 , 9 , "Alfards Fang",               9 }, -- Snapshot +10
+        [ 3292] = { 215 , 1 , 9 , "Azdajas Horn",               9 }, -- Ninja Tool Expertise +10
+        [ 2169] = { 124 , 1 , 30, "Cerberus Hide",              9 }, -- Pet: Acc/R.Acc/Atk/R.Atk +31
+        [ 2372] = { 140 , 1 , 9 , "Khimaira Mane",              9 }, -- Fast Cast +10%
+        [ 2172] = { 251 , 1 , 9 , "Hydra Scale",                9 }, -- Daken +10
+        [ 3493] = { 143 , 1 , 10, "Forgotten Thought",          9 }, -- Double Attack +11%
+        [ 3496] = { 140 , 1 , 10, "Forgotten Journey",          9 }, -- Fast Cast +11%
+    },
 }
 
 -- Function to get the tier of an item based on its ID
@@ -210,7 +483,7 @@ function augmentData.getItemTier(itemID)
     
     -- Then check for item ranges (example for Tier 5)
     if itemID >= 10240 and itemID <= 28671 then
-        return 5 -- Assign to Tier 5 if within range
+        return 9 -- Assign to Tier 9 if within range
     end
 
     -- You can add additional ranges here for other tiers if needed.
@@ -232,13 +505,15 @@ function augmentData.getAugmentsForTrade(itemTier, trade)
         -- For each material, check if it can apply an augment for the item's tier or lower
         for tier = itemTier, 0, -1 do
             local augmentInfo = augmentData.augmentTable[tier] and augmentData.augmentTable[tier][materialID]
-            if augmentInfo and qty >= augmentInfo.requiredQty and not selectedAugmentIDs[augmentInfo.augmentID] then
+            local augmentID = augmentInfo and (augmentInfo.augmentID or augmentInfo[1])
+            local requiredQty = augmentInfo and (augmentInfo.requiredQty or augmentInfo[2])
+            if augmentInfo and qty >= requiredQty and not selectedAugmentIDs[augmentID] then
                 table.insert(selectedAugments, {
-                    augmentID = augmentInfo.augmentID,
-                    power = augmentInfo.power,
-                    materialName = augmentInfo.materialName,
-                    desc = augmentInfo.desc,
-                    tier = tier -- maybe augmentInfo.tier so it matches
+                    augmentID = augmentID,
+                    power = augmentInfo.power or augmentInfo[3],
+                    materialName = augmentInfo.materialName or augmentInfo[4],
+                    desc = augmentInfo.desc or augmentInfo[6],
+                    tier = augmentInfo.tier or augmentInfo[5] or tier
                 })
                 selectedAugmentIDs[augmentInfo.augmentID] = true
                 break
