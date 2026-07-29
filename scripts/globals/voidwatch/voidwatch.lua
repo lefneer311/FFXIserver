@@ -3,7 +3,6 @@
 -----------------------------------
 require('scripts/enum/item')
 require('scripts/enum/key_item')
-require('scripts/enum/zone')
 -----------------------------------
 xi = xi or {}
 xi.voidwatch = xi.voidwatch or {}
