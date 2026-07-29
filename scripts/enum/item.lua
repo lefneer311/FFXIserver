@@ -3976,6 +3976,7 @@ xi.item =
     TURKEY_WITH_ROLANBERRY_SAUCE        = 6576,
     MAATS_CONCOCTION                    = 6597,
     MAATS_MIX                           = 6598,
+    ROLANBERRY_854_CE                   = 6603,
     OLD_CASE_P1                         = 6615,
     POPPER_II                           = 6684,
     SHEET_OF_MAPITOTO_TUNES             = 6691,
