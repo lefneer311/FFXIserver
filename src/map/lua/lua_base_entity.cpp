@@ -7797,61 +7797,74 @@ void CLuaBaseEntity::delTitle(uint16 titleID)
  *  Notes   :
  ************************************************************************/
 
-uint16 CLuaBaseEntity::getFame(const sol::object& areaObj)
+auto CLuaBaseEntity::getFame(const xi::FameArea area) const -> uint16
 {
     if (m_PBaseEntity->objtype != TYPE_PC)
     {
-        ShowWarning("Invalid entity type calling function (%s).", m_PBaseEntity->getName());
+        ShowWarningFmt("Invalid entity type calling function ({}).", m_PBaseEntity->getName());
         return 0;
     }
 
-    uint8  fameArea = areaObj.is<sol::table>() ? areaObj.as<sol::table>()["fame_area"] : areaObj.as<uint8>();
-    uint16 fame     = 0;
+    const auto& fame = static_cast<CCharEntity*>(m_PBaseEntity)->profile.fame;
 
-    if (fameArea <= 15)
+    uint16 points = 0;
+
+    switch (area)
     {
-        float fameMultiplier = settings::get<float>("map.FAME_MULTIPLIER");
-        auto* PChar          = static_cast<CCharEntity*>(m_PBaseEntity);
-
-        switch (fameArea)
-        {
-            case 0: // San d'Oria
-            case 1: // Bastok
-            case 2: // Windurst
-                fame = static_cast<uint16>(PChar->profile.fame[fameArea] * fameMultiplier);
-                break;
-            case 3: // Jeuno
-                fame = static_cast<uint16>(PChar->profile.fame[4] + ((PChar->profile.fame[0] + PChar->profile.fame[1] + PChar->profile.fame[2]) * fameMultiplier / 3));
-                break;
-            case 4: // Selbina / Rabao
-                fame = static_cast<uint16>((PChar->profile.fame[0] + PChar->profile.fame[1]) * fameMultiplier / 2);
-                break;
-            case 5: // Norg
-                fame = static_cast<uint16>(PChar->profile.fame[3] * fameMultiplier);
-                break;
-            // Abyssea
-            case 6:  // Konschtat
-            case 7:  // Tahrongi
-            case 8:  // La Theine
-            case 9:  // Misareaux
-            case 10: // Vunkerl
-            case 11: // Attohwa
-            case 12: // Altepa
-            case 13: // Grauberg
-            case 14: // Uleguerand
-                fame = static_cast<uint16>(PChar->profile.fame[fameArea - 1] * fameMultiplier);
-                break;
-            case 15: // Adoulin
-                fame = static_cast<uint16>(PChar->profile.fame[14] * fameMultiplier);
-                break;
-        }
+        case xi::FameArea::Sandoria:
+            points = fame.Sandoria;
+            break;
+        case xi::FameArea::Bastok:
+            points = fame.Bastok;
+            break;
+        case xi::FameArea::Windurst:
+            points = fame.Windurst;
+            break;
+        case xi::FameArea::Jeuno:
+            points = (fame.Sandoria + fame.Bastok + fame.Windurst) / 2;
+            break;
+        case xi::FameArea::SelbinaRabao:
+            points = (fame.Sandoria + fame.Bastok) * 2 / 3;
+            break;
+        case xi::FameArea::Norg:
+            points = fame.Norg;
+            break;
+        case xi::FameArea::AbysseaKonschtat:
+            points = fame.AbysseaKonschtat;
+            break;
+        case xi::FameArea::AbysseaTahrongi:
+            points = fame.AbysseaTahrongi;
+            break;
+        case xi::FameArea::AbysseaLatheine:
+            points = fame.AbysseaLaTheine;
+            break;
+        case xi::FameArea::AbysseaMisareaux:
+            points = fame.AbysseaMisareaux;
+            break;
+        case xi::FameArea::AbysseaVunkerl:
+            points = fame.AbysseaVunkerl;
+            break;
+        case xi::FameArea::AbysseaAttohwa:
+            points = fame.AbysseaAttohwa;
+            break;
+        case xi::FameArea::AbysseaAltepa:
+            points = fame.AbysseaAltepa;
+            break;
+        case xi::FameArea::AbysseaGrauberg:
+            points = fame.AbysseaGrauberg;
+            break;
+        case xi::FameArea::AbysseaUleguerand:
+            points = fame.AbysseaUleguerand;
+            break;
+        case xi::FameArea::Adoulin:
+            points = fame.Adoulin;
+            break;
+        default:
+            ShowErrorFmt("Invalid fame area ({}).", static_cast<uint8>(area));
+            break;
     }
-    else
-    {
-        ShowError("Lua::getFame: fameArea %i is invalid", fameArea);
-    }
 
-    return fame;
+    return std::min<uint16>(points, 2500); // Fame cap is 2500
 }
 
 /************************************************************************
@@ -7861,59 +7874,73 @@ uint16 CLuaBaseEntity::getFame(const sol::object& areaObj)
  *  Notes   :
  ************************************************************************/
 
-void CLuaBaseEntity::addFame(const sol::object& areaObj, uint16 fame)
+void CLuaBaseEntity::addFame(const xi::FameArea area, const uint16 fame)
 {
     if (m_PBaseEntity->objtype != TYPE_PC)
     {
-        ShowWarning("Invalid entity type calling function (%s).", m_PBaseEntity->getName());
+        ShowWarningFmt("Invalid entity type calling function ({}).", m_PBaseEntity->getName());
         return;
     }
 
-    uint8 fameArea = areaObj.is<sol::table>() ? areaObj.as<sol::table>()["fame_area"] : areaObj.as<uint8>();
+    auto* PChar  = static_cast<CCharEntity*>(m_PBaseEntity);
+    auto& stored = PChar->profile.fame;
 
-    if (fameArea <= 15)
-    {
-        auto* PChar = static_cast<CCharEntity*>(m_PBaseEntity);
+    // Fame cap is 2500
 
-        switch (fameArea)
-        {
-            case 0: // San d'Oria
-            case 1: // Bastok
-            case 2: // Windurst
-                PChar->profile.fame[fameArea] += fame;
-                break;
-            case 3: // Jeuno
-                PChar->profile.fame[4] += fame;
-                break;
-            case 4: // Selbina / Rabao
-                PChar->profile.fame[0] += fame;
-                PChar->profile.fame[1] += fame;
-                break;
-            case 5: // Norg
-                PChar->profile.fame[3] += fame;
-                break;
-            // Abyssea
-            case 6:  // Konschtat
-            case 7:  // Tahrongi
-            case 8:  // La Theine
-            case 9:  // Misareaux
-            case 10: // Vunkerl
-            case 11: // Attohwa
-            case 12: // Altepa
-            case 13: // Grauberg
-            case 14: // Uleguerand
-                PChar->profile.fame[fameArea - 1] += fame;
-                break;
-            case 15: // Adoulin
-                PChar->profile.fame[14] += fame;
-                break;
-        }
-        charutils::SaveFame(PChar);
-    }
-    else
+    switch (area)
     {
-        ShowError("Lua::addFame: fameArea %i is invalid", fameArea);
+        case xi::FameArea::Sandoria:
+            stored.Sandoria = std::min<uint16>(stored.Sandoria + fame, 2500);
+            break;
+        case xi::FameArea::Bastok:
+            stored.Bastok = std::min<uint16>(stored.Bastok + fame, 2500);
+            break;
+        case xi::FameArea::Windurst:
+            stored.Windurst = std::min<uint16>(stored.Windurst + fame, 2500);
+            break;
+        case xi::FameArea::Jeuno:
+        case xi::FameArea::SelbinaRabao:
+            ShowWarningFmt("Fame area ({}) is derived from nation fame and cannot be awarded directly.", static_cast<uint8>(area));
+            return;
+        case xi::FameArea::Norg:
+            stored.Norg = std::min<uint16>(stored.Norg + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaKonschtat:
+            stored.AbysseaKonschtat = std::min<uint16>(stored.AbysseaKonschtat + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaTahrongi:
+            stored.AbysseaTahrongi = std::min<uint16>(stored.AbysseaTahrongi + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaLatheine:
+            stored.AbysseaLaTheine = std::min<uint16>(stored.AbysseaLaTheine + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaMisareaux:
+            stored.AbysseaMisareaux = std::min<uint16>(stored.AbysseaMisareaux + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaVunkerl:
+            stored.AbysseaVunkerl = std::min<uint16>(stored.AbysseaVunkerl + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaAttohwa:
+            stored.AbysseaAttohwa = std::min<uint16>(stored.AbysseaAttohwa + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaAltepa:
+            stored.AbysseaAltepa = std::min<uint16>(stored.AbysseaAltepa + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaGrauberg:
+            stored.AbysseaGrauberg = std::min<uint16>(stored.AbysseaGrauberg + fame, 2500);
+            break;
+        case xi::FameArea::AbysseaUleguerand:
+            stored.AbysseaUleguerand = std::min<uint16>(stored.AbysseaUleguerand + fame, 2500);
+            break;
+        case xi::FameArea::Adoulin:
+            stored.Adoulin = std::min<uint16>(stored.Adoulin + fame, 2500);
+            break;
+        default:
+            ShowErrorFmt("Invalid fame area ({}).", static_cast<uint8>(area));
+            return;
     }
+
+    charutils::SaveFame(PChar);
 }
 
 /************************************************************************
@@ -7923,60 +7950,73 @@ void CLuaBaseEntity::addFame(const sol::object& areaObj, uint16 fame)
  *  Notes   :
  ************************************************************************/
 
-void CLuaBaseEntity::setFame(const sol::object& areaObj, uint16 fame)
+void CLuaBaseEntity::setFame(const xi::FameArea area, const uint16 fame)
 {
     if (m_PBaseEntity->objtype != TYPE_PC)
     {
-        ShowWarning("Invalid entity type calling function (%s).", m_PBaseEntity->getName());
+        ShowWarningFmt("Invalid entity type calling function ({}).", m_PBaseEntity->getName());
         return;
     }
 
-    uint8 fameArea = areaObj.is<sol::table>() ? areaObj.as<sol::table>()["fame_area"] : areaObj.as<uint8>();
+    auto* PChar  = static_cast<CCharEntity*>(m_PBaseEntity);
+    auto& stored = PChar->profile.fame;
 
-    if (fameArea <= 15)
+    const uint16 points = std::min<uint16>(fame, 2500); // Fame cap is 2500
+
+    switch (area)
     {
-        auto* PChar = static_cast<CCharEntity*>(m_PBaseEntity);
-
-        switch (fameArea)
-        {
-            case 0: // San d'Oria
-            case 1: // Bastok
-            case 2: // Windurst
-                PChar->profile.fame[fameArea] = fame;
-                break;
-            case 3: // Jeuno
-                PChar->profile.fame[4] = fame;
-                break;
-            case 4: // Selbina / Rabao
-                PChar->profile.fame[0] = fame;
-                PChar->profile.fame[1] = fame;
-                break;
-            case 5: // Norg
-                PChar->profile.fame[3] = fame;
-                break;
-            // Abyssea
-            case 6:  // Konschtat
-            case 7:  // Tahrongi
-            case 8:  // La Theine
-            case 9:  // Misareaux
-            case 10: // Vunkerl
-            case 11: // Attohwa
-            case 12: // Altepa
-            case 13: // Grauberg
-            case 14: // Uleguerand
-                PChar->profile.fame[fameArea - 1] = fame;
-                break;
-            case 15: // Adoulin
-                PChar->profile.fame[14] = fame;
-                break;
-        }
-
-        charutils::SaveFame(PChar);
+        case xi::FameArea::Sandoria:
+            stored.Sandoria = points;
+            break;
+        case xi::FameArea::Bastok:
+            stored.Bastok = points;
+            break;
+        case xi::FameArea::Windurst:
+            stored.Windurst = points;
+            break;
+        case xi::FameArea::Jeuno:
+        case xi::FameArea::SelbinaRabao:
+            ShowWarningFmt("Fame area ({}) is derived from nation fame and cannot be set directly.", static_cast<uint8>(area));
+            return;
+        case xi::FameArea::Norg:
+            stored.Norg = points;
+            break;
+        case xi::FameArea::AbysseaKonschtat:
+            stored.AbysseaKonschtat = points;
+            break;
+        case xi::FameArea::AbysseaTahrongi:
+            stored.AbysseaTahrongi = points;
+            break;
+        case xi::FameArea::AbysseaLatheine:
+            stored.AbysseaLaTheine = points;
+            break;
+        case xi::FameArea::AbysseaMisareaux:
+            stored.AbysseaMisareaux = points;
+            break;
+        case xi::FameArea::AbysseaVunkerl:
+            stored.AbysseaVunkerl = points;
+            break;
+        case xi::FameArea::AbysseaAttohwa:
+            stored.AbysseaAttohwa = points;
+            break;
+        case xi::FameArea::AbysseaAltepa:
+            stored.AbysseaAltepa = points;
+            break;
+        case xi::FameArea::AbysseaGrauberg:
+            stored.AbysseaGrauberg = points;
+            break;
+        case xi::FameArea::AbysseaUleguerand:
+            stored.AbysseaUleguerand = points;
+            break;
+        case xi::FameArea::Adoulin:
+            stored.Adoulin = points;
+            break;
+        default:
+            ShowErrorFmt("Invalid fame area ({}).", static_cast<uint8>(area));
+            return;
     }
-    else
-    {
-        ShowError("Lua::setFame: fameArea %i is invalid", fameArea);
-    }
+
+    charutils::SaveFame(PChar);
 }
 
 /************************************************************************
@@ -7986,62 +8026,25 @@ void CLuaBaseEntity::setFame(const sol::object& areaObj, uint16 fame)
  *  Notes   :
  ************************************************************************/
 
-uint8 CLuaBaseEntity::getFameLevel(const sol::object& areaObj)
+auto CLuaBaseEntity::getFameLevel(const xi::FameArea area) const -> uint8
 {
     if (m_PBaseEntity->objtype != TYPE_PC)
     {
-        ShowWarning("Invalid entity type calling function (%s).", m_PBaseEntity->getName());
+        ShowWarningFmt("Invalid entity type calling function ({}).", m_PBaseEntity->getName());
         return 0;
     }
 
-    uint8 fameArea  = areaObj.is<sol::table>() ? areaObj.as<sol::table>()["fame_area"] : areaObj.as<uint8>();
-    uint8 fameLevel = 1;
+    // Rank thresholds live in xi.data.fame.rankPoints
+    uint8 fameLevel = luautils::callGlobal<uint8>("xi.data.fame.getRankFromPoints", this->getFame(area));
 
-    if (fameArea <= 15)
+    if (fameLevel == 0)
     {
-        uint16 fame = this->getFame(areaObj);
-
-        if (fame >= 613)
-        {
-            fameLevel = 9;
-        }
-        else if (fame >= 550)
-        {
-            fameLevel = 8;
-        }
-        else if (fame >= 488)
-        {
-            fameLevel = 7;
-        }
-        else if (fame >= 425)
-        {
-            fameLevel = 6;
-        }
-        else if (fame >= 325)
-        {
-            fameLevel = 5;
-        }
-        else if (fame >= 225)
-        {
-            fameLevel = 4;
-        }
-        else if (fame >= 125)
-        {
-            fameLevel = 3;
-        }
-        else if (fame >= 50)
-        {
-            fameLevel = 2;
-        }
-
-        if ((fameArea >= 6) && (fameArea <= 14) && (fameLevel >= 6))
-        {
-            fameLevel = 6; // Abyssea areas cap out at level 6 fame.
-        }
+        fameLevel = 1; // Lua error fallback
     }
-    else
+
+    if (area >= xi::FameArea::AbysseaKonschtat && area <= xi::FameArea::AbysseaUleguerand)
     {
-        ShowError("Lua::getFameLevel: fameArea %i is invalid", fameArea);
+        fameLevel = std::min<uint8>(fameLevel, 6); // Abyssea areas cap out at level 6 fame
     }
 
     return fameLevel;

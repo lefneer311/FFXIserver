@@ -18,7 +18,7 @@ from .yaml_loaders import FastLoader
 def render_header(*, source_name: str, cls_name: str, underlying: str, is_flags: bool, case: str, values: dict[str, int]) -> str:
     if case not in CASE_FNS:
         raise ValueError(f"unknown enum case {case!r}; expected one of {sorted(CASE_FNS)}")
-    cpp_names = {k: CASE_FNS[case](k) for k in values}
+    cpp_names = {name: CASE_FNS[case](name) for name in values}
     return ENV.get_template("enum.h.j2").render(
         source_name=source_name,
         cls_name=cls_name,
@@ -26,21 +26,21 @@ def render_header(*, source_name: str, cls_name: str, underlying: str, is_flags:
         is_flags=is_flags,
         values=values,
         cpp_names=cpp_names,
-        enum_width=max(len(n) for n in cpp_names.values()),
-        quote_width=max(len(k) for k in values) + 2,
+        enum_width=max(len(cpp_name) for cpp_name in cpp_names.values()),
+        quote_width=max(len(name) for name in values) + 2,
     )
 
 
 def render_lua(*, source_name: str, lua_table: str, is_flags: bool, values: dict[str, int]) -> str:
     """Identifiers are the YAML key uppercased: `no_erase` -> `NO_ERASE`."""
-    lua_names = {k: k.upper() for k in values}
+    lua_names = {name: name.upper() for name in values}
     return ENV.get_template("enum.lua.j2").render(
         source_name=source_name,
         lua_table=lua_table,
         is_flags=is_flags,
         values=values,
         lua_names=lua_names,
-        name_width=max(len(n) for n in lua_names.values()),
+        name_width=max(len(lua_name) for lua_name in lua_names.values()),
     )
 
 
@@ -83,41 +83,79 @@ def emit_pure_enum(yaml_path: Path) -> dict[str, Any]:
     }
 
 
-def emit_table_enum(yaml_path: Path) -> dict[str, Any] | None:
-    """Same return shape as `emit_pure_enum`. Returns None when the file has no `meta.enum:` block."""
+def resolve_sections(doc: dict[str, Any], path: str) -> list[dict[str, Any]]:
+    """Every section the path names; `*` steps through all entries at that level (`ecosystems.*.families`)."""
+    nodes: list[dict[str, Any]] = [doc]
+    for part in path.split("."):
+        next_nodes: list[dict[str, Any]] = []
+        for node in nodes:
+            if part == "*":
+                next_nodes.extend(child for child in node.values() if isinstance(child, dict))
+            else:
+                child = node.get(part)
+                if isinstance(child, dict):
+                    next_nodes.append(child)
+
+        nodes = next_nodes
+    return nodes
+
+
+def emit_table_enums(yaml_path: Path) -> list[dict[str, Any]]:
+    """One entry per `meta.enum:` block. Members emit in id order."""
     with yaml_path.open(encoding="utf-8") as f:
         doc = yaml.load(f, Loader=FastLoader)
 
     if not isinstance(doc, dict):
-        return None
+        return []
     meta_enum = (doc.get("meta") or {}).get("enum")
     if not meta_enum:
-        return None
+        return []
 
-    section_name = meta_enum.get("section") or yaml_path.stem
-    section = doc.get(section_name) or {}
-    if not section:
-        raise ValueError(f"{yaml_path}: no '{section_name}' section to derive enum from")
-
-    values = derive_values(yaml_path, section, meta_enum.get("name_from"))
-
-    cpp = meta_enum.get("cpp") or {}
-    cls_name = cpp["class"]
     source_name = str(yaml_path.relative_to(ENUMS_DIR.parents[1])).replace("\\", "/")
-    return {
-        "name": pascal_to_snake(cls_name),
-        "values": values,
-        "source_name": source_name,
-        "header": render_header(
-            source_name=source_name,
-            cls_name=cls_name,
-            underlying=cpp.get("underlying", "uint32_t"),
-            is_flags=False,
-            case=cpp.get("case", "pascal"),
-            values=values,
-        ),
-        "lua": lua_block(meta_enum.get("lua"), source_name, False, values),
-    }
+    out: list[dict[str, Any]] = []
+    for block in meta_enum:
+        path = block.get("section") or yaml_path.stem
+        sections = resolve_sections(doc, path)
+        if not sections:
+            raise ValueError(f"{yaml_path}: section path '{path}' matched nothing")
+
+        values: dict[str, int] = {}
+        for section in sections:
+            for key, value in derive_values(yaml_path, section, block.get("name_from")).items():
+                if key in values:
+                    raise ValueError(f"{yaml_path}: '{path}' yields duplicate key '{key}' "
+                                     f"(ids {values[key]} and {value}); keys must be unique across the tree")
+                values[key] = value
+
+        # Disallow duplicate IDs
+        names_by_id: dict[int, list[str]] = {}
+        for name, value in values.items():
+            names_by_id.setdefault(value, []).append(name)
+
+        collisions = {value: names for value, names in names_by_id.items() if len(names) > 1}
+        if collisions:
+            raise ValueError(f"{yaml_path}: '{path}' reuses ids across entries: "
+                             + "; ".join(f"{value} -> {names}" for value, names in sorted(collisions.items())))
+
+        values = dict(sorted(values.items(), key=lambda name_and_value: name_and_value[1]))
+
+        cpp = block.get("cpp") or {}
+        cls_name = cpp["class"]
+        out.append({
+            "name": pascal_to_snake(cls_name),
+            "values": values,
+            "source_name": source_name,
+            "header": render_header(
+                source_name=source_name,
+                cls_name=cls_name,
+                underlying=cpp.get("underlying", "uint32_t"),
+                is_flags=False,
+                case=cpp.get("case", "pascal"),
+                values=values,
+            ),
+            "lua": lua_block(block.get("lua"), source_name, False, values),
+        })
+    return out
 
 
 def derive_values(yaml_path: Path, section: dict[str, Any], name_from: str | None) -> dict[str, int]:
