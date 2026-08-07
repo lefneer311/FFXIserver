@@ -5266,7 +5266,8 @@ void CLuaBaseEntity::confirmTrade() const
                 uint32 confirmedItems = PChar->TradeContainer->getConfirmedStatus(slotID);
                 auto   quantity       = (int32)std::min<uint32>(PChar->TradeContainer->getQuantity(slotID), confirmedItems);
 
-                PItem->setReserve(PItem->getReserve() - quantity);
+                PItem->setReserve(0);
+
                 if (confirmedItems > 0)
                 {
                     uint8 invSlotID = PChar->TradeContainer->getInvSlotID(slotID);
