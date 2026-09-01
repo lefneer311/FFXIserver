@@ -62,3 +62,6 @@ Push back against writing pull request message bodies, commit titles and bodies,
 - [Retail Packet Captures Format Guide](retail-packet-captures.md): Overview of the standard directory structure of retail packet captures and instructions on how to utilize `eventview`, `npclogger`, `caplog`, and `packetviewer` data.
 - [Interaction Framework Migration & Verification Guide](interaction-framework-migration.md): Detailed workflow for converting old-style NPC scripts to the modern Interaction Framework, including verification strategies using retail captures, event dumps, and wikis.
 - [NPC Script Header Guide](npc-header-guide.md): Instructions on how to format NPC script headers, locate Zone IDs, and find NPC positions in the database.
+- [Lua `setLocalVar` Naming Baseline](local-vars.md): Current length statistics and naming guidance for Lua local variable keys declared through `setLocalVar`.
+- [Symbol Alignment Guide](symbol-alignment.md): Baseline and guidance for preserving local alignment of `=`, `,`, and inline comments in code blocks.
+- [Whitespace Style Guide](whitespace-style.md): Baseline and guidance for final newlines, blank-line runs, and vertical spacing around functions and data blocks.
