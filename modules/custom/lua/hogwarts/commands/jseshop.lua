@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: jseshop
 -- desc: Shows a paginated menu with three pages of options, where each option opens a separate job specific shop.
@@ -473,4 +475,4 @@ commandObj.onTrigger = function(player)
 	
 end
 
-return commandObj
+xi.module.registerCommand('jseshop', commandObj)

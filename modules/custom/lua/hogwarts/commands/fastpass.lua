@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: menu_paginated
 -- desc: Shows a paginated test menu with two pages, an option per page.
@@ -99,4 +101,4 @@ commandObj.onTrigger = function (player)
     delaySendMenu(player)
 end
 
-return commandObj
+xi.module.registerCommand('fastpass', commandObj)

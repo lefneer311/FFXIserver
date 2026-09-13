@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: completerov (player)
 -- desc: Completes all Rhapsodies of Vana'diel missions and grants RoV key item rewards.
@@ -114,17 +116,17 @@ local rovMissions =
 
 local rovKeyItems =
 {
-    xi.ki.GILGAMESHS_INTRODUCTORY_LETTER,
-    xi.ki.RHAPSODY_IN_WHITE,
-    xi.ki.RHAPSODY_IN_UMBER,
-    xi.ki.RHAPSODY_IN_AZURE,
-    xi.ki.RHAPSODY_IN_CRIMSON,
-    xi.ki.RHAPSODY_IN_EMERALD,
-    xi.ki.RHAPSODY_IN_MAUVE,
-    xi.ki.RHAPSODY_IN_FUCHSIA,
-    xi.ki.RHAPSODY_IN_PUCE,
-    xi.ki.DIMENSIONAL_COMPASS,
-    xi.ki.SCINTILLATING_RHAPSODY,
+    xi.keyItem.GILGAMESHS_INTRODUCTORY_LETTER,
+    xi.keyItem.RHAPSODY_IN_WHITE,
+    xi.keyItem.RHAPSODY_IN_UMBER,
+    xi.keyItem.RHAPSODY_IN_AZURE,
+    xi.keyItem.RHAPSODY_IN_CRIMSON,
+    xi.keyItem.RHAPSODY_IN_EMERALD,
+    xi.keyItem.RHAPSODY_IN_MAUVE,
+    xi.keyItem.RHAPSODY_IN_FUCHSIA,
+    xi.keyItem.RHAPSODY_IN_PUCE,
+    xi.keyItem.DIMENSIONAL_COMPASS,
+    xi.keyItem.SCINTILLATING_RHAPSODY,
 }
 
 local function error(player, msg)
@@ -169,4 +171,4 @@ commandObj.onTrigger = function(player, target)
     player:printToPlayer(string.format('Completed all RoV missions and granted RoV key items for %s.', targ:getName()))
 end
 
-return commandObj
+xi.module.registerCommand('completerov', commandObj)

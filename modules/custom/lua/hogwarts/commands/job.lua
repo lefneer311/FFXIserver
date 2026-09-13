@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 ---------------------------------------------------------------------------------------------------
 -- func: multi function shop
 -- desc: shop with misc items for players
@@ -2751,4 +2753,4 @@ commandObj.onTrigger = function (player)
     end
 end
 
-return commandObj
+xi.module.registerCommand('job', commandObj)

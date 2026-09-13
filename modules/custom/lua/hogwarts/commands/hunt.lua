@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: hunt
 -- desc: Paginated hunt teleport menu with delayed teleport casting.
@@ -253,4 +255,4 @@ commandObj.onTrigger = function(player)
     delaySendMenu(player)
 end
 
-return commandObj
+xi.module.registerCommand('hunt', commandObj)

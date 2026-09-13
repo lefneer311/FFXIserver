@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: maxlight <light>
 -- desc: Sets selected Abyssea light to configured cap.
@@ -70,4 +72,4 @@ commandObj.onTrigger = function(player, lightName)
     )
 end
 
-return commandObj
+xi.module.registerCommand('maxlights', commandObj)

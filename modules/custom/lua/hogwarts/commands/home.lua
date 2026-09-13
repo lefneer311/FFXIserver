@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: homepoint
 -- desc: Sends the target to their homepoint.
@@ -36,4 +38,4 @@ commandObj.onTrigger = function (player, target)
     end
 end
 
-return commandObj
+xi.module.registerCommand('home', commandObj)

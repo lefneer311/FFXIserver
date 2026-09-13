@@ -7,7 +7,7 @@ M.ZONES = {
 }
 
 -- Key Item Gate: Rhapsody in White
-local REQUIRED_KI = xi.ki.RHAPSODY_IN_WHITE
+local REQUIRED_KI = xi.keyItem.RHAPSODY_IN_WHITE
 
 local function clamp(v, lo, hi)
     if v < lo then return lo end

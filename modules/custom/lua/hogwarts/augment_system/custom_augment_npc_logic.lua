@@ -125,15 +125,15 @@ end
 local MAX_AUGMENTS_PER_ITEM = 4
 
 local tierKeyItemRequirements = {
-    [1] = xi.ki.LIMIT_BREAKER,
-    [2] = xi.ki.PURE_WHITE_FEATHER,
-    [3] = xi.ki.AIRSHIP_PASS,
-    [4] = xi.ki.RHAPSODY_IN_UMBER,
-    [5] = xi.ki.RHAPSODY_IN_AZURE,
-    [6] = xi.ki.RHAPSODY_IN_CRIMSON,
-    [7] = xi.ki.RHAPSODY_IN_EMERALD,
-    [8] = xi.ki.CERULEAN_CRYSTAL,
-    [9] = xi.ki.WHISPER_OF_THE_WYRMKING,
+    [1] = xi.keyItem.LIMIT_BREAKER,
+    [2] = xi.keyItem.PURE_WHITE_FEATHER,
+    [3] = xi.keyItem.AIRSHIP_PASS,
+    [4] = xi.keyItem.RHAPSODY_IN_UMBER,
+    [5] = xi.keyItem.RHAPSODY_IN_AZURE,
+    [6] = xi.keyItem.RHAPSODY_IN_CRIMSON,
+    [7] = xi.keyItem.RHAPSODY_IN_EMERALD,
+    [8] = xi.keyItem.CERULEAN_CRYSTAL,
+    [9] = xi.keyItem.WHISPER_OF_THE_WYRMKING,
 }
 
 local function getMaxSequentialTierUnlocked(player)

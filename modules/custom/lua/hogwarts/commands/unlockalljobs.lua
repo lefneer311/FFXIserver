@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: unlockalljobs [player]
 -- desc: Unlocks all jobs and marks their unlock quests complete.
@@ -45,15 +47,13 @@ end
 local function cleanupJobUnlockKeyItems(player)
     local keyItems =
     {
-        xi.ki.BOOK_OF_TASKS,
-        xi.ki.BOOK_OF_THE_EAST,
-        xi.ki.BOOK_OF_THE_WEST,
-        xi.ki.KNIGHTS_SOUL,
-
-        xi.ki.FISTFUL_OF_HOMELAND_SOIL,
-        xi.ki.LUOPAN,
-
-        xi.ki.YAHSE_WILDFLOWER_PETAL,
+        xi.keyItem.BOOK_OF_TASKS,
+        xi.keyItem.BOOK_OF_THE_EAST,
+        xi.keyItem.BOOK_OF_THE_WEST,
+        xi.keyItem.KNIGHTS_SOUL,
+        xi.keyItem.FISTFUL_OF_HOMELAND_SOIL,
+        xi.keyItem.LUOPAN,
+        xi.keyItem.YAHSE_WILDFLOWER_PETAL,
     }
 
     for _, keyItem in ipairs(keyItems) do
@@ -113,22 +113,22 @@ local function unlockAllJobs(player)
     -- Job gesture key items.
     local jobGestureKeyItems =
     {
-        xi.ki.JOB_GESTURE_PALADIN,
-        xi.ki.JOB_GESTURE_DARK_KNIGHT,
-        xi.ki.JOB_GESTURE_BEASTMASTER,
-        xi.ki.JOB_GESTURE_BARD,
-        xi.ki.JOB_GESTURE_RANGER,
-        xi.ki.JOB_GESTURE_SAMURAI,
-        xi.ki.JOB_GESTURE_NINJA,
-        xi.ki.JOB_GESTURE_DRAGOON,
-        xi.ki.JOB_GESTURE_SUMMONER,
-        xi.ki.JOB_GESTURE_BLUE_MAGE,
-        xi.ki.JOB_GESTURE_CORSAIR,
-        xi.ki.JOB_GESTURE_PUPPETMASTER,
-        xi.ki.JOB_GESTURE_DANCER,
-        xi.ki.JOB_GESTURE_SCHOLAR,
-        xi.ki.JOB_GESTURE_GEOMANCER,
-        xi.ki.JOB_GESTURE_RUNE_FENCER,
+        xi.keyItem.JOB_GESTURE_PALADIN,
+        xi.keyItem.JOB_GESTURE_DARK_KNIGHT,
+        xi.keyItem.JOB_GESTURE_BEASTMASTER,
+        xi.keyItem.JOB_GESTURE_BARD,
+        xi.keyItem.JOB_GESTURE_RANGER,
+        xi.keyItem.JOB_GESTURE_SAMURAI,
+        xi.keyItem.JOB_GESTURE_NINJA,
+        xi.keyItem.JOB_GESTURE_DRAGOON,
+        xi.keyItem.JOB_GESTURE_SUMMONER,
+        xi.keyItem.JOB_GESTURE_BLUE_MAGE,
+        xi.keyItem.JOB_GESTURE_CORSAIR,
+        xi.keyItem.JOB_GESTURE_PUPPETMASTER,
+        xi.keyItem.JOB_GESTURE_DANCER,
+        xi.keyItem.JOB_GESTURE_SCHOLAR,
+        xi.keyItem.JOB_GESTURE_GEOMANCER,
+        xi.keyItem.JOB_GESTURE_RUNE_FENCER,
     }
 
     for _, keyItem in ipairs(jobGestureKeyItems) do
@@ -136,7 +136,7 @@ local function unlockAllJobs(player)
     end
 
     -- Quest-specific permanent key items / starter rewards where unlock scripts grant them.
-    giveKeyItemIfNeeded(player, xi.ki.MARK_OF_ZAHAK)
+    giveKeyItemIfNeeded(player, xi.keyItem.MARK_OF_ZAHAK)
 
     if not player:hasItem(xi.item.MATRE_BELL) then
         player:addItem(xi.item.MATRE_BELL)
@@ -168,4 +168,4 @@ commandObj.onTrigger = function(player, target)
     end
 end
 
-return commandObj
+xi.module.registerCommand('unlockalljobs', commandObj)

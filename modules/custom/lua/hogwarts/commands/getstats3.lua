@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: getstats3
 -- desc: prints stats of cursor target into chatlog, for debugging.
@@ -97,4 +99,4 @@ commandObj.onTrigger = function(player)
     ]]
 end
 
-return commandObj
+xi.module.registerCommand('getstats3', commandObj)

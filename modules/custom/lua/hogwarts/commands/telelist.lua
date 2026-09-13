@@ -1,3 +1,5 @@
+require('modules/module_utils')
+
 -----------------------------------
 -- func: telelist
 -- desc:
@@ -456,4 +458,4 @@ commandObj.onTrigger = function(player, args)
     usage(player)
 end
 
-return commandObj
+xi.module.registerCommand('telelist', commandObj)
