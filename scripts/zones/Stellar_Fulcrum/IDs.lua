@@ -17,13 +17,14 @@ zones[xi.zone.STELLAR_FULCRUM] =
         MEMBERS_LEVELS_ARE_RESTRICTED = 7028, -- Your party is unable to participate because certain members' levels are restricted.
         CONQUEST_BASE                 = 7073, -- Tallying conquest results...
         TIME_IN_THE_BATTLEFIELD_IS_UP = 7237, -- Your time in the battlefield is up! Now exiting...
+        CLEARED_BUT_MEMBERS_ENGAGED   = 7239, -- You are cleared to enter the battlefield, but you cannot while party members are engaged in combat.
         PARTY_MEMBERS_ARE_ENGAGED     = 7252, -- The battlefield where your party members are engaged in combat is locked. Access is denied.
         MEMBERS_OF_YOUR_PARTY         = 7543, -- Currently, # members of your party (including yourself) have clearance to enter the battlefield.
         MEMBERS_OF_YOUR_ALLIANCE      = 7544, -- Currently, # members of your alliance (including yourself) have clearance to enter the battlefield.
         TIME_LIMIT_FOR_THIS_BATTLE_IS = 7546, -- The time limit for this battle is <number> minutes.
         PARTY_MEMBERS_HAVE_FALLEN     = 7582, -- All party members have fallen in battle. Now leaving the battlefield.
         THE_PARTY_WILL_BE_REMOVED     = 7589, -- If all party members' HP are still zero after # minute[/s], the party will be removed from the battlefield.
-        ENTERING_THE_BATTLEFIELD_FOR  = 7610, -- Entering the battlefield for [Return to Delkfutt's Tower/The Indomitable Triumvirate/The Dauntless Duo/The Solitary Demolisher/Heroine's Combat/Mercenary Camp/Ode of Life Bestowing/★Return to Delkfutt's Tower/True Love/A Fond Farewell]!
+        ENTERING_THE_BATTLEFIELD_FOR  = 7610, -- Entering the battlefield for [Return to Delkfutt's Tower/The Indomitable Triumvirate/The Dauntless Duo/The Solitary Demolisher/Heroine's Combat/Mercenary Camp/Ode of Life Bestowing/★Return to Delkfutt's Tower/True Love/A Fond Farewell/★Ode of Life Bestowing]!
         NO_BATTLEFIELD_ENTRY          = 7612, -- The door will not budge.
     },
     mob =

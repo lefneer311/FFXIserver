@@ -10,7 +10,7 @@ local content = Battlefield:new({
     isMission     = true,
     allowTrusts   = true,
     maxPlayers    = 6,
-    levelCap      = 25,
+    levelCap      = xi.settings.main.MAX_LEVEL,
     timeLimit     = utils.minutes(15),
     index         = 0,
     entryNpc      = 'BC_Entrance',
@@ -20,7 +20,8 @@ local content = Battlefield:new({
 function content:entryRequirement(player, npc, isRegistrant, trade)
     local isCurrentMission    = player:getCurrentMission(xi.mission.log_id.WINDURST) == xi.mission.id.windurst.THE_THREE_KINGDOMS_SANDORIA2 or
         player:getCurrentMission(xi.mission.log_id.BASTOK) == xi.mission.id.bastok.THE_EMISSARY_SANDORIA2
-    local currentRequirements = isCurrentMission
+    local missionStatus       = player:getMissionStatus(player:getNation())
+    local currentRequirements = isCurrentMission and missionStatus >= 9
     local nonRegistrantReqs   = player:hasCompletedMission(player:getNation(), 5) or currentRequirements
 
     return (not isRegistrant and nonRegistrantReqs) or currentRequirements

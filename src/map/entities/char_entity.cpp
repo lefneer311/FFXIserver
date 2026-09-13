@@ -80,6 +80,7 @@
 #include "items/item_furnishing.h"
 #include "items/item_usable.h"
 #include "items/item_weapon.h"
+#include "items/transactions/npc_trade.h"
 #include "items/transactions/player_trade.h"
 #include "items/transactions/synth.h"
 #include "job_points.h"
@@ -215,7 +216,6 @@ CCharEntity::CCharEntity()
 
     WideScanTarget = std::nullopt;
 
-    lastTradeInvite = {};
     TradePending.clean();
     InvitePending.clean();
 
@@ -569,8 +569,8 @@ auto CCharEntity::isCrafting() const -> bool
 
 auto CCharEntity::tradePartner() const -> CCharEntity*
 {
-    auto* other = TradePending.resolve<CCharEntity>();
-    if (!other || other->TradePending.UniqueNo != id)
+    auto* other = TradePending.entity.resolve<CCharEntity>();
+    if (!other || other->TradePending.entity.UniqueNo != id)
     {
         return nullptr;
     }
@@ -1142,7 +1142,7 @@ void CCharEntity::takeCharVarChanges(std::vector<CharVarChange>& out)
 
 auto CCharEntity::Tick(timer::time_point tick) -> Task<void>
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::Tick");
 
     co_await CBattleEntity::Tick(tick);
 
@@ -1163,17 +1163,21 @@ auto CCharEntity::Tick(timer::time_point tick) -> Task<void>
 
 void CCharEntity::PostTick()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::PostTick");
 
     CBattleEntity::PostTick();
 
     if (ReloadParty())
     {
+        TracyZoneNamed(reloadPartyZone, "CCharEntity::PostTick: ReloadParty");
+
         charutils::ReloadParty(this);
     }
 
     if (m_EffectsChanged)
     {
+        TracyZoneNamed(effectsChangedZone, "CCharEntity::PostTick: effects changed");
+
         pushPacket<CCharStatusPacket>(this);
         pushPacket<CCharSyncPacket>(this);
         charutils::SendExtendedJobPackets(this);
@@ -1189,6 +1193,8 @@ void CCharEntity::PostTick()
 
     if (updatemask && now > m_nextUpdateTimer)
     {
+        TracyZoneNamed(updateBroadcastZone, "CCharEntity::PostTick: update broadcast");
+
         m_nextUpdateTimer = now + 250ms;
 
         if (loc.zone && !m_isGMHidden)
@@ -1222,7 +1228,11 @@ void CCharEntity::PostTick()
         updatemask        = 0;
     }
 
-    inventorySyncState_.flushDirtyItems(this);
+    {
+        TracyZoneNamed(flushDirtyItemsZone, "CCharEntity::PostTick: flush dirty items");
+
+        inventorySyncState_.flushDirtyItems(this);
+    }
 }
 
 // Flush all pending equipment changes at end of network cycle after all SmallPackets have been processed
@@ -1315,7 +1325,7 @@ void CCharEntity::delTrait(CTrait* PTrait)
 
 bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::ValidTarget");
 
     if (StatusEffectContainer->GetConfrontationEffect() != PInitiator->StatusEffectContainer->GetConfrontationEffect())
     {
@@ -1374,7 +1384,7 @@ bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 
 bool CCharEntity::CanUseSpell(CSpell* PSpell)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::CanUseSpell");
 
     return charutils::hasSpell(this, static_cast<uint16>(PSpell->getID())) && CBattleEntity::CanUseSpell(PSpell);
 }
@@ -1390,7 +1400,7 @@ void CCharEntity::OnChangeTarget(CBattleEntity* PNewTarget)
 
 void CCharEntity::OnEngage(CAttackState& state)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnEngage");
 
     CBattleEntity::OnEngage(state);
     PLatentEffectContainer->CheckLatentsTargetChange();
@@ -1399,7 +1409,7 @@ void CCharEntity::OnEngage(CAttackState& state)
 
 void CCharEntity::OnDisengage(CAttackState& state)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnDisengage");
 
     battleutils::RelinquishClaim(this);
     CBattleEntity::OnDisengage(state);
@@ -1412,7 +1422,7 @@ void CCharEntity::OnDisengage(CAttackState& state)
 
 bool CCharEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::CanAttack");
 
     if (PTarget->PAI->IsUntargetable())
     {
@@ -1449,7 +1459,7 @@ bool CCharEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket
 
 bool CCharEntity::OnAttack(CAttackState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnAttack");
 
     auto* controller{ static_cast<CPlayerController*>(PAI->GetController()) };
     controller->setLastAttackTime(timer::now());
@@ -1460,7 +1470,7 @@ bool CCharEntity::OnAttack(CAttackState& state, action_t& action)
 
 void CCharEntity::OnCastFinished(CMagicState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnCastFinished");
 
     auto* PSpell  = state.GetSpell();
     auto* PTarget = state.target().resolve<CBattleEntity>();
@@ -1624,7 +1634,7 @@ void CCharEntity::OnCastFinished(CMagicState& state, action_t& action)
 
 void CCharEntity::OnCastInterrupted(CMagicState& state, action_t& action, MsgBasic msg, bool blockedCast)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnCastInterrupted");
 
     CBattleEntity::OnCastInterrupted(state, action, msg, blockedCast);
 
@@ -1642,7 +1652,7 @@ void CCharEntity::OnCastInterrupted(CMagicState& state, action_t& action, MsgBas
 
 void CCharEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::OnWeaponSkillFinished");
 
     CBattleEntity::OnWeaponSkillFinished(state, action);
 
@@ -2347,14 +2357,14 @@ auto CCharEntity::OnItemFinish(CItemState& state, action_t& action) -> bool
 
 auto CCharEntity::IsValidTarget(uint16 targid, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::IsValidTarget");
 
     return applyTargetRestrictions(GetEntity(targid, TYPE_MOB | TYPE_PC | TYPE_PET | TYPE_TRUST), validTargetFlags, errMsg);
 }
 
 auto CCharEntity::IsValidTarget(EntityId target, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::IsValidTarget");
 
     return applyTargetRestrictions(target.resolve(), validTargetFlags, errMsg);
 }
@@ -2406,7 +2416,7 @@ auto CCharEntity::applyTargetRestrictions(CBaseEntity* PResolved, uint16 validTa
 
 void CCharEntity::Die()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::Die");
 
     if (auto* PLastAttacker = lastAttackerId_.resolve())
     {
@@ -2461,7 +2471,7 @@ void CCharEntity::setNextDeath(Maybe<DeathParams> params)
 
 void CCharEntity::Die(timer::duration _duration, DeathParams params)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CCharEntity::Die");
 
     this->ClearTrusts();
 
@@ -2653,13 +2663,13 @@ void CCharEntity::UpdateMoghancement()
         // Remove the previous moghancement
         if (m_moghancementID != 0)
         {
-            charutils::delKeyItem(this, static_cast<KeyItem>(m_moghancementID));
+            charutils::delKeyItem(this, static_cast<xi::KeyItem>(m_moghancementID));
         }
 
         // Add the new moghancement
         if (newMoghancementID != 0)
         {
-            charutils::addKeyItem(this, static_cast<KeyItem>(newMoghancementID));
+            charutils::addKeyItem(this, static_cast<xi::KeyItem>(newMoghancementID));
         }
 
         // Send only one key item packet if they are in the same key item table
@@ -2963,6 +2973,13 @@ bool CCharEntity::isNpcLocked()
 
 void CCharEntity::endCurrentEvent()
 {
+    // release an offer the event never consumed
+    if (auto* offer = this->activeTransaction<NpcTradeTransaction>())
+    {
+        this->removeTransaction(offer);
+        TradeContainer->Clean();
+    }
+
     currentEvent->reset();
     eventPreparation->reset();
     setLocked(false);

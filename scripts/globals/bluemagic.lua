@@ -249,6 +249,15 @@ end
 -- Global functions
 -----------------------------------
 
+-- get old style blue magic attack. Not used normally. see combat utils
+---@param caster CBaseEntity
+---@return number
+xi.spells.blue.getBlueMagicBaseAttack = function(caster)
+    local baseAttack = 8 + caster:getSkillLevel(xi.skill.BLUE_MAGIC) + math.floor(caster:getStat(xi.mod.STR) * xi.settings.main.ONE_HAND_MAIN_HAND_STR_ATTACK_MULTIPLIER)
+
+    return baseAttack
+end
+
 ---@class blueSkillParams
 ---@field numHits          number
 ---@field ftp0             number
@@ -407,7 +416,10 @@ xi.spells.blue.usePhysicalSpell = function(caster, target, spell, params)
     local sneakIsApplicable = false
     local trickAttackTarget = nil
 
-    if spell:isAoE() == 0 and params.attackType ~= xi.attackType.RANGED then
+    if
+        spell:getAoE() == xi.aoeType.NONE and
+        params.attackType ~= xi.attackType.RANGED
+    then
         if
             caster:hasStatusEffect(xi.effect.SNEAK_ATTACK) and
             (caster:isBehind(target) or caster:hasStatusEffect(xi.effect.HIDE))
@@ -418,6 +430,14 @@ xi.spells.blue.usePhysicalSpell = function(caster, target, spell, params)
         if caster:hasStatusEffect(xi.effect.TRICK_ATTACK) then
             trickAttackTarget = caster:getTrickAttackChar(target)
         end
+    end
+
+    if
+        target:hasStatusEffect(xi.effect.PERFECT_DODGE) or
+        target:hasStatusEffect(xi.effect.ALL_MISS)
+    then
+        hitrate           = -1
+        sneakIsApplicable = false
     end
 
     params.tpHitsLanded = 0

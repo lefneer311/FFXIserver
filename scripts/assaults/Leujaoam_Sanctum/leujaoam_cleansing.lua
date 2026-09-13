@@ -12,7 +12,7 @@ local content = InstanceAssault:new(
     assaultID        = xi.assault.mission.LEUJAOAM_CLEANSING,
     instanceID       = xi.assault.instance.LEUJAOAM_CLEANSING,
     assaultArea      = xi.assault.assaultArea.LEUJAOAM_SANCTUM,
-    requiredOrders   = xi.ki.LEUJAOAM_ASSAULT_ORDERS,
+    requiredOrders   = xi.keyItem.LEUJAOAM_ASSAULT_ORDERS,
 
     runeOfReleasePos = { x = 476.000, y = 8.479, z = 40.000, rot = 49 },
     ancientBoxPos    = { x = 476.000, y = 8.479, z = 39.000, rot = 49 },
@@ -20,7 +20,7 @@ local content = InstanceAssault:new(
 
     suggestedLevel   = 50,
     basePoints       = 1000,
-    requiredProgress = 14,
+    requiredProgress = 15,
 
     entranceParams   =
     {
@@ -41,25 +41,25 @@ content.loot =
     appraisalReward =
     {
         {
-            { itemId = xi.item.UNAPPRAISED_RING, weight = 7000 },
-            { itemId = xi.item.UNAPPRAISED_BOX,  weight = 3000 },
+            { itemId = xi.item.UNAPPRAISED_RING, weight =  7000 },
+            { itemId = xi.item.UNAPPRAISED_BOX,  weight =  3000 },
         },
     },
 
     bonusLoot =
     {
         {
-            { itemId = xi.item.REMEDY,       weight = 10000 },
+            { itemId = xi.item.REMEDY,           weight = 10000 },
         },
 
         {
-            { itemId = xi.item.HI_POTION_P3, weight = 5000 },
-            { itemId = xi.item.REMEDY,       weight = 5000 },
+            { itemId = xi.item.HI_POTION_P3,     weight =  5000 },
+            { itemId = xi.item.REMEDY,           weight =  5000 },
         },
 
         {
-            { itemId = xi.item.HI_POTION_P3, weight = 1000 },
-            { itemId = xi.item.NONE,         weight = 9000 },
+            { itemId = xi.item.HI_POTION_P3,     weight =  1000 },
+            { itemId = xi.item.NONE,             weight =  9000 },
         },
     },
 }

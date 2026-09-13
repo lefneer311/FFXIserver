@@ -21,9 +21,9 @@ local startingRaceInfo =
 
 local startingNationInfo =
 {
-    [xi.nation.SANDORIA] = { ring = xi.item.SAN_DORIAN_RING,  map = xi.ki.MAP_OF_THE_SAN_DORIA_AREA, fameArea = xi.fameArea.SANDORIA },
-    [xi.nation.BASTOK  ] = { ring = xi.item.BASTOKAN_RING,    map = xi.ki.MAP_OF_THE_BASTOK_AREA,    fameArea = xi.fameArea.BASTOK   },
-    [xi.nation.WINDURST] = { ring = xi.item.WINDURSTIAN_RING, map = xi.ki.MAP_OF_THE_WINDURST_AREA,  fameArea = xi.fameArea.WINDURST },
+    [xi.nation.SANDORIA] = { ring = xi.item.SAN_DORIAN_RING,  map = xi.keyItem.MAP_OF_THE_SAN_DORIA_AREA, fameArea = xi.fameArea.SANDORIA },
+    [xi.nation.BASTOK  ] = { ring = xi.item.BASTOKAN_RING,    map = xi.keyItem.MAP_OF_THE_BASTOK_AREA,    fameArea = xi.fameArea.BASTOK   },
+    [xi.nation.WINDURST] = { ring = xi.item.WINDURSTIAN_RING, map = xi.keyItem.MAP_OF_THE_WINDURST_AREA,  fameArea = xi.fameArea.WINDURST },
 }
 
 local startingJobGear =
@@ -67,12 +67,12 @@ xi.player.charCreate = function(player)
     player:addKeyItem(nationInfo.map)
 
     -- add job-emote Key items
-    player:addKeyItem(xi.ki.JOB_GESTURE_WARRIOR)
-    player:addKeyItem(xi.ki.JOB_GESTURE_MONK)
-    player:addKeyItem(xi.ki.JOB_GESTURE_WHITE_MAGE)
-    player:addKeyItem(xi.ki.JOB_GESTURE_BLACK_MAGE)
-    player:addKeyItem(xi.ki.JOB_GESTURE_RED_MAGE)
-    player:addKeyItem(xi.ki.JOB_GESTURE_THIEF)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_WARRIOR)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_MONK)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_WHITE_MAGE)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_BLACK_MAGE)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_RED_MAGE)
+    player:addKeyItem(xi.keyItem.JOB_GESTURE_THIEF)
 
     -- add nation- and race-specific ring
     if nation == raceInfo.homeNation and not player:hasItem(nationInfo.ring) then
@@ -100,19 +100,19 @@ xi.player.charCreate = function(player)
 
     -- give all maps
     if xi.settings.main.ALL_MAPS == 1 then
-        for i = xi.ki.MAP_OF_THE_SAN_DORIA_AREA, xi.ki.MAP_OF_DIO_ABDHALJS_GHELSBA do
+        for i = xi.keyItem.MAP_OF_THE_SAN_DORIA_AREA, xi.keyItem.MAP_OF_DIO_ABDHALJS_GHELSBA do
             player:addKeyItem(i)
         end
 
-        for i = xi.ki.MAP_OF_AL_ZAHBI, xi.ki.MAP_OF_RAKAZNAR do
+        for i = xi.keyItem.MAP_OF_AL_ZAHBI, xi.keyItem.MAP_OF_RAKAZNAR do
             player:addKeyItem(i)
         end
 
-        for i = xi.ki.MAP_OF_RALA_WATERWAYS_U, xi.ki.MAP_OF_RAKAZNAR_U do
+        for i = xi.keyItem.MAP_OF_RALA_WATERWAYS_U, xi.keyItem.MAP_OF_RAKAZNAR_U do
             player:addKeyItem(i)
         end
 
-        for i = xi.ki.MAP_OF_ESCHA_ZITAH, xi.ki.MAP_OF_REISENJIMA do
+        for i = xi.keyItem.MAP_OF_ESCHA_ZITAH, xi.keyItem.MAP_OF_REISENJIMA do
             player:addKeyItem(i)
         end
     end
@@ -203,41 +203,43 @@ xi.player.onGameIn = function(player, firstLogin, zoning)
     -- apply mods from gearsets (scripts/globals/gear_sets.lua)
     xi.gear_sets.checkForGearSet(player)
 
-    -- god mode
-    if player:getCharVar('GodMode') == 1 then
-        player:addStatusEffect(xi.effect.MAX_HP_BOOST, { power = 1000, origin = player })
-        player:addStatusEffect(xi.effect.MAX_MP_BOOST, { power = 1000, origin = player })
-        player:addStatusEffect(xi.effect.MIGHTY_STRIKES, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.HUNDRED_FISTS, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.CHAINSPELL, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.PERFECT_DODGE, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.INVINCIBLE, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.ELEMENTAL_SFORZO, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.MANAFONT, { power = 1, origin = player })
-        player:addStatusEffect(xi.effect.REGAIN, { power = 300, origin = player })
-        player:addStatusEffect(xi.effect.REFRESH, { power = 99, origin = player })
-        player:addStatusEffect(xi.effect.REGEN, { power = 99, origin = player })
-        player:addMod(xi.mod.RACC, 2500)
-        player:addMod(xi.mod.RATT, 2500)
-        player:addMod(xi.mod.ACC, 2500)
-        player:addMod(xi.mod.ATT, 2500)
-        player:addMod(xi.mod.MATT, 2500)
-        player:addMod(xi.mod.MACC, 2500)
-        player:addMod(xi.mod.RDEF, 2500)
-        player:addMod(xi.mod.DEF, 2500)
-        player:addMod(xi.mod.MDEF, 2500)
-        player:addHP(50000)
-        player:setMP(50000)
-    end
+    if player:getGMLevel() > 0 then
+        -- god mode
+        if player:getCharVar('GodMode') == 1 then
+            player:addStatusEffect(xi.effect.MAX_HP_BOOST, { power = 1000, origin = player })
+            player:addStatusEffect(xi.effect.MAX_MP_BOOST, { power = 1000, origin = player })
+            player:addStatusEffect(xi.effect.MIGHTY_STRIKES, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.HUNDRED_FISTS, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.CHAINSPELL, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.PERFECT_DODGE, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.INVINCIBLE, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.ELEMENTAL_SFORZO, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.MANAFONT, { power = 1, origin = player })
+            player:addStatusEffect(xi.effect.REGAIN, { power = 300, origin = player })
+            player:addStatusEffect(xi.effect.REFRESH, { power = 99, origin = player })
+            player:addStatusEffect(xi.effect.REGEN, { power = 99, origin = player })
+            player:addMod(xi.mod.RACC, 2500)
+            player:addMod(xi.mod.RATT, 2500)
+            player:addMod(xi.mod.ACC, 2500)
+            player:addMod(xi.mod.ATT, 2500)
+            player:addMod(xi.mod.MATT, 2500)
+            player:addMod(xi.mod.MACC, 2500)
+            player:addMod(xi.mod.RDEF, 2500)
+            player:addMod(xi.mod.DEF, 2500)
+            player:addMod(xi.mod.MDEF, 2500)
+            player:addHP(50000)
+            player:setMP(50000)
+        end
 
-    -- !immortal
-    if player:getCharVar('Immortal') == 1 then
-        player:setUnkillable(true)
-    end
+        -- !immortal
+        if player:getCharVar('Immortal') == 1 then
+            player:setUnkillable(true)
+        end
 
-    -- !hide
-    if player:getCharVar('GMHidden') == 1 then
-        player:setGMHidden(true)
+        -- !hide
+        if player:getCharVar('GMHidden') == 1 then
+            player:setGMHidden(true)
+        end
     end
 
     -- remember time player zoned in (e.g., to support zone-in delays)
@@ -270,10 +272,10 @@ xi.player.onPlayerMount = function(player)
     -- the Mimeo Jewel should a player be mounted, zone, or disconnect.
     if
         player:getZoneID() == xi.zone.ATTOHWA_CHASM and
-        player:hasKeyItem(xi.ki.MIMEO_JEWEL)
+        player:hasKeyItem(xi.keyItem.MIMEO_JEWEL)
     then
-        player:messageSpecial(zones[xi.zone.ATTOHWA_CHASM].text.MIMEO_JEWEL_OFFSET + 4, xi.ki.MIMEO_JEWEL)
-        player:delKeyItem(xi.ki.MIMEO_JEWEL)
+        player:messageSpecial(zones[xi.zone.ATTOHWA_CHASM].text.MIMEO_JEWEL_OFFSET + 4, xi.keyItem.MIMEO_JEWEL)
+        player:delKeyItem(xi.keyItem.MIMEO_JEWEL)
     end
 end
 

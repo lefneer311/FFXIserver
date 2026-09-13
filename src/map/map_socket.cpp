@@ -37,7 +37,6 @@
 
 #include <rigtorp/SPSCQueue.h>
 
-#include <chrono>
 #include <algorithm>
 #include <atomic>
 #include <cstring>
@@ -55,8 +54,6 @@ constexpr auto kEgressRingCapacity  = 4096uz;
 
 constexpr auto kSocketBufferBytes = 4 * 1024 * 1024;
 
-constexpr auto kLatencyWarningThreshold = std::chrono::milliseconds(25);
-
 // A single datagram parked in a ring. Fixed-size so slots never allocate. Constructed
 // in-place in the ring slot via SPSCQueue::try_emplace, copying the payload exactly once.
 // TODO: Should we bother with a no-copy design at some point? It's such a small memcpy...
@@ -66,15 +63,13 @@ struct Datagram
     : ipp(ipp)
     , length(static_cast<uint16>(std::min<std::size_t>(bytes.size(), kMaxBufferSize)))
     , data{}
-    , queuedAt(std::chrono::steady_clock::now())
     {
         std::memcpy(data.data(), bytes.data(), length);
     }
 
-    IPP                                   ipp;
-    uint16                                length;
-    NetworkBuffer                         data;
-    std::chrono::steady_clock::time_point queuedAt;
+    IPP           ipp;
+    uint16        length;
+    NetworkBuffer data;
 };
 
 auto endpointToIPP(const asio::ip::udp::endpoint& endpoint) -> IPP
@@ -293,46 +288,23 @@ void MapSocket::Impl::scheduleMainDrain()
 
 void MapSocket::Impl::drainIngress()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("MapSocket::drainIngress");
 
     ingressDrainScheduled_.store(false, std::memory_order_release);
 
+    int64 drained = 0;
+
     while (Datagram* d = ingress_.front())
     {
-        const auto drainStarted = std::chrono::steady_clock::now();
-        const auto queueDelay   = drainStarted - d->queuedAt;
-
-        if (queueDelay >= kLatencyWarningThreshold)
-        {
-            const auto delayMs =
-                std::chrono::duration_cast<std::chrono::milliseconds>(queueDelay).count();
-
-            ShowWarningFmt(
-                "MapSocket latency: ingress packet waited {} ms before main-thread processing",
-                delayMs);
-        }
-
         // onReceiveFn_ copies out of the span synchronously, so pointing at the ring slot for
         // the duration of the call is safe; pop() only frees it afterwards.
-        const auto handlerStarted = std::chrono::steady_clock::now();
-
         onReceiveFn_(ByteSpan(d->data.data(), d->length), d->ipp);
-
-        const auto handlerElapsed =
-            std::chrono::steady_clock::now() - handlerStarted;
-
-        if (handlerElapsed >= kLatencyWarningThreshold)
-        {
-            const auto elapsedMs =
-                std::chrono::duration_cast<std::chrono::milliseconds>(handlerElapsed).count();
-
-            ShowWarningFmt(
-                "MapSocket latency: incoming packet handler took {} ms",
-                elapsedMs);
-        }
-
         ingress_.pop();
+        ++drained;
     }
+
+    // The drain is unbounded and runs on the main thread, so a deep backlog here is a stalled tick.
+    TracyReportGraphNumber("Ingress Drained Per Pass", drained);
 }
 
 //
@@ -374,52 +346,32 @@ void MapSocket::Impl::send(const IPP& ipp, ByteSpan buffer)
 
 void MapSocket::Impl::drainEgress()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("MapSocket::drainEgress");
 
     egressDrainScheduled_.store(false, std::memory_order_release);
 
+    int64 drained = 0;
+
     while (Datagram* d = egress_.front())
     {
-        const auto drainStarted = std::chrono::steady_clock::now();
-        const auto queueDelay   = drainStarted - d->queuedAt;
-
-        if (queueDelay >= kLatencyWarningThreshold)
         {
-            const auto delayMs =
-                std::chrono::duration_cast<std::chrono::milliseconds>(queueDelay).count();
+            TracyZoneNamed(sendZone, "drainEgress: sendOne");
 
-            ShowWarningFmt(
-                "MapSocket latency: egress packet waited {} ms before network-thread processing",
-                delayMs);
-        }
-
-        const auto sendStarted = std::chrono::steady_clock::now();
-        const auto result      = sendOne(*d);
-        const auto sendElapsed = std::chrono::steady_clock::now() - sendStarted;
-
-        if (sendElapsed >= kLatencyWarningThreshold)
-        {
-            const auto elapsedMs =
-                std::chrono::duration_cast<std::chrono::milliseconds>(sendElapsed).count();
-
-            ShowWarningFmt(
-                "MapSocket latency: send_to took {} ms",
-                elapsedMs);
-        }
-
-        if (result)
-        {
-            egressBytesSent_.fetch_add(
-                static_cast<int64>(*result),
-                std::memory_order_relaxed);
-        }
-        else
-        {
-            recordSendError(result.error());
+            if (const auto result = sendOne(*d); result)
+            {
+                egressBytesSent_.fetch_add(static_cast<int64>(*result), std::memory_order_relaxed);
+            }
+            else
+            {
+                recordSendError(result.error());
+            }
         }
 
         egress_.pop();
+        ++drained;
     }
+
+    TracyReportGraphNumber("Egress Drained Per Pass", drained);
 }
 
 auto MapSocket::Impl::sendOne(const Datagram& d) -> ErrorOr<std::size_t, std::error_code>

@@ -60,8 +60,8 @@ using Chance = std::variant<yaml::EnumToken<xi::DropRate>, double>;
 //   nothing:      10.0
 using OneOf = std::variant<std::vector<std::string>, std::map<std::string, double>>;
 
-// A mob has one stealable item. A few name several because the source was ambiguous.
-using Steal = std::variant<std::string, std::vector<std::string>>;
+// One name, or several where the source names more than one: a few stealable items, or the regions a spawn may pick from.
+using Names = std::variant<std::string, std::vector<std::string>>;
 
 struct Loot
 {
@@ -73,7 +73,7 @@ struct Loot
     };
 
     std::optional<std::vector<Roll>>             drops;
-    std::optional<Steal>                         steal;
+    std::optional<Names>                         steal;
     std::optional<std::map<std::string, uint16>> despoil; // TODO: This may need to move to species level
 };
 
@@ -84,7 +84,8 @@ struct Template
     yaml::EnumToken<xi::Species>                              species;
     std::optional<std::vector<yaml::EnumToken<xi::MobType>>>  type;
     std::optional<std::vector<yaml::EnumToken<xi::RoamFlag>>> roam;
-    std::optional<uint16>                                     spell_list_id; // TODO: Bring in actual spells rather than a global list
+    std::optional<std::vector<std::string>>                   spells;
+    std::optional<uint16>                                     spell_list_id; // superseded by spells
     std::optional<uint16>                                     skill_list_id; // TODO: Bring in actual skills rather than a global list
     std::optional<shared::MobAttributes>                      attributes;
     std::optional<Loot>                                       loot;
@@ -98,7 +99,7 @@ struct Spawn
     std::optional<std::string>                     templateRef;
     std::optional<std::string>                     script;
     std::optional<std::vector<float>>              at;
-    std::optional<std::string>                     region;
+    std::optional<Names>                           region;
     std::optional<std::vector<std::vector<float>>> path;
     std::optional<std::vector<std::vector<float>>> circuit;
     std::optional<std::array<uint8, 2>>            level;
@@ -175,7 +176,8 @@ struct glz::json_schema<xi::data::datasets::zones::mobs::wire::Template>
     glz::schema species{ .description = "Species in data/ecosystems.yaml. Its attributes, and its family's and ecosystem's, are the base this template overrides." };
     glz::schema type{ .description = "Mob classification flags, such as notorious. Defaults to an empty list.", .uniqueItems = true };
     glz::schema roam{ .description = "Roaming behaviour flags. Defaults to an empty list.", .uniqueItems = true };
-    glz::schema spell_list_id{ .description = "Spell list id. Defaults to 0, meaning none." };
+    glz::schema spells{ .description = "Spells this mob casts. Mutually exclusive with spell_list_id.", .uniqueItems = true };
+    glz::schema spell_list_id{ .description = "Spell list id. Defaults 0, meaning none. Mutually exclusive with spells." };
     glz::schema skill_list_id{ .description = "Mob skill list id. Defaults to 0, meaning none." };
     glz::schema attributes{ .description = "Attribute overrides applied over the species chain. Same block families and species use." };
     glz::schema loot{ .description = "What this mob yields when killed, stolen from or despoiled." };
@@ -189,7 +191,7 @@ struct glz::json_schema<xi::data::datasets::zones::mobs::wire::Spawn>
     glz::schema templateRef{ .description = "Template this spawn instantiates. Omitting disables this spawn entirely." };
     glz::schema script{ .description = "Script identity, resolving to scripts/zones/<zone>/mobs/<script>.lua. Defaults to the template name." };
     glz::schema at{ .description = "A fixed spawn point, as x, y, z and optionally a facing of 0-255. Mutually exclusive with region, path and circuit." };
-    glz::schema region{ .description = "Name of a region in regions.yaml to spawn and roam in. Mutually exclusive with at, path and circuit." };
+    glz::schema region{ .description = "Region in regions.yaml to spawn and roam in. A list means one is picked at random on every spawn. Mutually exclusive with at, path and circuit." };
     glz::schema path{ .description = "Patrol route as x, y, z waypoints. Walked out and back, retracing the same legs, then looped for as long as the mob is left alone. Mutually exclusive with at, region and circuit." };
     glz::schema circuit{ .description = "Patrol route as x, y, z waypoints. Walked as a closed loop, the last waypoint leading back to the first. Mutually exclusive with at, region and path." };
     glz::schema level{ .description = "Minimum and maximum level. Defaults to 0, 0." };

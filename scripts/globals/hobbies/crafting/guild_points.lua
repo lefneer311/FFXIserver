@@ -28,75 +28,75 @@ xi.crafting.guildKeyItemTable =
 {
     [xi.guild.FISHING] =
     {
-        [0] = { id = xi.ki.FROG_FISHING,    rank = xi.craftRank.NOVICE,  cost =  30000 },
-        [1] = { id = xi.ki.SERPENT_RUMORS,  rank = xi.craftRank.ADEPT,   cost =  95000 },
-        [2] = { id = xi.ki.MOOCHING,        rank = xi.craftRank.VETERAN, cost = 115000 },
-        [3] = { id = xi.ki.ANGLERS_ALMANAC, rank = xi.craftRank.VETERAN, cost =  20000 },
+        [0] = { id = xi.keyItem.FROG_FISHING,    rank = xi.craftRank.NOVICE,  cost =  30000 },
+        [1] = { id = xi.keyItem.SERPENT_RUMORS,  rank = xi.craftRank.ADEPT,   cost =  95000 },
+        [2] = { id = xi.keyItem.MOOCHING,        rank = xi.craftRank.VETERAN, cost = 115000 },
+        [3] = { id = xi.keyItem.ANGLERS_ALMANAC, rank = xi.craftRank.VETERAN, cost =  20000 },
     },
     [xi.guild.WOODWORKING] =
     {
-        [0] = { id = xi.ki.WOOD_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.WOOD_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.LUMBERJACK,           rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.BOLTMAKER,            rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [4] = { id = xi.ki.WAY_OF_THE_CARPENTER, rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.WOOD_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.WOOD_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.LUMBERJACK,           rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.BOLTMAKER,            rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [4] = { id = xi.keyItem.WAY_OF_THE_CARPENTER, rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.SMITHING] =
     {
-        [0] = { id = xi.ki.METAL_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.METAL_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.CHAINWORK,             rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.SHEETING,              rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [4] = { id = xi.ki.WAY_OF_THE_BLACKSMITH, rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.METAL_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.METAL_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.CHAINWORK,             rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.SHEETING,              rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [4] = { id = xi.keyItem.WAY_OF_THE_BLACKSMITH, rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.GOLDSMITHING] =
     {
-        [0] = { id = xi.ki.GOLD_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.GOLD_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.CHAINWORK,            rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.SHEETING,             rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [4] = { id = xi.ki.CLOCKMAKING,          rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [5] = { id = xi.ki.WAY_OF_THE_GOLDSMITH, rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.GOLD_PURIFICATION,    rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.GOLD_ENSORCELLMENT,   rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.CHAINWORK,            rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.SHEETING,             rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [4] = { id = xi.keyItem.CLOCKMAKING,          rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [5] = { id = xi.keyItem.WAY_OF_THE_GOLDSMITH, rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.CLOTHCRAFT] =
     {
-        [0] = { id = xi.ki.CLOTH_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.CLOTH_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.SPINNING,            rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.FLETCHING,           rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [4] = { id = xi.ki.WAY_OF_THE_WEAVER,   rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.CLOTH_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.CLOTH_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.SPINNING,            rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.FLETCHING,           rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [4] = { id = xi.keyItem.WAY_OF_THE_WEAVER,   rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.LEATHERCRAFT] =
     {
-        [0] = { id = xi.ki.LEATHER_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.LEATHER_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.TANNING,               rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.WAY_OF_THE_TANNER,     rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.LEATHER_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.LEATHER_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.TANNING,               rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.WAY_OF_THE_TANNER,     rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.BONECRAFT] =
     {
-        [0] = { id = xi.ki.BONE_PURIFICATION,     rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [1] = { id = xi.ki.BONE_ENSORCELLMENT,    rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.FILING,                rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [3] = { id = xi.ki.WAY_OF_THE_BONEWORKER, rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.BONE_PURIFICATION,     rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [1] = { id = xi.keyItem.BONE_ENSORCELLMENT,    rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.FILING,                rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [3] = { id = xi.keyItem.WAY_OF_THE_BONEWORKER, rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.ALCHEMY] =
     {
-        [0] = { id = xi.ki.ANIMA_SYNTHESIS,        rank = xi.craftRank.NOVICE,  cost = 20000 },
-        [1] = { id = xi.ki.ALCHEMIC_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [2] = { id = xi.ki.ALCHEMIC_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
-        [3] = { id = xi.ki.TRITURATION,            rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [4] = { id = xi.ki.CONCOCTION,             rank = xi.craftRank.NOVICE,  cost = 20000 },
-        [5] = { id = xi.ki.IATROCHEMISTRY,         rank = xi.craftRank.NOVICE,  cost = 10000 },
-        [6] = { id = xi.ki.WAY_OF_THE_ALCHEMIST,   rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.ANIMA_SYNTHESIS,        rank = xi.craftRank.NOVICE,  cost = 20000 },
+        [1] = { id = xi.keyItem.ALCHEMIC_PURIFICATION,  rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [2] = { id = xi.keyItem.ALCHEMIC_ENSORCELLMENT, rank = xi.craftRank.NOVICE,  cost = 40000 },
+        [3] = { id = xi.keyItem.TRITURATION,            rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [4] = { id = xi.keyItem.CONCOCTION,             rank = xi.craftRank.NOVICE,  cost = 20000 },
+        [5] = { id = xi.keyItem.IATROCHEMISTRY,         rank = xi.craftRank.NOVICE,  cost = 10000 },
+        [6] = { id = xi.keyItem.WAY_OF_THE_ALCHEMIST,   rank = xi.craftRank.VETERAN, cost = 20000 },
     },
     [xi.guild.COOKING] =
     {
-        [0] = { id = xi.ki.RAW_FISH_HANDLING,     rank = xi.craftRank.NOVICE,  cost = 30000 },
-        [1] = { id = xi.ki.NOODLE_KNEADING,       rank = xi.craftRank.NOVICE,  cost = 30000 },
-        [2] = { id = xi.ki.PATISSIER,             rank = xi.craftRank.NOVICE,  cost =  8000 },
-        [3] = { id = xi.ki.STEWPOT_MASTERY,       rank = xi.craftRank.NOVICE,  cost = 30000 },
-        [4] = { id = xi.ki.WAY_OF_THE_CULINARIAN, rank = xi.craftRank.VETERAN, cost = 20000 },
+        [0] = { id = xi.keyItem.RAW_FISH_HANDLING,     rank = xi.craftRank.NOVICE,  cost = 30000 },
+        [1] = { id = xi.keyItem.NOODLE_KNEADING,       rank = xi.craftRank.NOVICE,  cost = 30000 },
+        [2] = { id = xi.keyItem.PATISSIER,             rank = xi.craftRank.NOVICE,  cost =  8000 },
+        [3] = { id = xi.keyItem.STEWPOT_MASTERY,       rank = xi.craftRank.NOVICE,  cost = 30000 },
+        [4] = { id = xi.keyItem.WAY_OF_THE_CULINARIAN, rank = xi.craftRank.VETERAN, cost = 20000 },
     },
 }
 
@@ -269,8 +269,11 @@ xi.crafting.guildPointOnEventUpdate = function(player, option, target, guildId)
     -- GP Key Item Option.
     if category == 3 then
         local keyItem = keyItems[bit.band(bit.rshift(option, 5), 15) - 1]
+        if not keyItem then
+            return
+        end
 
-        if keyItem and rank >= keyItem.rank then
+        if rank >= keyItem.rank then
             if player:getCurrency(currency) >= keyItem.cost then
                 player:delCurrency(currency, keyItem.cost)
                 npcUtil.giveKeyItem(player, keyItem.id)
@@ -285,13 +288,17 @@ xi.crafting.guildPointOnEventUpdate = function(player, option, target, guildId)
 
     -- GP Item Option.
     elseif category == 2 or category == 1 then
-        local index    = bit.band(option, 3)
-        local items    = xi.crafting.guildItemTable[guildId]
-        local item     = items[(category - 1) * 4 + index]
+        local index = bit.band(option, 3)
+        local items = xi.crafting.guildItemTable[guildId]
+        local item  = items[(category - 1) * 4 + index]
+        if not item then
+            return
+        end
+
         local quantity = math.min(bit.rshift(option, 9), 12)
         local cost     = quantity * item.cost
 
-        if item and rank >= item.rank then
+        if rank >= item.rank then
             if player:getCurrency(currency) >= cost then
                 local delivered = 0
 
@@ -320,11 +327,15 @@ xi.crafting.guildPointOnEventUpdate = function(player, option, target, guildId)
         category == 0 and
         option ~= utils.EVENT_CANCELLED_OPTION
     then
-        local crystal  = xi.crafting.hqCrystals[bit.band(bit.rshift(option, 5), 15)]
+        local crystal = xi.crafting.hqCrystals[bit.band(bit.rshift(option, 5), 15)]
+        if not crystal then
+            return
+        end
+
         local quantity = bit.rshift(option, 9)
         local cost     = quantity * crystal.cost
 
-        if crystal and rank >= 3 then
+        if rank >= 3 then
             if
                 player:getCurrency(currency) >= cost and
                 npcUtil.giveItem(player, { { crystal.id, quantity } })

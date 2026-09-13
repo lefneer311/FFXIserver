@@ -162,6 +162,10 @@ xi.settings.main =
     WEAPON_SKILL_POWER  = 1.000, -- Multiplies damage dealt by Weapon Skills.
     DELAY_REDUCTION_CAP = 0.80,  -- Set the cap for melee swing haste effect. (0.80 = 80% retail delay reduction max, 0.93 = 93% ToAU delay reduction max)
 
+    -- When true, use 8 + Blue magic skill + STR*ONE_HAND_MAIN_HAND_STR_ATTACK_MULTIPLIER for base attack (before blue magic merits) instead of current retail's "fetch main hand weapon attack" style
+    -- see xi.spells.blue.getBlueMagicBaseAttack
+    BLUE_SKILL_IS_BLUE_ATTACK = false,
+
     -- STR:ATT/RATT ratios. For players only. Mobs are hardcoded to 0.5
     TWO_HANDED_STR_ATTACK_MULTIPLIER         = 1.0,  -- 1.0: 1 STR = 1 Attack. This has been 0.5 and 0.75 in previous eras
     HAND_TO_HAND_STR_ATTACK_MULTIPLIER       = 1.0,  -- 1.0: 1 STR = 1 Attack. This has been 0.5 and 0.625 in previous eras.
@@ -227,7 +231,7 @@ xi.settings.main =
     NM_LOTTERY_COOLDOWN = 1.0,
 
     -- CONQUEST SETTINGS
-    CONQUEST_INFLUENCE_CAP = 250000, -- Combined influence pool per region shared across the 4 nations. Ceiling is 20 million.
+    CONQUEST_INFLUENCE_CAP = 10000000, -- Combined influence pool per region shared across the 4 nations. Ceiling is 20 million.
 
     -- GARRISON SETTINGS
     ENABLE_GARRISON        = true,  -- If true, enables garrison functionality
@@ -268,7 +272,6 @@ xi.settings.main =
     USE_OLD_CURE_FORMULA            = false, -- true/false. if true, uses older cure formula (3*MND + VIT + 3*(healing skill/5)) // cure 6 will use the newer formula
     USE_OLD_MAGIC_DAMAGE            = false, -- true/false. if true, uses older magic damage formulas
     USE_OLD_COUNTERSTANCE           = false, -- true/false. if true, Counterstance DEF = 1 + VIT/2 (+ Minne); gear/Protect ignored
-    USE_OLD_STAT_ROUNDING           = false, -- true/false. if true, race, job and subjob base stat parts are each rounded down separately (older retail) instead of pooled and rounded once
 
     -- CELEBRATIONS
     EXPLORER_MOOGLE_LV              = 10, -- Enables Explorer Moogle teleports and sets required level. Zero to disable.

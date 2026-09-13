@@ -401,9 +401,9 @@ void CMobEntity::setPatrolRoute(std::vector<position_t> route)
     }
 }
 
-void CMobEntity::setRoamRegion(const RoamRegion* region)
+void CMobEntity::setRoamRegions(std::vector<const RoamRegion*> regions)
 {
-    roamRegion_ = region;
+    roamRegions_ = std::move(regions);
 
     // a region has no leeway: its edge is the limit, so nothing outside counts as home
     m_maxRoamDistance = 0.0f;
@@ -653,7 +653,7 @@ bool CMobEntity::GetUntargetable() const
 
 void CMobEntity::PostTick()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::PostTick");
 
     CBattleEntity::PostTick();
 
@@ -681,11 +681,6 @@ float CMobEntity::GetRoamDistance()
     return (float)getMobMod(xi::MobMod::RoamDistance);
 }
 
-float CMobEntity::GetRoamRate()
-{
-    return (float)getMobMod(xi::MobMod::RoamRate) / 10.0f;
-}
-
 float CMobEntity::GetRangedAttackRange()
 {
     // Defaulted range is 14 as observed on all retail fomor.
@@ -696,7 +691,7 @@ float CMobEntity::GetRangedAttackRange()
 
 bool CMobEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::ValidTarget");
 
     if (StatusEffectContainer->GetConfrontationEffect() != PInitiator->StatusEffectContainer->GetConfrontationEffect())
     {
@@ -731,7 +726,7 @@ bool CMobEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 
 void CMobEntity::Spawn()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::Spawn");
 
     // Reset stolen item always for battlefields or only if HP was 0 (mob died)
     if ((this->m_Type & xi::MobType::Battlefield) != xi::MobType::Normal || health.hp == 0)
@@ -765,9 +760,11 @@ void CMobEntity::Spawn()
     mobutils::CalculateMobStats(this);
     mobutils::GetAvailableSpells(this);
 
-    // region mobs pick a fresh spawn point every life, and m_SpawnPoint keeps it for the point-based checks
-    if (roamRegion_ && loc.zone)
+    // region mobs pick one of their regions and a fresh point in it every life, and m_SpawnPoint keeps it for the point-based checks
+    if (!roamRegions_.empty() && loc.zone)
     {
+        roamRegion_ = xirand::GetRandomElement(roamRegions_);
+
         if (const auto point = roamRegion_->randomPoint(loc.zone->navMesh()))
         {
             m_SpawnPoint.x = point->x;
@@ -831,7 +828,9 @@ void CMobEntity::Spawn()
     }
 
     // Roam immediately on spawn
-    if (CanRoam() && PAI->PathFind->RoamAround(m_SpawnPoint, GetRoamDistance(), static_cast<uint8>(getMobMod(xi::MobMod::RoamTurns)), m_roamFlags))
+    const auto minTurns = static_cast<uint8>(getMobMod(xi::MobMod::RoamTurnsMin));
+    const auto maxTurns = static_cast<uint8>(getMobMod(xi::MobMod::RoamTurns));
+    if (CanRoam() && PAI->PathFind->RoamAround(GetRoamAnchor(), GetRoamDistance(), minTurns, maxTurns, m_roamFlags, roamRegion_))
     {
         PAI->PathFind->FollowPath(timer::now());
     }
@@ -839,7 +838,7 @@ void CMobEntity::Spawn()
 
 void CMobEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnWeaponSkillFinished");
 
     CBattleEntity::OnWeaponSkillFinished(state, action);
 
@@ -1297,7 +1296,7 @@ void CMobEntity::DropItems(CCharEntity* PChar)
 
 bool CMobEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::CanAttack");
 
     // Refuse the attack while the navmesh route is far longer than the straight line, until we have walked the detour.
     if (PAI->PathFind && PAI->PathFind->IsFollowingPath() && !PAI->PathFind->IsPathDirect())
@@ -1345,7 +1344,7 @@ bool CMobEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>
 
 void CMobEntity::OnEngage(CAttackState& state)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnEngage");
 
     CBattleEntity::OnEngage(state);
     luautils::OnMobEngage(this, state.target().resolve());
@@ -1412,7 +1411,7 @@ void CMobEntity::OnDespawn(CDespawnState& /*unused*/)
 
 void CMobEntity::Die()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::Die");
 
     if (PBattlefield != nullptr)
     {
@@ -1459,7 +1458,7 @@ void CMobEntity::Die()
 
 void CMobEntity::OnDisengage(CAttackState& state)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnDisengage");
 
     PAI->PathFind->Clear();
     PEnmityContainer->Clear();
@@ -1480,7 +1479,7 @@ void CMobEntity::OnDisengage(CAttackState& state)
 
 void CMobEntity::OnCastFinished(CMagicState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnCastFinished");
 
     CBattleEntity::OnCastFinished(state, action);
 
@@ -1495,7 +1494,7 @@ void CMobEntity::OnCastFinished(CMagicState& state, action_t& action)
 
 void CMobEntity::OnCastInterrupted(CMagicState& state, action_t& action, MsgBasic msg, bool blockedCast)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnCastInterrupted");
 
     CBattleEntity::OnCastInterrupted(state, action, msg, blockedCast);
 
@@ -1508,7 +1507,7 @@ void CMobEntity::OnCastInterrupted(CMagicState& state, action_t& action, MsgBasi
 
 bool CMobEntity::OnAttack(CAttackState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CMobEntity::OnAttack");
 
     TapDeaggroTime();
 

@@ -81,6 +81,24 @@ local shieldSizeToBlockRateTable =
     [6] = 100, -- Ochain  https://www.bg-wiki.com/ffxi/Category:Shields
 }
 
+---@param actor CBaseEntity
+---@param weaponType xi.skill
+---@param weaponSlot xi.slot
+local function getMeleeAttack(actor, weaponType, weaponSlot)
+    local actorAttack = 0
+
+    if
+        weaponType == xi.skill.BLUE_MAGIC and
+        xi.settings.main.BLUE_SKILL_IS_BLUE_ATTACK
+    then
+        actorAttack = xi.spells.blue.getBlueMagicBaseAttack(actor)
+    else
+        actorAttack = actor:getStat(xi.mod.ATT, weaponSlot)
+    end
+
+    return math.max(1, actorAttack)
+end
+
 -- WARNING: This function is used in src/map/attack.cpp "ProcessDamage" function.
 -- If you update these parameters, update them there as well.
 ---@param actor CBaseEntity
@@ -95,14 +113,15 @@ local shieldSizeToBlockRateTable =
 xi.combat.physical.calculateAttackDamage = function(actor, target, slot, physicalAttackType, isH2H, isFirstSwing, isSneakAttack, isTrickAttack, damageRatio)
     local bonusBasePhysicalDamage = 0
     local damage                  = 0
+    local isTHF                   = actor:getMainJob() == xi.job.THF
 
     -- Sneak Attack
-    if isSneakAttack then
+    if isSneakAttack and isTHF then
         bonusBasePhysicalDamage = math.floor(bonusBasePhysicalDamage + actor:getStat(xi.mod.DEX) * (1 + actor:getMod(xi.mod.SNEAK_ATK_DEX) / 100))
     end
 
     -- Trick Attack
-    if isTrickAttack then
+    if isTrickAttack and isTHF then
         bonusBasePhysicalDamage = math.floor(bonusBasePhysicalDamage + actor:getStat(xi.mod.AGI) * (1 + actor:getMod(xi.mod.TRICK_ATK_AGI) / 100))
     end
 
@@ -421,6 +440,24 @@ xi.combat.physical.calculateRangedStatFactor = function(actor, target)
     return fSTR
 end
 
+-- Calculates alpha, used for working out WSC on legacy servers. Retail has no alpha anymore as of 2014 Weaponskill functions.
+xi.combat.physical.calculateAlpha = function(actor)
+    local alpha = 1
+
+    if not xi.settings.main.USE_ADOULIN_WEAPON_SKILL_CHANGES then
+        local level = actor:getMainLvl()
+        if level > 75 then
+            alpha = 0.85
+        elseif level > 59 then
+            alpha = 0.9 - math.floor((level - 60) / 2) / 100
+        elseif level > 5 then
+            alpha = 1 - math.floor(level / 6) / 100
+        end
+    end
+
+    return alpha
+end
+
 -- Weapon Skill Secondary Attribute Modifier: Function used to get stat addition to base damage.
 xi.combat.physical.calculateWSC = function(actor, wsSTRmod, wsDEXmod, wsVITmod, wsAGImod, wsINTmod, wsMNDmod, wsCHRmod)
     local finalWSC = 0
@@ -444,6 +481,10 @@ xi.combat.physical.calculateWSC = function(actor, wsSTRmod, wsDEXmod, wsVITmod, 
     local wscCHR = math.floor(actor:getStat(xi.mod.CHR) * (chrMultiplier + actor:getMod(xi.mod.WS_CHR_BONUS) / 100))
 
     finalWSC = wscSTR + wscDEX + wscVIT + wscAGI + wscINT + wscMND + wscCHR
+
+    if finalWSC > 0 then
+        finalWSC = finalWSC * xi.combat.physical.calculateAlpha(actor)
+    end
 
     return finalWSC
 end
@@ -627,7 +668,6 @@ xi.combat.physical.calculateMeleePDIF = function(actor, target, weaponType, wsAt
     -- Step 1: Attack / Defense Ratio
     ----------------------------------------
     local baseRatio     = 0
-    local actorAttack   = 0
     local targetDefense = math.max(1, target:getStat(xi.mod.DEF))
     local flourishBonus = 1
 
@@ -644,7 +684,7 @@ xi.combat.physical.calculateMeleePDIF = function(actor, target, weaponType, wsAt
 
     -- TODO: it is unknown if ws attack mod and flourish bonus are additive or multiplicative
     -- TODO: do flourish and attack mods come before or after food?
-    actorAttack = math.max(1, math.floor(actor:getStat(xi.mod.ATT, weaponSlot) * wsAttackMod * flourishBonus))
+    local actorAttack = math.floor(getMeleeAttack(actor, weaponType, weaponSlot) * wsAttackMod * flourishBonus)
 
     -- handle attuner
     -- note: isAutomaton is checked inside xi.automaton.handleAttuner and could be removed
@@ -811,7 +851,17 @@ xi.combat.physical.calculateRangedPDIF = function(actor, target, weaponType, wsA
     end
 
     -- TODO: it is unknown if ws attack mod and flourish bonus are additive or multiplicative
-    actorAttack = math.max(1, math.floor((actor:getStat(xi.mod.RATT) + bonusRangedAttack - distancePenalty) * wsAttackMod * flourishBonus))
+    -- TODO: do flourish and attack mods come before or after food?
+    if
+        weaponType == xi.skill.BLUE_MAGIC and
+        xi.settings.main.BLUE_SKILL_IS_BLUE_ATTACK
+    then
+        local baseBlueMagicAttack = xi.spells.blue.getBlueMagicBaseAttack(actor)
+
+        actorAttack = math.max(1, math.floor(baseBlueMagicAttack + bonusRangedAttack - distancePenalty) * wsAttackMod * flourishBonus)
+    else
+        actorAttack = math.max(1, math.floor((actor:getStat(xi.mod.RATT) + bonusRangedAttack - distancePenalty) * wsAttackMod * flourishBonus))
+    end
 
     -- Target Defense Modifiers.
     local ignoreDefenseFactor = 1

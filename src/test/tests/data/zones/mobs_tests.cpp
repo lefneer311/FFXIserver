@@ -30,6 +30,7 @@
 #include <ranges>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace
@@ -59,9 +60,9 @@ auto spawnAt(const uint32 id) -> const xi::data::MobSpawnData&
     return *entry;
 }
 
-auto templateNamed(const std::string& name) -> const xi::data::MobTemplateData&
+auto templateNamed(const std::string_view name) -> const xi::data::MobTemplateData&
 {
-    const auto entry = westRonfaure().Templates.find(name);
+    const auto entry = westRonfaure().Templates.find(std::string{ name });
     REQUIRE(entry != westRonfaure().Templates.end());
     return entry->second;
 }
@@ -205,6 +206,56 @@ TEST_CASE("mobs: a template keeps its mods and mob mods", "[data][mob]")
     REQUIRE(digger.Attributes.Mods.at(xi::Mod::VERMIN_KILLER) == 5);
     REQUIRE(digger.Attributes.MobMods.at(xi::MobMod::NoDespawn) == 1);
     REQUIRE(digger.Attributes.Links.value_or(false));
+}
+
+TEST_CASE("mobs: a template names its own spells", "[data][mob]")
+{
+    constexpr auto named = R"(
+templates:
+  Forest_Hare:
+    id:      1
+    species: rabbit
+    spells:  [stone, stone_ii, dia]
+spawns:
+  17186822: { template: Forest_Hare }
+)";
+
+    const auto  records = MobsDataset::decode(named);
+    const auto& hare    = records.Templates.at("Forest_Hare");
+
+    REQUIRE(hare.Spells == std::vector<std::string>{ "stone", "stone_ii", "dia" });
+    REQUIRE(hare.SpellList == 0);
+}
+
+TEST_CASE("mobs: a template names spells or a spell list, never both", "[data][mob]")
+{
+    constexpr auto both = R"(
+templates:
+  Forest_Hare:
+    id:            1
+    species:       rabbit
+    spells:        [stone]
+    spell_list_id: 21
+spawns:
+  17186822: { template: Forest_Hare }
+)";
+
+    REQUIRE_THROWS_AS(MobsDataset::decode(both), std::runtime_error);
+}
+
+TEST_CASE("mobs: a spells list naming nothing is rejected", "[data][mob]")
+{
+    constexpr auto empty = R"(
+templates:
+  Forest_Hare:
+    id:      1
+    species: rabbit
+    spells:  []
+spawns:
+  17186822: { template: Forest_Hare }
+)";
+
+    REQUIRE_THROWS_AS(MobsDataset::decode(empty), std::runtime_error);
 }
 
 TEST_CASE("mobs: a spawn naming an unknown template is rejected", "[data][mob]")
@@ -392,4 +443,50 @@ spawns:
     REQUIRE(overridden->Attributes.Respawn.value_or(0) == 900);
     REQUIRE(overridden->Attributes.SpawnWindow.has_value());
     REQUIRE(overridden->Attributes.SpawnWindow->first == 20);
+}
+
+TEST_CASE("mobs: a spawn names one region or several", "[data][mob]")
+{
+    constexpr auto regions = R"(
+templates:
+  Wild_Rabbit:
+    id: 1
+    species: rabbit
+    attributes:
+      render:
+        look: { type: standard, model: 1 }
+spawns:
+  17186862:
+    template: Wild_Rabbit
+    region: e_46
+  17186863:
+    template: Wild_Rabbit
+    region: [e_46, e_47]
+)";
+
+    const auto records = MobsDataset::decode(regions);
+    REQUIRE(records.Spawns.size() == 2);
+
+    const auto one  = std::ranges::find(records.Spawns, 17186862u, &xi::data::MobSpawnData::Id);
+    const auto many = std::ranges::find(records.Spawns, 17186863u, &xi::data::MobSpawnData::Id);
+    REQUIRE(one != records.Spawns.end());
+    REQUIRE(many != records.Spawns.end());
+
+    REQUIRE(one->Placed);
+    REQUIRE(one->Regions == std::vector<std::string>{ "e_46" });
+    REQUIRE(many->Regions == std::vector<std::string>{ "e_46", "e_47" });
+}
+
+TEST_CASE("mobs: a spawn listing no regions is rejected", "[data][mob]")
+{
+    constexpr auto empty = R"(
+templates:
+  Wild_Rabbit:
+    id:      1
+    species: rabbit
+spawns:
+  17186862: { template: Wild_Rabbit, region: [] }
+)";
+
+    REQUIRE_THROWS_AS(MobsDataset::decode(empty), std::runtime_error);
 }

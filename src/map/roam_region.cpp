@@ -73,8 +73,21 @@ constexpr uint8 kValidationSamples = 64;
 // how far a snap may move a point before it counts as a different point
 constexpr float kSnapTolerance = 2.5f;
 
-// how far short of the target a walk may stop and still count as reaching it
-constexpr float kShortfallTolerance = 2.5f;
+// retail's 10th percentile leg
+constexpr float kMinStep = 2.0f;
+
+// rest a little inside the edge so the next leg still sees it; from the edge itself an outward leg crosses at t = 0 and is missed
+constexpr float kEdgeMargin = 0.05f;
+
+// retail legs are log-normal about RoamDistance and end near twice it; the same spread and cap fit every captured family
+constexpr double kStepSigma = 0.40;
+constexpr float  kStepCap   = 2.0f;
+
+auto sampleStepDistance(const float median) -> float
+{
+    const auto drawn = static_cast<float>(median * std::exp(xirand::GetNormalNumber(0.0, kStepSigma)));
+    return std::min(drawn, median * kStepCap);
+}
 
 // the only place the triangulator is named. it returns a flat triangle list indexing the rings concatenated in order
 auto triangulate(const std::vector<RoamRegion::Ring>& rings) -> std::vector<uint32>
@@ -118,6 +131,14 @@ RoamRegion::RoamRegion(const Ring& outer, const std::vector<Ring>& holes)
 
         areaSum += std::abs(signedArea(a, b, c)) * 0.5f;
         triangles_.push_back({ .a = a, .b = b, .c = c, .areaSum = areaSum });
+    }
+
+    for (const auto& ring : rings)
+    {
+        for (size_t i = 0; i < ring.size(); ++i)
+        {
+            edges_.push_back({ .a = ring[i], .b = ring[(i + 1) % ring.size()] });
+        }
     }
 
     // the box every query checks before touching the triangles
@@ -197,6 +218,46 @@ auto RoamRegion::distanceOutside(const position_t& position) const -> float
     return std::hypot(closest.x - position.x, closest.z - position.z);
 }
 
+auto RoamRegion::clampToRegion(const position_t& from, const Vector3& direction, const float distance) const -> float
+{
+    TracyZoneScoped;
+
+    // a start outside the region gets no leg
+    if (!contains(from.x, from.z))
+    {
+        return 0.0f;
+    }
+
+    // first crossing of a ring edge; the ray may leave and come back
+    float nearest = distance;
+    for (const auto& edge : edges_)
+    {
+        const float ex    = edge.b.x - edge.a.x;
+        const float ez    = edge.b.z - edge.a.z;
+        const float denom = direction.x * ez - direction.z * ex;
+        if (std::abs(denom) < 1e-6f)
+        {
+            continue;
+        }
+
+        const float dx = edge.a.x - from.x;
+        const float dz = edge.a.z - from.z;
+        const float t  = (dx * ez - dz * ex) / denom;
+        const float u  = (dx * direction.z - dz * direction.x) / denom;
+        if (t > 1e-4f && t < nearest && u >= 0.0f && u <= 1.0f)
+        {
+            nearest = t;
+        }
+    }
+
+    if (nearest >= distance)
+    {
+        return distance;
+    }
+
+    return std::max(nearest - kEdgeMargin, 0.0f);
+}
+
 auto RoamRegion::samplePoint() const -> position_t
 {
     // area-weighted, so every square yalm is equally likely however the triangles were cut
@@ -240,8 +301,8 @@ auto RoamRegion::acceptPoint(const position_t& point, const NavMesh* navMesh) co
         return std::nullopt;
     }
 
-    // it landed too far from where we asked, so it is not the point we sampled
-    if (std::abs(snapped->x - point.x) > kSnapTolerance || std::abs(snapped->z - point.z) > kSnapTolerance)
+    // it landed too far from where we asked, or the snap carried it out of the region
+    if (std::abs(snapped->x - point.x) > kSnapTolerance || std::abs(snapped->z - point.z) > kSnapTolerance || !contains(snapped->x, snapped->z))
     {
         return std::nullopt;
     }
@@ -281,19 +342,18 @@ auto RoamRegion::randomPointAt(const position_t& from, float distance, const Nav
 
     for (uint8 attempt = 0; attempt < kSampleAttempts; ++attempt)
     {
-        // a random direction, `distance` away
-        const auto angle = xirand::GetRandomNumber(0.0f, 2.0f * std::numbers::pi_v<float>);
+        const auto angle     = xirand::GetRandomNumber(0.0f, 2.0f * std::numbers::pi_v<float>);
+        const auto direction = Vector3{ .x = std::cos(angle), .y = 0.0f, .z = std::sin(angle) };
 
-        position_t target;
-        target.x = from.x + std::cos(angle) * distance;
-        target.y = from.y;
-        target.z = from.z + std::sin(angle) * distance;
+        // shorten the step to the edge rather than discard the draw
+        const auto step = clampToRegion(from, direction, sampleStepDistance(distance));
 
-        // that direction left the region, so try another
-        if (!contains(target.x, target.z))
+        if (step < kMinStep)
         {
             continue;
         }
+
+        const position_t target{ from.x + direction.x * step, from.y, from.z + direction.z * step, 0, 0 };
 
         if (!navMesh)
         {
@@ -307,8 +367,14 @@ auto RoamRegion::randomPointAt(const position_t& from, float distance, const Nav
             continue;
         }
 
-        // something blocked the way well short of the target
-        if (std::abs(reached.x - target.x) > kShortfallTolerance || std::abs(reached.z - target.z) > kShortfallTolerance)
+        // sliding along the surface can end outside even when the target was inside
+        if (!contains(reached.x, reached.z))
+        {
+            continue;
+        }
+
+        // a wall shortens the walk; only one that got nowhere is retried
+        if (std::hypot(reached.x - from.x, reached.z - from.z) < kMinStep)
         {
             continue;
         }

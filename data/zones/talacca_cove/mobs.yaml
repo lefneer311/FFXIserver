@@ -136,10 +136,8 @@ templates:
     attributes:
       combat:
         skill: scythe
+        delay: 220
       jobs: [blm, blm]
-      resists:
-        dmg_physical:
-          piercing: 2500
       render:
         look:
           type:  standard
@@ -161,14 +159,12 @@ templates:
     species:       imp
     type:          [battlefield]
     spell_list_id: 21
-    skill_list_id: 414
+    skill_list_id: 423
     attributes:
       combat:
         skill: scythe
+        delay: 220
       jobs: [blm, blm]
-      resists:
-        dmg_physical:
-          piercing: 2500
       render:
         look:
           type:  standard
@@ -259,11 +255,6 @@ templates:
       combat:
         skill: sword
         delay: 270
-      resists:
-        dmg_physical:
-          slashing:  1250
-          blunt:    -1250
-          h2h:      -1250
       render:
         look:
           type:  standard
@@ -358,11 +349,12 @@ templates:
     id:            4123
     species:       automaton
     type:          [notorious, battlefield]
-    spell_list_id: 1
-    skill_list_id: 363
+    spell_list_id: 2
+    skill_list_id: 426
     attributes:
       combat:
         skill: axe
+        delay: 240
       jobs: [rdm, rdm]
       render:
         look:
@@ -377,6 +369,9 @@ templates:
         true_detection: true
       spawn:
         type: [scripted]
+      stats:
+        hp: 13200
+        mp: 13200
 
   Valkeng_Large:
     id:            7288
@@ -549,8 +544,7 @@ spawns:
     at:       [220.000, -40.500, 185.000, 65]
     level:    [80, 80]
   17010719:
-    template: Valkeng_Large
-    script:   Valkeng
+    template: Valkeng
     at:       [-180.000, 39.500, 185.000, 65]
     level:    [66, 66]
   17010720:

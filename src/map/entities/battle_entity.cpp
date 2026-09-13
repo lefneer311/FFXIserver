@@ -1831,85 +1831,13 @@ void CBattleEntity::addModifiers(std::vector<CModifier>* modList)
     }
 }
 
-void CBattleEntity::addEquipModifiers(std::vector<CModifier>* modList, uint8 itemLevel, uint8 slotid)
+void CBattleEntity::addEquipModifiers(CItemEquipment* PItem)
 {
     TracyZoneScoped;
 
-    if (GetMLevel() >= itemLevel)
+    for (auto& i : PItem->modList)
     {
-        for (auto& i : *modList)
-        {
-            if (slotid == SLOT_SUB)
-            {
-                if (i.getModID() == xi::Mod::MAIN_DMG_RANK)
-                {
-                    m_modStat[xi::Mod::SUB_DMG_RANK] += i.getModAmount();
-                }
-                else
-                {
-                    m_modStat[i.getModID()] += i.getModAmount();
-                }
-            }
-            else
-            {
-                m_modStat[i.getModID()] += i.getModAmount();
-            }
-        }
-    }
-    else
-    {
-        for (auto& i : *modList)
-        {
-            int16 modAmount = GetMLevel() * i.getModAmount();
-            switch (i.getModID())
-            {
-                case xi::Mod::DEF:
-                case xi::Mod::MAIN_DMG_RATING:
-                case xi::Mod::SUB_DMG_RATING:
-                case xi::Mod::RANGED_DMG_RATING:
-                    modAmount *= 3;
-                    modAmount /= 4;
-                    break;
-                case xi::Mod::HP:
-                case xi::Mod::MP:
-                    modAmount /= 2;
-                    break;
-                case xi::Mod::STR:
-                case xi::Mod::DEX:
-                case xi::Mod::VIT:
-                case xi::Mod::AGI:
-                case xi::Mod::INT:
-                case xi::Mod::MND:
-                case xi::Mod::CHR:
-                case xi::Mod::ATT:
-                case xi::Mod::RATT:
-                case xi::Mod::ACC:
-                case xi::Mod::RACC:
-                case xi::Mod::MATT:
-                case xi::Mod::MACC:
-                    modAmount /= 3;
-                    break;
-                default:
-                    modAmount = 0;
-                    break;
-            }
-            modAmount /= itemLevel;
-            if (slotid == SLOT_SUB)
-            {
-                if (i.getModID() == xi::Mod::MAIN_DMG_RANK)
-                {
-                    m_modStat[xi::Mod::SUB_DMG_RANK] += modAmount;
-                }
-                else
-                {
-                    m_modStat[i.getModID()] += modAmount;
-                }
-            }
-            else
-            {
-                m_modStat[i.getModID()] += modAmount;
-            }
-        }
+        m_modStat[i.getModID()] += battleutils::GetScaledItemModifier(this, PItem, i.getModID());
     }
 }
 
@@ -2029,85 +1957,13 @@ void CBattleEntity::delModifiers(std::vector<CModifier>* modList)
     }
 }
 
-void CBattleEntity::delEquipModifiers(std::vector<CModifier>* modList, uint8 itemLevel, uint8 slotid)
+void CBattleEntity::delEquipModifiers(CItemEquipment* PItem, bool isDelevel /* = false */)
 {
     TracyZoneScoped;
 
-    if (GetMLevel() >= itemLevel)
+    for (auto& i : PItem->modList)
     {
-        for (auto& i : *modList)
-        {
-            if (slotid == SLOT_SUB)
-            {
-                if (i.getModID() == xi::Mod::MAIN_DMG_RANK)
-                {
-                    m_modStat[xi::Mod::SUB_DMG_RANK] -= i.getModAmount();
-                }
-                else
-                {
-                    m_modStat[i.getModID()] -= i.getModAmount();
-                }
-            }
-            else
-            {
-                m_modStat[i.getModID()] -= i.getModAmount();
-            }
-        }
-    }
-    else
-    {
-        for (auto& i : *modList)
-        {
-            int16 modAmount = GetMLevel() * i.getModAmount();
-            switch (i.getModID())
-            {
-                case xi::Mod::DEF:
-                case xi::Mod::MAIN_DMG_RATING:
-                case xi::Mod::SUB_DMG_RATING:
-                case xi::Mod::RANGED_DMG_RATING:
-                    modAmount *= 3;
-                    modAmount /= 4;
-                    break;
-                case xi::Mod::HP:
-                case xi::Mod::MP:
-                    modAmount /= 2;
-                    break;
-                case xi::Mod::STR:
-                case xi::Mod::DEX:
-                case xi::Mod::VIT:
-                case xi::Mod::AGI:
-                case xi::Mod::INT:
-                case xi::Mod::MND:
-                case xi::Mod::CHR:
-                case xi::Mod::ATT:
-                case xi::Mod::RATT:
-                case xi::Mod::ACC:
-                case xi::Mod::RACC:
-                case xi::Mod::MATT:
-                case xi::Mod::MACC:
-                    modAmount /= 3;
-                    break;
-                default:
-                    modAmount = 0;
-                    break;
-            }
-            modAmount /= itemLevel;
-            if (slotid == SLOT_SUB)
-            {
-                if (i.getModID() == xi::Mod::MAIN_DMG_RANK)
-                {
-                    m_modStat[xi::Mod::SUB_DMG_RANK] -= modAmount;
-                }
-                else
-                {
-                    m_modStat[i.getModID()] -= modAmount;
-                }
-            }
-            else
-            {
-                m_modStat[i.getModID()] -= modAmount;
-            }
-        }
+        m_modStat[i.getModID()] -= battleutils::GetScaledItemModifier(this, PItem, i.getModID(), isDelevel);
     }
 }
 
@@ -2119,15 +1975,18 @@ void CBattleEntity::delEquipModifiers(std::vector<CModifier>* modList, uint8 ite
 
 int16 CBattleEntity::getMod(xi::Mod modID)
 {
-    TracyZoneScoped;
-
     if (modID == xi::Mod::NONE)
     {
         return 0;
     }
 
     const auto it = m_modStat.find(modID);
-    return it != m_modStat.end() ? it->second : 0;
+    if (it != m_modStat.end())
+    {
+        return it->second;
+    }
+
+    return 0;
 }
 
 /************************************************************************
@@ -2216,8 +2075,6 @@ void CBattleEntity::delPetModifier(xi::Mod type, PetModType petmod, int16 amount
 
 void CBattleEntity::addPetModifiers(std::vector<CPetModifier>* modList)
 {
-    TracyZoneScoped;
-
     for (auto modifier : *modList)
     {
         addPetModifier(modifier.getModID(), modifier.getPetModType(), modifier.getModAmount());
@@ -2226,8 +2083,6 @@ void CBattleEntity::addPetModifiers(std::vector<CPetModifier>* modList)
 
 void CBattleEntity::delPetModifiers(std::vector<CPetModifier>* modList)
 {
-    TracyZoneScoped;
-
     for (auto modifier : *modList)
     {
         delPetModifier(modifier.getModID(), modifier.getPetModType(), modifier.getModAmount());
@@ -2277,8 +2132,6 @@ void CBattleEntity::removePetModifiers(CPetEntity* PPet)
 
 uint16 CBattleEntity::GetSkill(xi::SkillType SkillID)
 {
-    TracyZoneScoped;
-
     if (static_cast<uint8>(SkillID) < MAX_SKILLTYPE)
     {
         return WorkingSkills.skill[static_cast<uint8>(SkillID)] & 0x7FFF;
@@ -2317,8 +2170,6 @@ bool CBattleEntity::hasTrait(uint16 traitID)
 
 bool CBattleEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 {
-    TracyZoneScoped;
-
     if (targetFlags & TARGET_ENEMY)
     {
         if (!isDead())
@@ -2365,14 +2216,14 @@ bool CBattleEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 
 bool CBattleEntity::CanUseSpell(CSpell* PSpell)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::CanUseSpell");
 
     return spell::CanUseSpell(this, PSpell) && !PRecastContainer->Has(RECAST_MAGIC, static_cast<Recast>(PSpell->getID()));
 }
 
 void CBattleEntity::Spawn()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::Spawn");
 
     animation = xi::Animation::None;
     HideName(false);
@@ -2383,7 +2234,7 @@ void CBattleEntity::Spawn()
 
 void CBattleEntity::Die()
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::Die");
 
     if (CBaseEntity* PKiller = m_OwnerID.resolve())
     {
@@ -2470,7 +2321,7 @@ void CBattleEntity::OnDeathTimer()
 
 void CBattleEntity::OnCastFinished(CMagicState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnCastFinished");
 
     auto*          PSpell          = state.GetSpell();
     auto*          PActionTarget   = state.target().resolve<CBattleEntity>();
@@ -2775,7 +2626,7 @@ void CBattleEntity::OnCastFinished(CMagicState& state, action_t& action)
 
 void CBattleEntity::OnCastInterrupted(CMagicState& state, action_t& action, MsgBasic msg, bool blockedCast)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnCastInterrupted");
 
     if (CSpell* PSpell = state.GetSpell())
     {
@@ -2896,7 +2747,7 @@ void CBattleEntity::OnAbility(CAbilityState& state, action_t& action)
 
 void CBattleEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnWeaponSkillFinished");
 
     auto* PWeaponskill = state.GetSkill();
 
@@ -3218,7 +3069,7 @@ void CBattleEntity::OnMobSkillFinished(CMobSkillState& state, action_t& action)
 
 bool CBattleEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::CanAttack");
 
     if (PTarget->PAI->IsUntargetable())
     {
@@ -3664,7 +3515,7 @@ void CBattleEntity::OnRangedAttack(CRangeState& state, action_t& action)
 
 void CBattleEntity::OnDisengage(CAttackState& s)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnDisengage");
 
     setBattleTarget(std::nullopt);
     if (animation == xi::Animation::Attack)
@@ -3696,7 +3547,7 @@ auto CBattleEntity::GetBattleTarget() const -> CBattleEntity*
 
 bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnAttack");
 
     auto* PTarget = state.target().resolve<CBattleEntity>();
 
@@ -4055,7 +3906,7 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
 
 auto CBattleEntity::IsValidTarget(uint16 targid, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::IsValidTarget");
 
     auto* PTarget = PAI->TargetFind->getValidTarget(targid, validTargetFlags);
     return PTarget;
@@ -4063,14 +3914,14 @@ auto CBattleEntity::IsValidTarget(uint16 targid, uint16 validTargetFlags, std::u
 
 auto CBattleEntity::IsValidTarget(EntityId target, uint16 validTargetFlags, std::unique_ptr<CBasicPacket>& errMsg) -> CBattleEntity*
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::IsValidTarget");
 
     return PAI->TargetFind->getValidTarget(target.resolve<CBattleEntity>(), validTargetFlags);
 }
 
 void CBattleEntity::OnEngage(CAttackState& state)
 {
-    TracyZoneScoped;
+    TracyZoneScopedN("CBattleEntity::OnEngage");
 
     animation = xi::Animation::Attack;
     updatemask |= UPDATE_HP;
@@ -4116,15 +3967,11 @@ uint16 CBattleEntity::getBattleID()
 
 auto CBattleEntity::Tick(timer::time_point /*unused*/) -> Task<void>
 {
-    TracyZoneScoped;
-
     co_return;
 }
 
 void CBattleEntity::PostTick()
 {
-    TracyZoneScoped;
-
     if (health.hp <= 0 && PAI->IsSpawned() && !PAI->IsCurrentState<CDeathState>() && !PAI->IsCurrentState<CDespawnState>())
     {
         Die();

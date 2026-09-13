@@ -22,7 +22,7 @@ zones[xi.zone.DYNAMIS_XARCABARD] =
         DYNAMIS_TIME_UPDATE_2         = 7241, -- You will be expelled from Dynamis in <number> [seconds/minutes] (Earth time).
         DYNAMIS_TIME_EXPIRED          = 7243, -- The sands of the hourglass have emptied...
         OMINOUS_PRESENCE              = 7255, -- You feel an ominous presence, as if something might happen if you possessed <item>.
-        DYNAMIS_LORD_DIALOGUE         = 7297, -- Writhing Worms... Look at you crawl before me. I will end your meaningless existence.
+        DYNAMIS_LORD_DIALOGUE         = 7297, -- Writhing worms... Look at you crawl before me. I will end your meaningless existence...
         ANIMATED_KNUCKLES_DIALOG      = 7322, -- I am known as the Fists of Mystics. Come, show me your fighting spirit.
         ANIMATED_DAGGER_DIALOG        = 7354, -- I am called the Ornate Blade. Now, show me your strength.
         ANIMATED_LONGSWORD_DIALOG     = 7386, -- People have named me the Holy Blade. I will try thy resolution.
@@ -45,11 +45,11 @@ zones[xi.zone.DYNAMIS_XARCABARD] =
     {
         TIME_EXTENSION =
         {
-            { minutes = 10, ki = xi.ki.CRIMSON_GRANULES_OF_TIME,   mob = 17330531 },
-            { minutes = 10, ki = xi.ki.AZURE_GRANULES_OF_TIME,     mob = 17330532 },
-            { minutes = 10, ki = xi.ki.AMBER_GRANULES_OF_TIME,     mob = 17330533 },
-            { minutes = 10, ki = xi.ki.ALABASTER_GRANULES_OF_TIME, mob = 17330534 },
-            { minutes = 20, ki = xi.ki.OBSIDIAN_GRANULES_OF_TIME,  mob = 17330535 },
+            { minutes = 10, ki = xi.keyItem.CRIMSON_GRANULES_OF_TIME,   mob = 17330531 },
+            { minutes = 10, ki = xi.keyItem.AZURE_GRANULES_OF_TIME,     mob = 17330532 },
+            { minutes = 10, ki = xi.keyItem.AMBER_GRANULES_OF_TIME,     mob = 17330533 },
+            { minutes = 10, ki = xi.keyItem.ALABASTER_GRANULES_OF_TIME, mob = 17330534 },
+            { minutes = 20, ki = xi.keyItem.OBSIDIAN_GRANULES_OF_TIME,  mob = 17330535 },
         },
 
         REFILL_STATUE =

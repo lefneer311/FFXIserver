@@ -1171,27 +1171,22 @@ void SetupJob(CMobEntity* PMob)
             break;
         case xi::Job::PLD:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 7);
             break;
         case xi::Job::DRK:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 7);
             break;
         case xi::Job::WHM:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 10);
             break;
         case xi::Job::BRD:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
             PMob->defaultMobMod(xi::MobMod::GaChance, 25);
             PMob->defaultMobMod(xi::MobMod::BuffChance, 60);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 10);
             break;
         case xi::Job::RDM:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
             PMob->defaultMobMod(xi::MobMod::GaChance, 15);
             PMob->defaultMobMod(xi::MobMod::BuffChance, 40);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 10);
             break;
         case xi::Job::SMN:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 70);
@@ -1201,7 +1196,6 @@ void SetupJob(CMobEntity* PMob)
             PMob->defaultMobMod(xi::MobMod::SpecialCool, 9);
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
             PMob->defaultMobMod(xi::MobMod::BuffChance, 20);
-            PMob->defaultMobMod(xi::MobMod::MagicDelay, 7);
             break;
         case xi::Job::BLU:
             PMob->defaultMobMod(xi::MobMod::MagicCool, 35);
@@ -1315,23 +1309,11 @@ void SetupJob(CMobEntity* PMob)
 
 void SetupRoaming(CMobEntity* PMob)
 {
-    uint16 distance = 10;
-    uint16 turns    = 1;
-    uint16 cool     = 20;
-    uint16 rate     = 15;
-
-    if (PMob->m_EcoSystem == xi::Ecosystem::Beastmen)
-    {
-        distance = 20;
-        turns    = 5;
-        cool     = 45;
-    }
-
-    // default mob roaming mods
-    PMob->defaultMobMod(xi::MobMod::RoamDistance, distance);
-    PMob->defaultMobMod(xi::MobMod::RoamTurns, turns);
-    PMob->defaultMobMod(xi::MobMod::RoamCool, cool);
-    PMob->defaultMobMod(xi::MobMod::RoamRate, rate);
+    // default mob roaming mods; 6 is the median retail leg
+    PMob->defaultMobMod(xi::MobMod::RoamDistance, 6);
+    PMob->defaultMobMod(xi::MobMod::RoamTurns, 1);
+    PMob->defaultMobMod(xi::MobMod::RoamCool, 20);
+    PMob->defaultMobMod(xi::MobMod::RoamRate, 15);
 
     if ((PMob->m_roamFlags & xi::RoamFlag::Ambush) != xi::RoamFlag::None)
     {
@@ -1526,8 +1508,11 @@ void GetAvailableSpells(CMobEntity* PMob)
 
 void SetSpellList(CMobEntity* PMob, uint16 spellList)
 {
-    PMob->m_SpellListContainer = mobSpellList::GetMobSpellList(spellList);
-    RecalculateSpellContainer(PMob);
+    if (auto* PSpellList = mobSpellList::GetMobSpellList(spellList))
+    {
+        PMob->m_SpellListContainer = PSpellList;
+        RecalculateSpellContainer(PMob);
+    }
 }
 
 void InitializeMob(CMobEntity* PMob)

@@ -34,10 +34,16 @@
 using Recalculate       = xi::Flag<struct RecalculateTag>;
 using IncludeRecycleBin = xi::Flag<struct IncludeRecycleBinTag>;
 
+namespace xi
+{
+
+enum class KeyItem : uint16_t;
+
+}
+
 struct Charge_t;
 enum class MissionLog : uint8_t;
 enum class QuestLog : uint8_t;
-enum class KeyItem : uint16_t;
 class CPetEntity;
 class CMobEntity;
 class CAbility;
@@ -79,7 +85,7 @@ namespace charutils
 void LoadExpTable();
 void SetExpDifficultyCurve(std::vector<std::pair<uint16, EMobDifficulty>>& curve, std::pair<uint16, uint8>& incrediblyEasyPreyData);
 auto LoadChar(uint32 charId) -> std::unique_ptr<CCharEntity>;
-void LoadSpells(CCharEntity* PChar);
+void LoadFromCharSpellsSQL(CCharEntity* PChar);
 void LoadInventory(CCharEntity* PChar);
 void LoadEquip(CCharEntity* PChar);
 
@@ -108,7 +114,7 @@ void DelExperiencePoints(CCharEntity* PChar, float retainpct, uint16 forcedXpLos
 void DistributeExperiencePoints(CCharEntity* PChar, CMobEntity* PMob);
 void DistributeGil(CCharEntity* PChar, CMobEntity* PMob);
 void DistributeItem(CCharEntity* PChar, CBaseEntity* PEntity, uint16 itemid, uint16 droprate);
-void AddExperiencePoints(bool expFromRaise, bool awardRegionPoints, bool fromScripts, CCharEntity* PChar, CBaseEntity* PMob, uint32 exp, EMobDifficulty mobCheck = EMobDifficulty::TooWeak, bool isexpchain = false);
+void AddExperiencePoints(bool expFromRaise, bool awardRegionPoints, bool fromScripts, CCharEntity* PChar, CBaseEntity* PMob, uint32 exp, EMobDifficulty mobCheck = EMobDifficulty::TooWeak, bool isexpchain = false, bool allowLimitPoints = true);
 
 uint16 AddCapacityBonus(CCharEntity* PChar, uint16 capacityPoints);
 void   AddCapacityPoints(CCharEntity* PChar, CBaseEntity* PMob, uint32 capacityPoints, int16 levelDiff = 0, bool isCapacityChain = false);
@@ -130,11 +136,11 @@ uint32 getItemCount(CCharEntity* PChar, uint16 ItemID);
 uint8  MoveItem(CCharEntity* PChar, uint8 LocationID, uint8 SlotID, uint8 NewSlotID);
 
 void DropItem(CCharEntity* PChar, uint8 container, uint8 slotID, int32 quantity, uint16 ItemID);
-void CheckValidEquipment(CCharEntity* PChar);
+void CheckValidEquipment(CCharEntity* PChar, bool isDelevel = false);
 void SaveJobChangeGear(CCharEntity* PChar);
 void LoadJobChangeGear(CCharEntity* PChar);
 void EquipItem(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 containerID);
-void UnequipItem(CCharEntity* PChar, uint8 equipSlotID, xi::Flag<struct RecalculateTag> recalculate = Recalculate::Yes);
+void UnequipItem(CCharEntity* PChar, uint8 equipSlotID, xi::Flag<struct RecalculateTag> recalculate = Recalculate::Yes, bool isDelevel = false);
 bool hasSlotEquipped(CCharEntity* PChar, uint8 equipSlotID);
 void RemoveSub(CCharEntity* PChar);
 bool EquipArmor(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 containerID);
@@ -149,12 +155,12 @@ void UpdateRemovedSlotsLook(CCharEntity* PChar);
 void AddItemToRecycleBin(CCharEntity* PChar, uint32 container, uint8 slotID, uint8 quantity);
 void EmptyRecycleBin(CCharEntity* PChar);
 
-auto hasKeyItem(const CCharEntity* PChar, KeyItem keyItemId) -> bool; // checking the presence of a key item
-auto seenKeyItem(CCharEntity* PChar, KeyItem keyItemId) -> bool;      // checking whether the description of the key item has been read
-void markSeenKeyItem(CCharEntity* PChar, KeyItem keyItemId);          // mark key item as seen (description read)
-void unseenKeyItem(CCharEntity* PChar, KeyItem keyItemId);            // attempt to remove keyitem from seen list
-void addKeyItem(CCharEntity* PChar, KeyItem keyItemId);               // add a key item
-void delKeyItem(CCharEntity* PChar, KeyItem keyItemId);               // delete a key item
+auto hasKeyItem(const CCharEntity* PChar, xi::KeyItem keyItemId) -> bool; // checking the presence of a key item
+auto seenKeyItem(CCharEntity* PChar, xi::KeyItem keyItemId) -> bool;      // checking whether the description of the key item has been read
+void markSeenKeyItem(CCharEntity* PChar, xi::KeyItem keyItemId);          // mark key item as seen (description read)
+void unseenKeyItem(CCharEntity* PChar, xi::KeyItem keyItemId);            // attempt to remove keyitem from seen list
+void addKeyItem(CCharEntity* PChar, xi::KeyItem keyItemId);               // add a key item
+void delKeyItem(CCharEntity* PChar, xi::KeyItem keyItemId);               // delete a key item
 
 int32 hasSpell(CCharEntity* PChar, uint16 SpellID); // checking for the presence of a spell
 int32 addSpell(CCharEntity* PChar, uint16 SpellID); // add a spell
@@ -200,7 +206,6 @@ void SaveCharAppearances(const std::vector<CharAppearance>& rows);
 void PersistCharVars(const std::vector<CharVarChange>& rows);
 auto BuildCharEquipSlots(const CCharEntity* PChar) -> std::vector<CharEquipSlot>;
 auto BuildCharAppearance(const CCharEntity* PChar) -> CharAppearance;
-// void SaveCharLinkshells(CCharEntity* PChar);     // TODO: save the character's linkshells
 void SaveMissionsList(CCharEntity* PChar);          // save the missions list
 void SaveEminenceData(CCharEntity* PChar);          // save Eminence Record (RoE) data
 void SaveQuestsList(CCharEntity* PChar);            // save the list of quests

@@ -116,17 +116,17 @@ end
 
 xi.besieged.badges =
 {
-    xi.ki.PSC_WILDCAT_BADGE,
-    xi.ki.PFC_WILDCAT_BADGE,
-    xi.ki.SP_WILDCAT_BADGE,
-    xi.ki.LC_WILDCAT_BADGE,
-    xi.ki.C_WILDCAT_BADGE,
-    xi.ki.S_WILDCAT_BADGE,
-    xi.ki.SM_WILDCAT_BADGE,
-    xi.ki.CS_WILDCAT_BADGE,
-    xi.ki.SL_WILDCAT_BADGE,
-    xi.ki.FL_WILDCAT_BADGE,
-    xi.ki.CAPTAIN_WILDCAT_BADGE
+    xi.keyItem.PSC_WILDCAT_BADGE,
+    xi.keyItem.PFC_WILDCAT_BADGE,
+    xi.keyItem.SP_WILDCAT_BADGE,
+    xi.keyItem.LC_WILDCAT_BADGE,
+    xi.keyItem.C_WILDCAT_BADGE,
+    xi.keyItem.S_WILDCAT_BADGE,
+    xi.keyItem.SM_WILDCAT_BADGE,
+    xi.keyItem.CS_WILDCAT_BADGE,
+    xi.keyItem.SL_WILDCAT_BADGE,
+    xi.keyItem.FL_WILDCAT_BADGE,
+    xi.keyItem.CAPTAIN_WILDCAT_BADGE
 }
 
 xi.besieged.getMercenaryRank = function(player)
@@ -142,13 +142,26 @@ xi.besieged.getMercenaryRank = function(player)
     return rank
 end
 
-local function getMapBitmask(player)
-    local mamook   = player:hasKeyItem(xi.ki.MAP_OF_MAMOOK) and 1 or 0 -- Map of Mammok
-    local halvung  = player:hasKeyItem(xi.ki.MAP_OF_HALVUNG) and 2 or 0 -- Map of Halvung
-    local arrapago = player:hasKeyItem(xi.ki.MAP_OF_ARRAPAGO_REEF) and 4 or 0 -- Map of Arrapago Reef
-    local astral   = bit.lshift(xi.besieged.getAstralCandescence(), 31) -- Include astral candescence in the top byte
+-- Maps sold by the sanction NPCs, indexed by their bit in the menu mask
+local sanctionMaps =
+{
+    [0] = xi.keyItem.MAP_OF_MAMOOK,
+    [1] = xi.keyItem.MAP_OF_HALVUNG,
+    [2] = xi.keyItem.MAP_OF_ARRAPAGO_REEF,
+}
 
-    return bit.bor(mamook, halvung, arrapago, astral)
+local function getMapBitmask(player)
+    local maps = 0
+
+    for index, mapId in pairs(sanctionMaps) do
+        if player:hasKeyItem(mapId) then
+            maps = bit.bor(maps, bit.lshift(1, index))
+        end
+    end
+
+    local astral = bit.lshift(xi.besieged.getAstralCandescence(), 31) -- Include astral candescence in the top byte
+
+    return bit.bor(maps, astral)
 end
 
 -----------------------------------
@@ -250,14 +263,18 @@ xi.besieged.onEventFinish = function(player, csid, option, npc)
             return
         end
 
-        local ki = xi.ki.MAP_OF_MAMOOK + bit.rshift(option, 8)
+        local ki = sanctionMaps[bit.rshift(option, 8)]
+        if not ki or player:hasKeyItem(ki) then
+            return
+        end
+
         npcUtil.giveKeyItem(player, ki)
         player:delCurrency('imperial_standing', 1000)
 
     -- Player bought an item
     elseif option < 0x40000000 then
         local entry = imperialStandingItems[option]
-        if not entry.id then
+        if not entry then
             return
         end
 
@@ -291,7 +308,7 @@ xi.besieged.hasAssaultOrders = function(player)
     local keyitem = 0
 
     for i = 0, 4 do
-        local ki = xi.ki.LEUJAOAM_ASSAULT_ORDERS + i
+        local ki = xi.keyItem.LEUJAOAM_ASSAULT_ORDERS + i
         if player:hasKeyItem(ki) then
             event = 120 + i
             keyitem = ki

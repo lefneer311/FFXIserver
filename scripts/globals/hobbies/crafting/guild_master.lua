@@ -14,16 +14,16 @@ local lastRank = xi.craftRank.EXPERT
 
 local npcTable =
 {
-    ['Thubu_Parohren'] = { 10009, xi.guild.FISHING,      xi.skill.FISHING,      xi.item.WATER_CRYSTAL, xi.ki.ANGLERS_ALMANAC,       '[Expert]Fishing'      },
-    ['Cheupirudaux'  ] = {   621, xi.guild.WOODWORKING,  xi.skill.WOODWORKING,  xi.item.WIND_CRYSTAL,  xi.ki.WAY_OF_THE_CARPENTER,  '[Expert]Woodworking'  },
-    ['Ghemp'         ] = {   101, xi.guild.SMITHING,     xi.skill.SMITHING,     xi.item.FIRE_CRYSTAL,  xi.ki.WAY_OF_THE_BLACKSMITH, '[Expert]Smithing'     },
-    ['Mevreauche'    ] = {   626, xi.guild.SMITHING,     xi.skill.SMITHING,     xi.item.FIRE_CRYSTAL,  xi.ki.WAY_OF_THE_BLACKSMITH, '[Expert]Smithing'     },
-    ['Reinberta'     ] = {   300, xi.guild.GOLDSMITHING, xi.skill.GOLDSMITHING, xi.item.FIRE_CRYSTAL,  xi.ki.WAY_OF_THE_GOLDSMITH,  '[Expert]Goldsmithing' },
-    ['Ponono'        ] = { 10011, xi.guild.CLOTHCRAFT,   xi.skill.CLOTHCRAFT,   xi.item.EARTH_CRYSTAL, xi.ki.WAY_OF_THE_WEAVER,     '[Expert]Clothcraft'   },
-    ['Faulpie'       ] = {   648, xi.guild.LEATHERCRAFT, xi.skill.LEATHERCRAFT, xi.item.DARK_CRYSTAL,  xi.ki.WAY_OF_THE_TANNER,     '[Expert]Leathercraft' },
-    ['Peshi_Yohnts'  ] = { 10016, xi.guild.BONECRAFT,    xi.skill.BONECRAFT,    xi.item.WIND_CRYSTAL,  xi.ki.WAY_OF_THE_BONEWORKER, '[Expert]Bonecraft'    },
-    ['Abd-al-Raziq'  ] = {   120, xi.guild.ALCHEMY,      xi.skill.ALCHEMY,      xi.item.WATER_CRYSTAL, xi.ki.WAY_OF_THE_ALCHEMIST,  '[Expert]Alchemy'      },
-    ['Piketo-Puketo' ] = { 10013, xi.guild.COOKING,      xi.skill.COOKING,      xi.item.FIRE_CRYSTAL,  xi.ki.WAY_OF_THE_CULINARIAN, '[Expert]Cooking'      },
+    ['Thubu_Parohren'] = { 10009, xi.guild.FISHING,      xi.skill.FISHING,      xi.item.WATER_CRYSTAL, xi.keyItem.ANGLERS_ALMANAC,       '[Expert]Fishing'      },
+    ['Cheupirudaux'  ] = {   621, xi.guild.WOODWORKING,  xi.skill.WOODWORKING,  xi.item.WIND_CRYSTAL,  xi.keyItem.WAY_OF_THE_CARPENTER,  '[Expert]Woodworking'  },
+    ['Ghemp'         ] = {   101, xi.guild.SMITHING,     xi.skill.SMITHING,     xi.item.FIRE_CRYSTAL,  xi.keyItem.WAY_OF_THE_BLACKSMITH, '[Expert]Smithing'     },
+    ['Mevreauche'    ] = {   626, xi.guild.SMITHING,     xi.skill.SMITHING,     xi.item.FIRE_CRYSTAL,  xi.keyItem.WAY_OF_THE_BLACKSMITH, '[Expert]Smithing'     },
+    ['Reinberta'     ] = {   300, xi.guild.GOLDSMITHING, xi.skill.GOLDSMITHING, xi.item.FIRE_CRYSTAL,  xi.keyItem.WAY_OF_THE_GOLDSMITH,  '[Expert]Goldsmithing' },
+    ['Ponono'        ] = { 10011, xi.guild.CLOTHCRAFT,   xi.skill.CLOTHCRAFT,   xi.item.EARTH_CRYSTAL, xi.keyItem.WAY_OF_THE_WEAVER,     '[Expert]Clothcraft'   },
+    ['Faulpie'       ] = {   648, xi.guild.LEATHERCRAFT, xi.skill.LEATHERCRAFT, xi.item.DARK_CRYSTAL,  xi.keyItem.WAY_OF_THE_TANNER,     '[Expert]Leathercraft' },
+    ['Peshi_Yohnts'  ] = { 10016, xi.guild.BONECRAFT,    xi.skill.BONECRAFT,    xi.item.WIND_CRYSTAL,  xi.keyItem.WAY_OF_THE_BONEWORKER, '[Expert]Bonecraft'    },
+    ['Abd-al-Raziq'  ] = {   120, xi.guild.ALCHEMY,      xi.skill.ALCHEMY,      xi.item.WATER_CRYSTAL, xi.keyItem.WAY_OF_THE_ALCHEMIST,  '[Expert]Alchemy'      },
+    ['Piketo-Puketo' ] = { 10013, xi.guild.COOKING,      xi.skill.COOKING,      xi.item.FIRE_CRYSTAL,  xi.keyItem.WAY_OF_THE_CULINARIAN, '[Expert]Cooking'      },
 }
 
 -- TODO: Enum this items. This PR is already massive.
@@ -104,6 +104,35 @@ xi.crafting.guildMasterOnTrade = function(player, npc, trade)
     end
 end
 
+-- Crafts at or above the common cap rank, except the highest one, which cannot be renounced
+local function getRenounceableCrafts(player)
+    local rankFromSetting   = math.floor(xi.settings.map.CRAFT_COMMON_CAP / 100)
+    local highestSkillId    = 0
+    local highestSkillLevel = 0
+
+    for skillChecked = xi.skill.WOODWORKING, xi.skill.COOKING do
+        local currentSkillLevel = player:getCharSkillLevel(skillChecked)
+
+        if currentSkillLevel > highestSkillLevel then
+            highestSkillLevel = currentSkillLevel
+            highestSkillId    = skillChecked
+        end
+    end
+
+    local renounceable = {}
+
+    for skillChecked = xi.skill.WOODWORKING, xi.skill.COOKING do
+        if
+            player:getSkillRank(skillChecked) >= rankFromSetting and
+            skillChecked ~= highestSkillId
+        then
+            renounceable[skillChecked] = true
+        end
+    end
+
+    return renounceable
+end
+
 xi.crafting.guildMasterOnTrigger = function(player, npc)
     local npcName  = npc:getName()
     local eventId  = npcTable[npcName][1]
@@ -152,37 +181,18 @@ xi.crafting.guildMasterOnTrigger = function(player, npc)
         guildId ~= xi.guild.FISHING
     then
         if player:getLocalVar('skipRenounceDialog') == 0 then
-            local rankChecked       = 0
-            local highestSkillId    = 0
-            local highestSkillLevel = 0
-            local currentSkillLevel = 0
-
-            -- Track highest skill. This one wont appear in renounce list.
-            for skillChecked = xi.skill.WOODWORKING, xi.skill.COOKING do
-                currentSkillLevel = player:getCharSkillLevel(skillChecked)
-
-                if currentSkillLevel > highestSkillLevel then
-                    highestSkillLevel = currentSkillLevel
-                    highestSkillId    = skillChecked
-                end
-            end
-
             local rankFromSetting = math.floor(xi.settings.map.CRAFT_COMMON_CAP / 100) -- If 700, it will return rank 7 (Artisan)
+            local renounceable    = getRenounceableCrafts(player)
 
             -- Params 7 and 8.
             for skillChecked = xi.skill.WOODWORKING, xi.skill.COOKING do
-                rankChecked = player:getSkillRank(skillChecked)
-
                 -- Param 7: Count crafts over craftsman rank.
-                if rankChecked >= rankFromSetting then
+                if player:getSkillRank(skillChecked) >= rankFromSetting then
                     artisanCount = artisanCount + 1
                 end
 
                 -- Param 8: Full mask except craft ids that CAN be renounced.
-                if
-                    rankChecked < rankFromSetting or
-                    skillChecked == highestSkillId
-                then
+                if not renounceable[skillChecked] then
                     artisanBitmask = bit.bor(artisanBitmask, bit.lshift(1, skillChecked - 48))
                 end
             end
@@ -232,9 +242,12 @@ xi.crafting.guildMasterOnEventFinish = function(player, csid, option, npc)
         -- Rank renouncement.
         elseif
             option >= xi.skill.WOODWORKING and
-            option <= xi.skill.COOKING
+            option <= xi.skill.COOKING and
+            xi.crafting.hasJoinedGuild(player, guildId) and
+            guildId ~= xi.guild.FISHING and
+            getRenounceableCrafts(player)[option]
         then
-            local rankFromSetting = math.floor(xi.settings.map.CRAFT_COMMON_CAP / 100) - 1  -- If 700, it will return rank 6 (Craftsman)
+            local rankFromSetting = math.floor(xi.settings.map.CRAFT_COMMON_CAP / 100) - 1 -- If 700, it will return rank 6 (Craftsman)
 
             player:setSkillRank(option, rankFromSetting)
             player:setSkillLevel(option, xi.settings.map.CRAFT_COMMON_CAP)
