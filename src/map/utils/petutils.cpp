@@ -75,6 +75,7 @@ void LoadPetList()
                        "mob_pools.speciesid, "
                        "mob_pools.mJob, "
                        "mob_pools.sJob, "
+                       "mob_pools.cmbSkill,"
                        "pet_list.element, "
                        "hasSpellScript, spellList, "
                        "slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, "
@@ -153,6 +154,7 @@ void LoadPetList()
         Pet->stun_res_rank        = rset->get<int8>("stun_res_rank");
         Pet->gravity_res_rank     = rset->get<int8>("gravity_res_rank");
 
+        Pet->cmbSkill       = rset->get<xi::SkillType>("cmbSkill");
         Pet->cmbDelay       = rset->get<uint16>("cmbDelay");
         Pet->name_prefix    = rset->get<uint8>("name_prefix");
         Pet->m_MobSkillList = rset->get<uint16>("skill_list_id");
@@ -197,7 +199,7 @@ void RetreatToMaster(CBattleEntity* PMaster)
 
     CBattleEntity* PPet = PMaster->PPet;
 
-    if (!PPet->StatusEffectContainer->HasPreventActionEffect())
+    if (PPet && PPet->PAI)
     {
         PPet->PAI->Disengage();
     }
@@ -350,8 +352,9 @@ void LoadJugStats(CPetEntity* PPet, Pet_t* petStats)
     PPet->setMobMod(xi::MobMod::RangedDamageOffset, 2);
 
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage(weaponDamage);
-    static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage(weaponDamage);
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDmgType(petStats->m_dmgType);
+    static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setSkillType(petStats->cmbSkill);
+    static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage(weaponDamage);
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDmgType(petStats->m_dmgType);
 
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDelay(petStats->cmbDelay);
@@ -889,7 +892,6 @@ void CalculateAvatarStats(CBattleEntity* PMaster, CPetEntity* PPet)
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage(weaponDamage);
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage(weaponDamage);
     static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDmgType(PPetData->m_dmgType);
-    static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_SUB])->setDmgType(PPetData->m_dmgType);
 
     PPet->addModifier(xi::Mod::DEF, mobutils::GetBaseDefEva(PPet, PPetData->defRank));
     PPet->addModifier(xi::Mod::EVA, mobutils::GetBaseDefEva(PPet, mobutils::JobSkillRankToBaseEvaRank(PPet->GetMJob(), PPet->GetSJob())));

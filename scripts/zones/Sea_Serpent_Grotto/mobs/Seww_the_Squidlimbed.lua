@@ -2,17 +2,10 @@
 -- Area: Sea Serpent Grotto
 --   NM: Seww the Squidlimbed
 -----------------------------------
-mixins = { require('scripts/mixins/job_special') }
------------------------------------
 local ID = zones[xi.zone.SEA_SERPENT_GROTTO]
 -----------------------------------
 ---@type TMobEntity
 local entity = {}
-
-entity.spawnPoints =
-{
-    { x =  245.000, y =  11.000, z =  61.000 }
-}
 
 entity.phList =
 {

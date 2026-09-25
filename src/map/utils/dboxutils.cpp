@@ -26,12 +26,14 @@
 #include "common/settings.h"
 
 #include "entities/char_entity.h"
+#include "enums/msg_std.h"
 
 #include "items/transactions/item_claim.h"
 #include "utils/charutils.h"
 #include "utils/itemutils.h"
 
 #include "packets/c2s/0x04d_pbx.h"
+#include "packets/s2c/0x009_message.h"
 #include "packets/s2c/0x01d_item_same.h"
 #include "packets/s2c/0x04b_pbx_result.h"
 #include "universal_container.h"
@@ -320,11 +322,11 @@ void dboxutils::CancelSendingItem(CCharEntity* PChar, GP_CLI_COMMAND_PBX_BOXNO B
                 if (rset && rset->rowsAffected())
                 {
                     const auto rset2 = db::preparedStmt(
-                        "DELETE FROM delivery_box WHERE senderid = ? AND box = 1 AND charid = ? AND itemid = ? AND quantity = ? "
+                        "DELETE FROM delivery_box WHERE senderid = ? AND box = 1 AND charid = ? AND itemid = ? AND quantity = ? AND extra = ? "
                         "AND slot >= 8 LIMIT 1",
-                        PChar->id, charid, PItem->getID(), PItem->getQuantity());
+                        PChar->id, charid, PItem->getID(), PItem->getQuantity(), PItem->m_extra);
 
-                    if (rset2 && rset->rowsAffected())
+                    if (rset2 && rset2->rowsAffected())
                     {
                         PChar->UContainer->GetItem(PostWorkNo)->setSent(false);
                         PChar->pushPacket<GP_SERV_COMMAND_PBX_RESULT>(GP_CLI_COMMAND_PBX_COMMAND::Cancel, BoxNo, PChar->UContainer->GetItem(PostWorkNo), PostWorkNo, PChar->UContainer->GetItemsCount(), 0x02);
@@ -656,6 +658,13 @@ void dboxutils::TakeItemFromCell(CCharEntity* PChar, GP_CLI_COMMAND_PBX_BOXNO Bo
         if (!PItem->isType(ITEM_CURRENCY) && PChar->getStorage(LOC_INVENTORY)->GetFreeSlotsCount() == 0)
         {
             PChar->pushPacket<GP_SERV_COMMAND_PBX_RESULT>(GP_CLI_COMMAND_PBX_COMMAND::Get, BoxNo, PItem, PostWorkNo, PChar->UContainer->GetItemsCount(), 0xB9);
+            return;
+        }
+
+        if (PItem->hasFlag(ItemFlag::Rare) && charutils::HasItem(PChar, PItem->getID()))
+        {
+            PChar->pushPacket<GP_SERV_COMMAND_MESSAGE>(PChar, PItem->getID(), 0, MsgStd::ItemEx);
+            PChar->pushPacket<GP_SERV_COMMAND_PBX_RESULT>(GP_CLI_COMMAND_PBX_COMMAND::Get, BoxNo, PItem, PostWorkNo, PChar->UContainer->GetItemsCount(), 0xBA);
             return;
         }
 

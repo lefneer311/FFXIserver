@@ -4,7 +4,7 @@ templates:
 
   Akvan:
     id:            5162
-    species:       ahriman
+    species:       akoman
     type:          [notorious]
     spell_list_id: 21
     skill_list_id: 4
@@ -45,7 +45,6 @@ templates:
         hitbox:          11
       behaviors:
         aggressive: true
-        links:      true
       spawn:
         respawn: 300
     loot:
@@ -786,7 +785,7 @@ templates:
         name_prefix:    64
         hitbox:         13
       behaviors:
-        links: true
+        aggressive: true
       spawn:
         respawn: 300
     loot:

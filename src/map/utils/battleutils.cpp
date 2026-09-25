@@ -1536,15 +1536,19 @@ void HandleEnspell(CBattleEntity* PAttacker, CBattleEntity* PDefender, action_re
         return; // Lambda handled the function
     }
     // check script for grip if main failed
-    else if (PAttacker->objtype == TYPE_PC && static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB) && weapon == PAttacker->m_Weapons[SLOT_MAIN] &&
-             static_cast<CItemWeapon*>(static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB))->getSkillType() == xi::SkillType::None &&
-             battleutils::GetScaledItemModifier(PAttacker, static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB), xi::Mod::ITEM_ADDEFFECT_TYPE) > 0 &&
-             luautils::additionalEffectAttack(PAttacker, PDefender, static_cast<CItemWeapon*>(static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB)), Action, finaldamage) == 0 &&
-             Action->hasAdditionalEffect())
+    else if (PAttacker->objtype == TYPE_PC && static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB) && weapon == PAttacker->m_Weapons[SLOT_MAIN])
     {
-        if (Action->addEffectMessage == MsgBasic::AddEffectDamage && Action->addEffectParam < 0)
+        if (auto* PSubWeapon = dynamic_cast<CItemWeapon*>(static_cast<CCharEntity*>(PAttacker)->getEquip(SLOT_SUB));
+            PSubWeapon &&
+            PSubWeapon->getSkillType() == xi::SkillType::None &&
+            GetScaledItemModifier(PAttacker, PSubWeapon, xi::Mod::ITEM_ADDEFFECT_TYPE) > 0 &&
+            luautils::additionalEffectAttack(PAttacker, PDefender, PSubWeapon, Action, finaldamage) == 0 &&
+            Action->hasAdditionalEffect())
         {
-            Action->addEffectMessage = MsgBasic::AddEffectRecoversHP;
+            if (Action->addEffectMessage == MsgBasic::AddEffectDamage && Action->addEffectParam < 0)
+            {
+                Action->addEffectMessage = MsgBasic::AddEffectRecoversHP;
+            }
         }
     }
     else if ((PAttacker->objtype == TYPE_MOB || PAttacker->objtype == TYPE_PET) && static_cast<CMobEntity*>(PAttacker)->getMobMod(xi::MobMod::AddEffect) > 0)
@@ -5039,7 +5043,7 @@ void DrawIn(CBattleEntity* PTarget, const position_t pos, const float offset, co
     constexpr float ENTITY_HEIGHT = 2.0f;
 
     const auto src = Vector3{ pos.x, pos.y - ENTITY_HEIGHT, pos.z };
-    const auto dst = Vector3{ nearEntity.x, nearEntity.y, nearEntity.z };
+    const auto dst = Vector3{ nearEntity.x, nearEntity.y - ENTITY_HEIGHT, nearEntity.z };
     if (PTarget->loc.zone->xiMesh()->rayIntersect(src, dst))
     {
         return;
@@ -5493,7 +5497,7 @@ timer::duration CalculateSpellCastTime(CBattleEntity* PEntity, CMagicState* PMag
                 bonus += PChar->PJobPoints->GetJobPointValue(JP_STRATEGEM_EFFECT_II);
             }
 
-            cast -= std::chrono::floor<std::chrono::milliseconds>(base * ((100 - (50 + bonus)) / 100.0f));
+            cast -= std::chrono::floor<std::chrono::milliseconds>(base * ((50 + bonus) / 100.0f));
             applyArts = false;
         }
         // Add Black & Dark Magic Casting Time -% bonus to Bio, Absorbs, Drain, Aspir, Dread Spikes, Stun, Tractor, Endark
@@ -5536,7 +5540,7 @@ timer::duration CalculateSpellCastTime(CBattleEntity* PEntity, CMagicState* PMag
                 bonus += PChar->PJobPoints->GetJobPointValue(JP_STRATEGEM_EFFECT_II);
             }
 
-            cast -= std::chrono::floor<std::chrono::milliseconds>(base * ((100 - (50 + bonus)) / 100.0f));
+            cast -= std::chrono::floor<std::chrono::milliseconds>(base * ((50 + bonus) / 100.0f));
             applyArts = false;
         }
         else if (applyArts)
@@ -5866,16 +5870,21 @@ timer::duration CalculateSpellRecastTime(CBattleEntity* PEntity, CSpell* PSpell)
         if (PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Alacrity))
         {
             recast = std::chrono::floor<std::chrono::milliseconds>(recast * 0.60); // 40% reduction from Alacrity alone
-            recast = std::max<timer::duration>(recast, recastCapFloor(alacrityCelerityRecastReductionCap));
 
-            // Only apply bonus mod if the spell element matches the weather, this is allowed to go over the 80% cap to a 90% cap.
+            auto reductionCap = recastReductionCap;
+
+            // the relic feet bonus only applies when the spell element matches the weather, and only then does the cap extend to 90%
             if (battleutils::WeatherMatchesElement(battleutils::GetWeather(PEntity, false), static_cast<uint8>(PSpell->getElement())))
             {
                 uint16 bonus = PEntity->getMod(xi::Mod::ALACRITY_CELERITY_EFFECT);
-
-                recast = std::chrono::floor<std::chrono::milliseconds>(recast * ((100 - bonus) / 100.0f));
-                recast = std::max<timer::duration>(recast, recastCapFloor(alacrityCelerityRecastReductionCap));
+                if (bonus > 0)
+                {
+                    recast       = std::chrono::floor<std::chrono::milliseconds>(recast * ((100 - bonus) / 100.0f));
+                    reductionCap = alacrityCelerityRecastReductionCap;
+                }
             }
+
+            recast = std::max<timer::duration>(recast, recastCapFloor(reductionCap));
         }
     }
     else if (PSpell->getSpellGroup() == SPELLGROUP_WHITE)
@@ -5908,16 +5917,21 @@ timer::duration CalculateSpellRecastTime(CBattleEntity* PEntity, CSpell* PSpell)
         if (PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Celerity))
         {
             recast = std::chrono::floor<std::chrono::milliseconds>(recast * 0.60); // 40% reduction from Celerity alone
-            recast = std::max<timer::duration>(recast, recastCapFloor(alacrityCelerityRecastReductionCap));
 
-            // Only apply bonus mod if the spell element matches the weather.
+            auto reductionCap = recastReductionCap;
+
+            // the relic feet bonus only applies when the spell element matches the weather, and only then does the cap extend to 90%
             if (battleutils::WeatherMatchesElement(battleutils::GetWeather(PEntity, false), static_cast<uint8>(PSpell->getElement())))
             {
                 uint16 bonus = PEntity->getMod(xi::Mod::ALACRITY_CELERITY_EFFECT);
-
-                recast = std::chrono::floor<std::chrono::milliseconds>(recast * ((100 - bonus) / 100.0f));
-                recast = std::max<timer::duration>(recast, recastCapFloor(alacrityCelerityRecastReductionCap));
+                if (bonus > 0)
+                {
+                    recast       = std::chrono::floor<std::chrono::milliseconds>(recast * ((100 - bonus) / 100.0f));
+                    reductionCap = alacrityCelerityRecastReductionCap;
+                }
             }
+
+            recast = std::max<timer::duration>(recast, recastCapFloor(reductionCap));
         }
     }
 

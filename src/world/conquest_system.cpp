@@ -25,8 +25,6 @@
 
 #include "common/ipp.h"
 
-#include "common/settings.h"
-
 ConquestSystem::ConquestSystem(WorldEngine& worldServer)
 : worldServer_(worldServer)
 {
@@ -158,46 +156,34 @@ bool ConquestSystem::updateInfluencePoints(int points, unsigned int nation, REGI
         points *= 2;
     }
 
-    const int total = influences[0] + influences[1] + influences[2];
+    // Scale the influence points and make sure if points are not 0, the nation gets at least 1.
+    if (points > 0)
+    {
+        points = std::max<int>(points / 10, 1);
+    }
 
-    // Read from main settings. Protect against 0 or too high of number.
     // Restricted by a factor of 100 because of packet lines in 0x05e_conquest.cpp
-    const int32 influenceCapSetting = std::clamp<int32>(settings::get<int32>("main.CONQUEST_INFLUENCE_CAP"), 1, 20000000);
+    constexpr int32 influenceCap = INT32_MAX / 100;
 
-    // Account for situation where influenceCapSetting was reduced midweek.
-    const int32 influenceCap = std::max<int32>(influenceCapSetting, total);
+    const int room = influenceCap - influences[nation];
 
-    const int room = influenceCap - total;
-
-    if (points <= room) // Pool is not capped and there is space. Straight add.
+    if (points <= room) // Nation is not full and there is space. Straight add.
     {
         influences[nation] += points;
     }
-    else // Pool is full. Gains come out of the other nations.
+    else // Nation is full. Gains come out of the other nations.
     {
-        // Fill the remaining room first, then redistribute the overflow.
+        // Fill the remaining room first, then decrease the other nations by the overflow.
         influences[nation] += room;
 
-        // Do not adjust anything if the nation is already at the pool maximum.
-        if (influences[nation] < influenceCap)
+        const int overflow = points - room;
+
+        for (auto i = 0u; i < 3; ++i)
         {
-            const int overflow = points - room;
-
-            auto lost = 0;
-            for (auto i = 0u; i < 3; ++i)
+            if (i != nation)
             {
-                if (i == nation)
-                {
-                    continue;
-                }
-
-                const int64 share = static_cast<int64>(overflow) * influences[i] / (influenceCap - influences[nation]);
-                auto        loss  = std::min<int>(static_cast<int>(share), influences[i]);
-                influences[i] -= loss;
-                lost += loss;
+                influences[i] -= std::min(influences[i], overflow); // Do not allow to drop below 0.
             }
-
-            influences[nation] += lost;
         }
     }
 

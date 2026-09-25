@@ -190,6 +190,7 @@ xi.mobSkill =
 
     BAD_BREATH_1                  =  319,
 
+    NEEDLESHOT_1                  =  321,
     THOUSAND_NEEDLES_1            =  322,
     WILD_CARROT_1                 =  323,
 
@@ -306,6 +307,7 @@ xi.mobSkill =
 
     STINKING_GAS                  =  489,
 
+    CALL_OF_THE_GRAVE             =  491,
     ABYSS_BLAST                   =  492,
 
     SNORT_1                       =  495,
@@ -445,6 +447,7 @@ xi.mobSkill =
     POWER_ATTACK_ARMED_1          =  667,
     KICK_BACK                     =  668,
     IMPLOSION                     =  669,
+    SHADOW_LORD_DEATH             =  670,
 
     UMBRA_SMASH                   =  671,
     GIGA_SLASH                    =  672,
@@ -1032,10 +1035,44 @@ xi.mobSkill =
     SMITE_OF_FURY_2               = 1558,
     FLURRY_OF_RAGE_2              = 1559,
     WHISPERS_OF_IRE_2             = 1560,
-
+    SONIC_WAVE_2                  = 1561,
+    STOMPING_2                    = 1562,
+    COLD_STARE_2                  = 1563,
+    WHISTLE_2                     = 1564,
+    BERSERK_DHALMEL_2             = 1565,
+    HEALING_BREEZE_2              = 1566,
     FOOT_KICK_2                   = 1567,
     DUST_CLOUD_2                  = 1568,
     WHIRL_CLAWS_2                 = 1569,
+    WILD_CARROT_2                 = 1570,
+    GAS_SHELL_2                   = 1571,
+    VENOM_SHELL_2                 = 1572,
+    PALSYNYXIS_2                  = 1573,
+    PAINFUL_WHIP_2                = 1574,
+    SUCTORIAL_TENTACLE_2          = 1575,
+    HELLDIVE_2                    = 1576,
+    WING_CUTTER_2                 = 1577,
+    BROADSIDE_BARRAGE_2           = 1578,
+    BLIND_SIDE_BARRAGE_2          = 1579,
+    DAMNATION_DIVE_2              = 1580,
+    STICKY_THREAD_2               = 1581,
+    POISON_BREATH_2               = 1582,
+    COCOON_2                      = 1583,
+    HEAD_BUTT_2                   = 1584,
+    DREAM_FLOWER_2                = 1585,
+    WILD_OATS_2                   = 1586,
+    LEAF_DAGGER_2                 = 1587,
+    SCREAM_2                      = 1588,
+    BUBBLE_SHOWER_2               = 1589,
+    BUBBLE_CURTAIN_2              = 1590,
+    BIG_SCISSORS_2                = 1591,
+    SCISSOR_GUARD_2               = 1592,
+    METALLIC_BODY_2               = 1593,
+    TOXIC_SPIT_2                  = 1594,
+    GEIST_WALL_2                  = 1595,
+    NUMBING_NOISE_2               = 1596,
+    NIMBLE_SNAP_2                 = 1597,
+    CYCLOTAIL_2                   = 1598,
 
     MIASMIC_BREATH_1              = 1604, -- Cirrate Christelle - Mobskill Version
     MIASMIC_BREATH_2              = 1605, -- Cirrate Christelle - Skill Attack version
@@ -1043,7 +1080,23 @@ xi.mobSkill =
     PUTRID_BREATH_1               = 1608, -- Cirrate Christelle - Mobskill Version
     PUTRID_BREATH_2               = 1609, -- Cirrate Christelle - Skill Attack version
 
+    GLOEOSUCCUS_2                 = 1613,
+
+    SOPORIFIC_2                   = 1615,
+    PALSY_POLLEN_2                = 1616,
+
     FROGKICK_2                    = 1621,
+    CURSED_SPHERE_2               = 1622,
+    VENOM_2                       = 1623,
+    DEBILITATING_DRONE_2          = 1624,
+    TWO_THOUSAND_NEEDLES_1        = 1625,
+    FOUR_THOUSAND_NEEDLES_1       = 1626,
+
+    HEAT_BREATH_2                 = 1628,
+    RIDDLE_2                      = 1629,
+    GREAT_SANDSTORM_2             = 1630,
+    GREAT_WHIRLWIND_2             = 1631,
+    CHOKE_BREATH_2                = 1632,
 
     SHEEP_BLEAT_2                 = 1633,
     SHEEP_SONG_2                  = 1634,
@@ -1119,8 +1172,11 @@ xi.mobSkill =
     FAZE                          = 1728,
 
     FORCEFUL_BLOW                 = 1731, -- Used with Mamool's weapons break.
-
+    SOMERSAULT_KICK_1             = 1732,
     FIRESPIT                      = 1733,
+    WARM_UP_1                     = 1734,
+
+    AXE_THROW                     = 1736,
 
     LAVA_SPIT                     = 1785,
     SULFUROUS_BREATH              = 1786,
@@ -1148,6 +1204,9 @@ xi.mobSkill =
     SERPENTINE_TAIL               = 1835,
     NERVE_GAS                     = 1836,
 
+    MINE_BLAST                    = 1838,
+    RUSHING_SLASH_2               = 1839,
+
     SANDBLAST_2                   = 1841,
     SANDPIT_2                     = 1842,
     VENOM_SPRAY_2                 = 1843,
@@ -1157,7 +1216,12 @@ xi.mobSkill =
     ROAR_CERBERUS                 = 1892,
     -- SPIRIT_SURGE                  = 1893,
 
+    RUSHING_DRUB                  = 1920,
+    FORCEFUL_BLOW_2               = 1921,
+    SOMERSAULT_KICK_2             = 1922,
     FIRESPIT_BLUE_MAMOOLJA        = 1923, -- Ignores shadows
+    WARM_UP_2                     = 1924,
+    STAVE_TOSS_1                  = 1925,
 
     EES_LAMIA                     = 1931,
     EES_MERROW                    = 1932,

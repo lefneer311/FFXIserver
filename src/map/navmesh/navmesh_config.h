@@ -37,7 +37,7 @@ struct NavMeshConfig
     float cellHeight{ 0.2f };             // Previous xiNavmeshes value: 0.2
     float walkableSlopeAngle{ 46.0f };    // Previous xiNavmeshes value: 46.0
     float agentHeight{ 2.0f };            // Previous xiNavmeshes value: 1.8
-    float agentRadius{ 0.5f };            // Previous xiNavmeshes value: 0.3
+    float agentRadius{ 0.0f };            // Previous xiNavmeshes value: 0.3
     float agentMaxClimb{ 1.0f };          // Previous xiNavmeshes value: 0.6
     float maxEdgeLen{ 0.0f };             // Previous xiNavmeshes value: 12.0
     float maxSimplificationError{ 1.3f }; // Previous xiNavmeshes value: 1.3
@@ -63,6 +63,10 @@ struct NavMeshConfig
     // remove stray geometry parked far outside the playable area, which would otherwise
     // inflate the world bounds and with them the tile grid.
     std::vector<NavMeshSkipSphere> skipSpheres{};
+
+    // World-space positions something is known to stand on, such as spawn points and roam region corners.
+    // A surface buried under other ground is kept when one of these sits on it, since a floor under a floor is a real floor.
+    std::vector<std::array<float, 3>> seeds{};
 
     // Auto-generate off-mesh drop/step links across ledges Recast severs; zone-wide.
     bool  generateOffMeshLinks{ true };
